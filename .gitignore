@@ -1,2 +1,7 @@
 .env
 self.txt
+vomitignore.txt
+vomit.txt
+*.py[cod]
+.ipynb*
+__pycache__/
