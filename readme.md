@@ -15,12 +15,22 @@ this update adds core database models and a starter jupyter notebook for dev exp
    pip install -r requirements.txt
    ```
 
-3. create tables:
+3. re-create tables:
    ```
    python3 -m app.main
    ```
 
-4. start jupyter lab:
+4. run the dev server
+    ```
+    uvicorn app.main:app --reload
+    ```
+
+    open ```http://127.0.0.1:8000/docs``` for api docs
+    
+    root endpoint: ```http://127.0.0.1:8000/api ```
+
+
+5. start jupyter lab:
    ```
    python3 -m jupyter lab
    ```
