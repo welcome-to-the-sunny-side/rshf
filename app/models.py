@@ -1,8 +1,8 @@
 from sqlalchemy import Integer, Column, String, ForeignKey, Enum, PrimaryKeyConstraint, Boolean
 from sqlalchemy.orm import relationship
 from app.database import Base
+from app.utils import hash_password
 import enum
-
 
 class Role(str, enum.Enum):
     admin = "admin"
@@ -13,10 +13,14 @@ class Role(str, enum.Enum):
 class User(Base):
     __tablename__ = "users"
 
-    user_id = Column(String, primary_key=True, index=True)
+    user_id = Column(String, primary_key=True, index=True) 
+    # note that the username which the user will login with will be the same as their codeforces handle
     cf_handle = Column(String, unique=True, index=True, nullable=False)
     internal_default_rated = Column(Boolean, nullable=False, default=True)
     trusted_score = Column(Integer, nullable=False, default=0)
+
+    # hqas to be hashed
+    hashed_password = Column(String, nullable=False, default=hash_password("devpass"))
 
     memberships = relationship("GroupMembership", back_populates="user", cascade="all, delete")
     def __repr__(self):

@@ -37,6 +37,14 @@ this update adds core database models and a starter jupyter notebook for dev exp
 
 the schema supports many-to-many user-group relationships and group-specific rating forks from global codeforces ratings.
 
----
 
-ready for that dev_playground.ipynb scaffold next? can include inserts + example queries + pandas views.
+## todo
+
+- [ ] schemas/models/endpoints are currently being written manually to stay flexible.
+- [ ] once schema design stabilizes, introduce a `generate.py` script to dynamically scaffold:
+  - pydantic schemas (`schemas.py`)
+  - sqlalchemy models (`models.py`)
+  - crud functions (`crud.py`)
+  - fastapi route stubs (`endpoints.py`)
+- [ ] potential format: a minimal json/yaml spec describing tables and fields.
+- [ ] revisit automation after 3-4 tables and route patterns are locked in.
