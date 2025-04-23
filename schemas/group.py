@@ -1,4 +1,3 @@
-
 class Group:
     def __init__(self, internal_group_id, group_name, rating_calculation_formula, moderators, users, official_default_rated):
         self._internal_group_id = internal_group_id
