@@ -7,3 +7,16 @@
 - conversely, for every group, store the number of users
 - for every group, store the list of moderators and number of moderators
 - a view of the form (contest, group)
+- user participation in a certain contest wrt a certain group: 
+[
+    - internal_contest_id
+    - rank in contest wrt group
+    - final group rating after this contest
+]
+- within a contest object:
+[
+    - internal contest id
+    - cf contest id
+    - cf contest name
+    - contest time
+]
