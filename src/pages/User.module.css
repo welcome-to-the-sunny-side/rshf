@@ -1,0 +1,110 @@
+.profileBox {
+  background-color: rgb(255, 255, 255);
+  border: 1px solid rgb(185, 185, 185);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 1rem 1rem 1rem; /* Double upper and lower padding */
+
+  box-sizing: border-box;
+  width: calc(100% + 2rem); /* Compensate for main padding */
+  max-width: 1200px;
+  margin: 0 -1rem; /* Negative margin to extend beyond parent padding */
+  min-height: 140px;
+  position: relative;
+}
+
+/* Reusable content box class with the same styling as profileBox */
+.contentBox {
+  background-color: rgb(255, 255, 255);
+  border: 1px solid rgb(185, 185, 185);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 1rem 1rem 1rem;
+  box-sizing: border-box;
+  width: calc(100% + 2rem); /* Compensate for main padding */
+  max-width: 1200px;
+  margin: 1rem -1rem 0; /* Add top margin between boxes */
+  min-height: 140px;
+  position: relative;
+}
+
+.username {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: rgb(255, 140, 0); /* Will be dynamic in the future */
+}
+
+.groupRatingRow {
+  margin-top: 0.5rem;
+  font-size: 1rem;
+  color: #222;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.groupDropdown {
+  font-size: 0.95rem;
+  padding: 0.18rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid #aaa;
+  background: #fff;
+}
+
+.statItem {
+  position: relative;
+  padding-left: 1rem;
+  font-size: 0.95rem;
+  color: #444;
+  margin-bottom: 0.6rem;
+}
+
+.statItem:before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #777;
+}
+
+.statsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Trust score gradient colors */
+.trustScore {
+  font-weight: bold;
+}
+
+/* Profile content layout */
+.profileContent {
+  display: flex;
+  width: 100%;
+}
+
+.profileInfo {
+  flex: 1;
+}
+
+.profilePictureContainer {
+  width: 150px;
+  height: 150px;
+  /* border-radius: 8px; */ /* Removed rounded corners */
+  border: 1px solid #ddd;
+  overflow: hidden;
+  background-color: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 1rem;
+}
+
+.profilePicture {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

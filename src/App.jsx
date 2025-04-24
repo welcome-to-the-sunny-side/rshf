@@ -10,6 +10,9 @@ import About from './pages/About';
 import Contests from './pages/Contests';
 import Users from './pages/Users';
 import Contact from './pages/Contact'; // Import Contact page
+import Posts from './pages/Posts';
+import Post from './pages/Post';
+import ContestPage from './pages/ContestPage'; // Import ContestPage
 
 export default function App() {
   // Example: Replace with your actual authentication logic
@@ -26,8 +29,11 @@ export default function App() {
         <Route path="/groups" element={<Groups />} />
         <Route path="/group/:groupId" element={<Group />} />
         <Route path="/contests" element={<Contests />} />
+        <Route path="/contest/:contest_id" element={<ContestPage />} /> {/* Add Contest route */}
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} /> {/* Add Contact route */}
+        <Route path="/posts" element={<Posts />} />
+        <Route path="/post/:postId" element={<Post />} />
       </Routes>
     </Layout>
   );
