@@ -1,157 +1,115 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.responses import HTMLResponse
+from datetime import datetime, timedelta
+import os
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 from app import schemas, crud, database
-from app.schemas import Token
-from app.utils import verify_password
-from datetime import timedelta, datetime
-from jose import JWTError, jwt
-import os
 
 
 router = APIRouter(prefix="/api")
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/token")
-
-
+# auth stufff
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/user/login")
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 998244353
 
+def get_db():
+    db = next(database.get_db())
+    try:
+        yield db
+    finally:
+        db.close()
 
-def create_access_token(data: dict, expires_delta: timedelta = None):
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
     expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-def get_current_user(db: Session = Depends(database.get_db), token: str = Depends(oauth2_scheme)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="invalid credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-    except JWTError:
-        raise credentials_exception
-    user = crud.get_user_by_username(db, username)
-    if user is None:
-        raise credentials_exception
-    return user
 
-@router.get("", response_class=HTMLResponse, include_in_schema=False)
-def root():
-    return """
-    <html>
-        <head>
-            <title>clean-rating api</title>
-            <style>
-                body { font-family: monospace; background: #111; color: #eee; padding: 2rem; line-height: 1.6; }
-                h1 { color: #ff4081; }
-                h2 { color: #00d4ff; margin-top: 2em; }
-                code { background: #222; padding: 0.2em 0.4em; border-radius: 4px; }
-                pre { background: #1a1a1a; padding: 1em; border-radius: 6px; overflow-x: auto; }
-            </style>
-        </head>
-        <body>
-            <h1>clean-rating api</h1>
-            <p>you’ve reached the root of the api router. here’s a quick rundown of the available endpoints:</p>
+@router.post("/user/register", response_model=schemas.UserOut)
+def register_user(payload: schemas.UserRegister, db: Session = Depends(get_db)):
+    if crud.get_user(db, payload.user_id):
+        raise HTTPException(status_code=400, detail="user already exists")
+    return crud.create_user(db, payload)
 
-            <h2>🔐 POST /api/token</h2>
-            <p>obtain a bearer token by passing Codeforces handle as username + password</p>
-            <pre>
-form:
-  username: str  # cf_handle
-  password: str
-
-response:
-  {
-    "access_token": "...",
-    "token_type": "bearer"
-  }
-            </pre>
-
-            <h2>👤 POST /api/users</h2>
-            <p>register a new user</p>
-            <pre>
-payload:
-{
-  "user_id": "user123",
-  "cf_handle": "tourist",
-  "username": "tourist",  // alias for cf_handle
-  "password": "hunter2",
-  "internal_default_rated": true,
-  "trusted_score": 0
-}
-
-response:
-{
-  "user_id": "user123",
-  "cf_handle": "tourist",
-  "username": "tourist",
-  "internal_default_rated": true,
-  "trusted_score": 0
-}
-            </pre>
-
-            <h2>👁️ GET /api/me</h2>
-            <p>get current user details (requires Authorization header)</p>
-            <pre>
-Authorization: Bearer &lt;access_token&gt;
-            </pre>
-
-            <h2>👥 POST /api/groups</h2>
-            <p>create a new rating group</p>
-            <pre>
-payload:
-{
-  "group_id": "mathboys",
-  "group_name": "mathboys"
-}
-            </pre>
-
-            <h2>📡 GET /api/groups/{group_id}</h2>
-            <p>fetch group info by id</p>
-
-            <h2>🧪 for Swagger-style docs:</h2>
-            <p>visit <a href="/docs" style="color:#00ff99">/docs</a> for interactive testing</p>
-        </body>
-    </html>
-    """
-
-
-
-@router.post("/users", response_model=schemas.User)
-def register_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
-    db_user = crud.get_user_by_username(db, user.cf_handle)
-    if db_user:
-        raise HTTPException(status_code=400, detail="username already registered")
-    return crud.create_user(db, user)
-
-@router.post("/token", response_model=Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
-    user = crud.authenticate_user(db, form_data.username, form_data.password)
+@router.post("/user/login", response_model=schemas.TokenOut)
+def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = crud.authenticate_user(db, form.username, form.password)
+    print(form.username, form.password)
     if not user:
-        raise HTTPException(status_code=401, detail="invalid username or password")
-    access_token = create_access_token(data={"sub": user.cf_handle})
-    return {"access_token": access_token, "token_type": "bearer"}
+        raise HTTPException(status_code=401, detail="invalid credentials")
+    token = create_access_token({"sub": user.user_id})
+    return {"access_token": token, "token_type": "bearer"}
 
-@router.get("/me", response_model=schemas.User)
-def read_users_me(current_user: schemas.User = Depends(get_current_user)):
-    return current_user
 
-@router.post("/groups", response_model=schemas.Group)
-def create_group(group: schemas.GroupCreate, db: Session = Depends(database.get_db)):
-    return crud.create_group(db, group)
+@router.get("/user", response_model=List[schemas.UserOut])
+def list_or_get_user(uid: Optional[str] = Query(None), db: Session = Depends(get_db)):
+    if uid:
+        user = crud.get_user(db, uid)
+        if not user:
+            raise HTTPException(status_code=404, detail="user not found")
+        return [user]
+    return crud.list_users(db)
 
-@router.get("/groups/{group_id}", response_model=schemas.Group)
-def read_group(group_id: str, db: Session = Depends(database.get_db)):
-    group = crud.get_group(db, group_id)
-    if not group:
+
+@router.put("/user", response_model=schemas.UserOut)
+def update_user(
+    user_id: str = Query(...),
+    payload: schemas.UserUpdate = Depends(),
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme),
+):
+    try:
+        jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    except JWTError:
+        raise HTTPException(status_code=401, detail="unauthorized")
+
+    updated = crud.update_user(db, user_id, payload)
+    if not updated:
+        raise HTTPException(status_code=404, detail="user not found")
+    return updated
+
+@router.post("/group/register", response_model=schemas.GroupOut)
+def register_group(payload: schemas.GroupRegister, db: Session = Depends(get_db)):
+    if crud.get_group(db, payload.group_id):
+        raise HTTPException(status_code=400, detail="group already exists")
+    return crud.create_group(db, payload)
+
+
+@router.get("/group", response_model=List[schemas.GroupOut])
+def list_or_get_group(group_id: Optional[str] = Query(None), db: Session = Depends(get_db)):
+    if group_id:
+        group = crud.get_group(db, group_id)
+        if not group:
+            raise HTTPException(status_code=404, detail="group not found")
+        return [group]
+    return crud.list_groups(db)
+
+
+@router.put("/group", response_model=schemas.GroupOut)
+def update_group(payload: schemas.GroupUpdate, db: Session = Depends(get_db)):
+    updated = crud.update_group(db, payload)
+    if not updated:
         raise HTTPException(status_code=404, detail="group not found")
-    return group
+    return updated
+
+
+@router.post("/add_to_group", response_model=schemas.GroupMembershipOut)
+def add_to_group(payload: schemas.GroupMembershipAdd, db: Session = Depends(get_db)):
+    return crud.add_membership(db, payload)
+
+
+@router.post("/remove_from_group")
+def remove_from_group(payload: schemas.GroupMembershipRemove, db: Session = Depends(get_db)):
+    success = crud.remove_membership(db, payload.user_id, payload.group_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="membership not found")
+    return {"detail": "membership removed"}
+
+@router.post("/register_rated")
+def register_rated(payload: schemas.ContestRegistration, db: Session = Depends(get_db)):
+    participation = crud.register_contest_participation(db, payload)
+    return {"detail": "participation recorded", "participation_id": participation.contest_id}

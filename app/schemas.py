@@ -1,79 +1,95 @@
-from pydantic import BaseModel
 from enum import Enum
-from typing import Optional
+from typing import List, Optional
+from pydantic import BaseModel
+
 
 class Role(str, Enum):
     admin = "admin"
     moderator = "moderator"
     user = "user"
 
-class UserBase(BaseModel):
+
+class UserRegister(BaseModel):
+    user_id: str
     cf_handle: str
-    username: str
+    password: str
     internal_default_rated: bool = True
     trusted_score: int = 0
 
-class UserCreate(UserBase):
-    user_id: str
+class UserLogin(BaseModel):
+    cf_handle: str
     password: str
 
-class User(UserBase):
+
+class UserUpdate(BaseModel):
+    cf_handle: Optional[str] = None
+    password: Optional[str] = None
+    internal_default_rated: Optional[bool] = None
+    trusted_score: Optional[int] = None
+
+
+class UserOut(BaseModel):
     user_id: str
+    cf_handle: str
+    internal_default_rated: bool
+    trusted_score: int
 
     class Config:
         orm_mode = True
 
-class GroupBase(BaseModel):
+
+class GroupRegister(BaseModel):
+    group_id: str
     group_name: str
+    creator_user_id: str 
 
-class GroupCreate(GroupBase):
+
+class GroupUpdate(BaseModel):
     group_id: str
+    group_name: Optional[str] = None
 
-class Group(GroupBase):
+
+class GroupMembershipAdd(BaseModel):
+    user_id: str
     group_id: str
-
-    class Config:
-        orm_mode = True
-
-class GroupMembershipBase(BaseModel):
     role: Role = Role.user
     user_group_rating: int = 0
 
-class GroupMembershipCreate(GroupMembershipBase):
+
+class GroupMembershipRemove(BaseModel):
     user_id: str
     group_id: str
 
-class GroupMembership(GroupMembershipBase):
+
+class GroupMembershipOut(BaseModel):
     user_id: str
     group_id: str
+    role: Role
+    user_group_rating: int
 
     class Config:
         orm_mode = True
 
-class ContestBase(BaseModel):
-    cf_contest_id: int
 
-class ContestCreate(ContestBase):
-    contest_id: str
-
-class Contest(ContestBase):
-    contest_id: str
-
-    class Config:
-        orm_mode = True
-
-class ContestParticipationBase(BaseModel):
-    user_id: str
+class GroupOut(BaseModel):
     group_id: str
-    contest_id: str
+    group_name: str
+    memberships: List[GroupMembershipOut] = []
 
-class ContestParticipation(ContestParticipationBase):
     class Config:
         orm_mode = True
 
-class Token(BaseModel):
+
+class ContestRegistration(BaseModel):
+    contest_id: str
+    group_id: str
+    user_id: str
+
+
+class TokenOut(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
-class TokenData(BaseModel):
-    username: Optional[str] = None
+
+# late binding for forward refs
+GroupOut.update_forward_refs()

@@ -14,7 +14,7 @@ class User(Base):
     __tablename__ = "users"
 
     user_id = Column(String, primary_key=True, index=True) 
-    # note that the username which the user will login with will be the same as their codeforces handle
+    # user_id -> username that user will login through
     cf_handle = Column(String, unique=True, index=True, nullable=False)
     internal_default_rated = Column(Boolean, nullable=False, default=True)
     trusted_score = Column(Integer, nullable=False, default=0)
@@ -34,6 +34,8 @@ class Group(Base):
     __tablename__ = "groups"
     group_id = Column(String, primary_key=True, index=True)
     group_name = Column(String, unique=True, index=True, nullable=False)
+    is_private = Column(Boolean, nullable=False, default=False)
+
     memberships = relationship("GroupMembership", back_populates="group", cascade="all, delete")
     def __repr__(self):
         return f"<Group(id={self.group_id}, name='{self.group_name}')>"
@@ -47,6 +49,8 @@ class GroupMembership(Base):
     group_id = Column(String, ForeignKey("groups.group_id"))
     role = Column(Enum(Role), nullable=False, default=Role.user)
     user_group_rating = Column(Integer, nullable=False, default=0)
+    is_pending_user = Column(Boolean, nullable=False, default=False)
+    is_pending_group = Column(Boolean, nullable=False, default=False)
 
     __table_args__ = (PrimaryKeyConstraint('user_id', 'group_id'),)
 
