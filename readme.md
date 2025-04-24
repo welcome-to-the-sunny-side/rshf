@@ -1,6 +1,6 @@
-# clean-rating schema setup
+# unpolluted-elo
 
-this update adds core database models and a starter jupyter notebook for dev experimentation.
+
 
 ## setup
 
@@ -15,27 +15,251 @@ this update adds core database models and a starter jupyter notebook for dev exp
    pip install -r requirements.txt
    ```
 
-3. re-create tables:
-   ```
-   python3 -m app.main
-   ```
-
-4. run the dev server
+3. run the dev server
     ```
     uvicorn app.main:app --reload
     ```
 
     open ```http://127.0.0.1:8000/docs``` for api docs
-    
+
     root endpoint: ```http://127.0.0.1:8000/api ```
 
 
-5. start jupyter lab:
+4. start jupyter lab:
    ```
    python3 -m jupyter lab
    ```
 
    then open the notebook to interact with the database.
+
+## endpoints
+
+---
+
+### post /api/user/register  
+create a new user.
+
+**request json**
+```json
+{
+  "user_id": "u123",
+  "cf_handle": "ani123",
+  "password": "hunter2",
+  "internal_default_rated": true,
+  "trusted_score": 0
+}
+```
+
+**response json**
+```json
+{
+  "user_id": "u123",
+  "cf_handle": "ani123",
+  "internal_default_rated": true,
+  "trusted_score": 0
+}
+```
+
+---
+
+### post /api/user/login  
+form-encoded login ➜ jwt.
+
+**form fields**
+```
+username=u123        # user_id
+password=hunter2
+```
+
+**response json**
+```json
+{
+  "access_token": "<jwt>",
+  "token_type": "bearer"
+}
+```
+
+---
+
+### get /api/user  
+list all users or single user by query param `uid`.
+
+**query examples**
+```
+/api/user                     # returns list[UserOut]
+/api/user?uid=u123            # returns [single UserOut]
+```
+
+**response snippet**
+```json
+[
+  {
+    "user_id": "u123",
+    "cf_handle": "ani123",
+    "internal_default_rated": true,
+    "trusted_score": 0
+  }
+]
+```
+
+---
+
+### put /api/user  
+update a user. bearer token required.
+
+**query** `user_id=u123`  
+**request json**
+```json
+{
+  "cf_handle": "ani_new",
+  "internal_default_rated": false
+}
+```
+
+**response json** (updated record)
+```json
+{
+  "user_id": "u123",
+  "cf_handle": "ani_new",
+  "internal_default_rated": false,
+  "trusted_score": 0
+}
+```
+
+---
+
+### post /api/group/register  
+create a group.
+
+**request json**
+```json
+{
+  "group_id": "g456",
+  "group_name": "team rocket",
+  "creator_user_id": "u123"
+}
+```
+
+**response json**
+```json
+{
+  "group_id": "g456",
+  "group_name": "team rocket",
+  "memberships": []
+}
+```
+
+---
+
+### get /api/group  
+list all groups or one by `group_id`.
+
+```
+/api/group
+/api/group?group_id=g456
+```
+
+**response snippet**
+```json
+[
+  {
+    "group_id": "g456",
+    "group_name": "team rocket",
+    "memberships": [
+      {
+        "user_id": "u123",
+        "group_id": "g456",
+        "role": "admin",
+        "user_group_rating": 0
+      }
+    ]
+  }
+]
+```
+
+---
+
+### put /api/group  
+update group name.
+
+**request json**
+```json
+{
+  "group_id": "g456",
+  "group_name": "new name"
+}
+```
+
+**response json** same shape as `GroupOut`.
+
+---
+
+### post /api/add_to_group  
+add a user to group.
+
+**request json**
+```json
+{
+  "user_id": "u789",
+  "group_id": "g456",
+  "role": "user",
+  "user_group_rating": 1500
+}
+```
+
+**response json**
+```json
+{
+  "user_id": "u789",
+  "group_id": "g456",
+  "role": "user",
+  "user_group_rating": 1500
+}
+```
+
+---
+
+### post /api/remove_from_group  
+remove membership.
+
+**request json**
+```json
+{
+  "user_id": "u789",
+  "group_id": "g456"
+}
+```
+
+**response json**
+```json
+{ "detail": "membership removed" }
+```
+
+---
+
+### post /api/register_rated  
+record contest participation.
+
+**request json**
+```json
+{
+  "contest_id": "abc/2025",
+  "group_id": "g456",
+  "user_id": "u123"
+}
+```
+
+**response json**
+```json
+{
+  "detail": "participation recorded",
+  "participation_id": "abc/2025"
+}
+```
+
+---
+
+done.
 
 ## schema overview
 
