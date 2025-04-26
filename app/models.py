@@ -15,6 +15,8 @@ class User(Base):
 
     user_id = Column(String, primary_key=True, index=True) 
     # user_id -> username that user will login through
+    role = Column(Enum(Role), nullable=False, default=Role.user) 
+    # Gloabl role
     cf_handle = Column(String, unique=True, index=True, nullable=False)
     internal_default_rated = Column(Boolean, nullable=False, default=True)
     trusted_score = Column(Integer, nullable=False, default=0)
@@ -48,7 +50,8 @@ class GroupMembership(Base):
     user_id = Column(String, ForeignKey("users.user_id"))
     group_id = Column(String, ForeignKey("groups.group_id"))
     role = Column(Enum(Role), nullable=False, default=Role.user)
-    user_group_rating = Column(Integer, nullable=False, default=0)
+    user_group_rating = Column(Integer, nullable=False, default=1500)
+    user_group_max_rating = Column(Integer, nullable=False, default=1500)
     is_pending_user = Column(Boolean, nullable=False, default=False)
     is_pending_group = Column(Boolean, nullable=False, default=False)
 
@@ -80,6 +83,8 @@ class ContestParticipation(Base):
     user_id = Column(String, ForeignKey("users.user_id"), primary_key=True)
     group_id = Column(String, ForeignKey("groups.group_id"), primary_key=True)
     contest_id = Column(String, ForeignKey("contests.contest_id"), primary_key=True)
+    user_group_rating_before = Column(Integer, nullable=True)
+    user_group_rating_after = Column(Integer, nullable=True)
 
     user = relationship("User")
     group = relationship("Group")

@@ -13,6 +13,7 @@ class UserRegister(BaseModel):
     user_id: str
     cf_handle: str
     password: str
+    role: Role = Role.user
     internal_default_rated: bool = True
     trusted_score: int = 0
 
@@ -26,13 +27,14 @@ class UserUpdate(BaseModel):
     password: Optional[str] = None
     internal_default_rated: Optional[bool] = None
     trusted_score: Optional[int] = None
-
+    role: Optional[Role] = None
 
 class UserOut(BaseModel):
     user_id: str
     cf_handle: str
     internal_default_rated: bool
     trusted_score: int
+    role: Role
 
     class Config:
         orm_mode = True
@@ -85,11 +87,54 @@ class ContestRegistration(BaseModel):
     group_id: str
     user_id: str
 
+    user_group_rating_before: Optional[int] = None
+    user_group_rating_after: Optional[int] = None
+
 
 class TokenOut(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
+class ContestParticipationOut(BaseModel):
+    user_id: str
+    group_id: str
+    contest_id: str
+    user_group_rating_before: Optional[int] = None
+    user_group_rating_after: Optional[int] = None
+
+    class Config:
+        orm_mode = True
+
+
+class UserOut(BaseModel):
+    user_id: str
+    cf_handle: str
+    internal_default_rated: bool
+    trusted_score: int
+    role: Role
+    # new
+    group_memberships: List[GroupMembershipOut] = []
+    contest_participations: List[ContestParticipationOut] = []
+
+    class Config:
+        orm_mode = True
+
+
+class GroupOut(BaseModel):
+    group_id: str
+    group_name: str
+    memberships: List[GroupMembershipOut] = []
+    # new
+    contest_participations: List[ContestParticipationOut] = []
+
+    class Config:
+        orm_mode = True
+
+
+# rebuild forward refs
+GroupOut.model_rebuild()
+UserOut.model_rebuild()
+
 
 # late binding for forward refs
-GroupOut.update_forward_refs()
+GroupOut.model_rebuild()

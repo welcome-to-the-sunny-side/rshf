@@ -8,6 +8,26 @@ from app.utils import hash_password, verify_password
 from app import schemas
 
 
+# helper enrichers ───────────────────────────────────────────
+def _enrich_user(db: Session, user: models.User) -> models.User:
+    user.group_memberships = list(user.memberships)
+    user.contest_participations = (
+        db.query(models.ContestParticipation)
+        .filter(models.ContestParticipation.user_id == user.user_id)
+        .all()
+    )
+    return user
+
+
+def _enrich_group(db: Session, group: models.Group) -> models.Group:
+    group.contest_participations = (
+        db.query(models.ContestParticipation)
+        .filter(models.ContestParticipation.group_id == group.group_id)
+        .all()
+    )
+    return group
+
+
 # ───────────── user ─────────────
 def create_user(db: Session, payload: schemas.UserRegister) -> models.User:
     db_user = models.User(
@@ -16,6 +36,7 @@ def create_user(db: Session, payload: schemas.UserRegister) -> models.User:
         hashed_password=hash_password(payload.password),
         internal_default_rated=payload.internal_default_rated,
         trusted_score=payload.trusted_score,
+        role=payload.role,
     )
     db.add(db_user)
     db.commit()
@@ -24,15 +45,19 @@ def create_user(db: Session, payload: schemas.UserRegister) -> models.User:
 
 
 def get_user(db: Session, user_id: str) -> Optional[models.User]:
-    return db.query(models.User).filter(models.User.user_id == user_id).first()
+    user = db.query(models.User).filter(models.User.user_id == user_id).first()
+    return _enrich_user(db, user) if user else None
+
+
+def list_users(db: Session) -> List[models.User]:
+    users = db.query(models.User).all()
+    return [_enrich_user(db, u) for u in users]
+
 
 
 def get_user_by_handle(db: Session, cf_handle: str) -> Optional[models.User]:
     return db.query(models.User).filter(models.User.cf_handle == cf_handle).first()
 
-
-def list_users(db: Session) -> List[models.User]:
-    return db.query(models.User).all()
 
 
 def update_user(db: Session, user_id: str, payload: schemas.UserUpdate) -> Optional[models.User]:
@@ -83,13 +108,14 @@ def create_group(db: Session, payload: schemas.GroupRegister) -> models.Group:
     db.commit()
     return group
 
+def get_group(db: Session, group_id: str) -> Optional[models.Group]:
+    grp = db.query(models.Group).filter(models.Group.group_id == group_id).first()
+    return _enrich_group(db, grp) if grp else None
+
 
 def list_groups(db: Session) -> List[models.Group]:
-    return db.query(models.Group).all()
-
-
-def get_group(db: Session, group_id: str) -> Optional[models.Group]:
-    return db.query(models.Group).filter(models.Group.group_id == group_id).first()
+    groups = db.query(models.Group).all()
+    return [_enrich_group(db, g) for g in groups]
 
 
 def update_group(db: Session, payload: schemas.GroupUpdate) -> Optional[models.Group]:
@@ -140,9 +166,57 @@ def register_contest_participation(
     db: Session, payload: schemas.ContestRegistration
 ) -> models.ContestParticipation:
     participation = models.ContestParticipation(
-        user_id=payload.user_id, group_id=payload.group_id, contest_id=payload.contest_id
+        user_id=payload.user_id, group_id=payload.group_id, contest_id=payload.contest_id,
+        user_group_rating_before=payload.user_group_rating_before,
+        user_group_rating_after=payload.user_group_rating_after
     )
     db.add(participation)
     db.commit()
     db.refresh(participation)
     return participation
+
+def filter_contest_participations(
+    db: Session,
+    gid: Optional[str],
+    uid: Optional[str],
+    cid: Optional[str],
+) -> List[models.ContestParticipation]:
+    q = db.query(models.ContestParticipation)
+    if gid is not None:
+        q = q.filter(models.ContestParticipation.group_id == gid)
+    if uid is not None:
+        q = q.filter(models.ContestParticipation.user_id == uid)
+    if cid is not None:
+        q = q.filter(models.ContestParticipation.contest_id == cid)
+    return q.all()
+
+# ───────────── membership helpers ─────────────
+def get_membership(db: Session, user_id: str, group_id: str) -> Optional[models.GroupMembership]:
+    """
+    fetch a single membership row or None.
+    """
+    return (
+        db.query(models.GroupMembership)
+        .filter(
+            models.GroupMembership.user_id == user_id,
+            models.GroupMembership.group_id == group_id,
+        )
+        .first()
+    )
+
+
+def list_groups_for_user(db: Session, user_id: str) -> List[models.Group]:
+    """
+    all groups a user belongs to. handy for non-admin listing.
+    """
+    return (
+        db.query(models.Group)
+        .join(
+            models.GroupMembership,
+            models.Group.group_id == models.GroupMembership.group_id,
+        )
+        .filter(models.GroupMembership.user_id == user_id)
+        .all()
+    )
+
+
