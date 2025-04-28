@@ -4,14 +4,14 @@
 }
 
 .titleBox {
-  border: 1px solid rgb(185, 185, 185);
-  border-radius: 6px;
-  padding: 0.5rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--box-border-radius);
+  padding: 0.5rem var(--container-horizontal-padding);
   margin-bottom: -1px; /* Connect with the content box */
   display: inline-block;
   font-size: 0.95rem;
   font-weight: 400;
-  font-family: 'Roboto Condensed', sans-serif;
+  font-family: var(--font-heading);
 }
 
 .titleLink {
@@ -22,20 +22,6 @@
 
 .titleLink:hover {
   text-decoration: underline;
-  color: #007bff;
+  color: var(--primary-color);
   cursor: pointer;
-}
-
-.contentBox {
-  background-color: rgb(255, 255, 255);
-  border: 1px solid rgb(185, 185, 185);
-  border-radius: 6px;
-  display: flex;
-  flex-direction: column;
-  padding: 1rem;
-  box-sizing: border-box;
-  width: 100%;
-  margin-bottom: 1rem;
-  min-height: 140px;
-  position: relative;
 } 

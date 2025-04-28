@@ -2,18 +2,18 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: var(--background-color);
 }
 
 .header {
-  background: #fff;
-  padding: 0.59rem 1rem;
+  background: var(--background-color);
+  padding: 0.59rem var(--container-horizontal-padding);
   display: flex;
   align-items: center;
   justify-content: space-between;
   position: relative;
   width: 100%;
-  max-width: 1200px;
+  max-width: var(--max-content-width);
   margin: 0 auto;
   box-sizing: border-box;
   /* border-bottom: 1px solid #ccc; */ /* Removed border */
@@ -27,7 +27,7 @@
 
 .usernameLink {
   font-weight: 400;
-  color: #007bff;
+  color: var(--primary-color);
   text-decoration: none;
   font-size: 14px;
 }
@@ -53,7 +53,7 @@
 /* Style for logout link (can reuse usernameLink or be specific) */
 .logoutLink {
   font-weight: 400;
-  color: #007bff;
+  color: var(--primary-color);
   text-decoration: none;
   font-size: 14px;
 }
@@ -64,33 +64,33 @@
 
 /* Styles for the new navigation bar */
 .navBar {
-  background-color: rgb(255, 255, 255);
-  border: 1px solid rgb(185, 185, 185);
-  border-radius: 6px;
+  background-color: var(--background-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--box-border-radius);
   display: flex;
   height: 40px;
   line-height: 40px;
-  padding: 0 1rem;
+  padding: 0 var(--container-horizontal-padding);
   box-sizing: border-box;
   gap: 1rem;
   width: 100%;
-  max-width: 1200px;
+  max-width: var(--max-content-width);
   margin: 0 auto;
   align-items: center;
 }
 
 .navLink {
-  color: #333;
+  color: var(--text-color);
   text-decoration: none;
   font-weight: 400;
-  font-family: 'Roboto Condensed', sans-serif;
+  font-family: var(--font-heading);
   font-size: 16px;
   padding: 0 5px;
   line-height: normal;
 }
 
 .navLink:hover {
-  color: #007bff;
+  color: var(--primary-color);
   text-decoration: underline;
 }
 
@@ -98,10 +98,10 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 1rem 0;
-  background: #fff;
+  padding: var(--container-vertical-padding) 0;
+  background: var(--background-color);
   width: 100%;
-  max-width: 1200px;
+  max-width: var(--max-content-width);
   margin: 0 auto;
   box-sizing: border-box;
 }
@@ -112,9 +112,9 @@
   min-height: 60px;
   display: flex;
   align-items: center;
-  padding: 0 1rem;
+  padding: 0 var(--container-horizontal-padding);
   width: 100%;
-  max-width: 1200px;
+  max-width: var(--max-content-width);
   margin: 0 auto;
   box-sizing: border-box;
 }
@@ -127,7 +127,7 @@
 }
 
 .footerLink {
-  color: #555;
+  color: var(--light-text-color);
   text-decoration: none;
   font-size: 0.9rem;
 }

@@ -5,14 +5,15 @@ export default function TableBox({
   title, 
   columns, 
   data,
-  backgroundColor = 'rgb(230, 240, 255)' // Same default as TitledBox
+  backgroundColor = 'rgb(230, 240, 255)', // Same default as TitledBox
+  className = ''
 }) {
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} ${className}`}>
       <div className={styles.titleBox} style={{ backgroundColor }}>
         {title}
       </div>
-      <div className={styles.contentBox}>
+      <div className="contentBox tableContainer">
         <table className={styles.table}>
           <thead>
             <tr>

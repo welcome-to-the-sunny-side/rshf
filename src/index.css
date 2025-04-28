@@ -4,12 +4,41 @@
 @import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600&display=swap');
 
+:root {
+  /* Global layout variables */
+  --max-content-width: 1200px;
+  --container-horizontal-padding: 1rem;
+  --container-vertical-padding: 1rem;
+  --container-margin-bottom: 1rem;
+  
+  /* Colors */
+  --border-color: rgb(185, 185, 185);
+  --background-color: rgb(255, 255, 255);
+  --light-gray-bg: rgb(248, 249, 250);
+  --medium-gray-bg: rgb(240, 240, 240);
+  --hover-bg: rgb(242, 245, 250);
+  --primary-color: #007bff;
+  --primary-hover-color: #0056b3;
+  --text-color: #222;
+  --light-text-color: #444;
+  --border-light-color: #eee;
+  
+  /* Border radius */
+  --box-border-radius: 6px;
+  
+  /* Typography */
+  --font-primary: 'Inter', Arial, sans-serif;
+  --font-heading: 'Roboto Condensed', sans-serif;
+  --font-table-heading: 'Source Sans 3', sans-serif;
+  --font-table-data: 'DM Sans', sans-serif;
+}
+
 body {
   margin: 0;
   padding: 0;
-  font-family: 'Inter', Arial, sans-serif;
-  background: #fff;
-  color: #222;
+  font-family: var(--font-primary);
+  background: var(--background-color);
+  color: var(--text-color);
 }
 
 h1 {
@@ -23,52 +52,60 @@ h1 {
 /* This ensures uniformity across the entire application */
 .page-container {
   width: 100%;
-  max-width: 1200px;
+  max-width: var(--max-content-width);
   margin: 0 auto;
   padding: 0;
 }
 
 /* Global font classes */
 .columnHeadingFont {
-  font-family: 'Source Sans 3', sans-serif;
+  font-family: var(--font-table-heading);
   font-size: 0.92rem;
   font-weight: 600;
   letter-spacing: 0.01em;
 }
 
 .tableDataFont {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-table-data);
   font-size: 0.88rem;
   font-weight: 400;
   letter-spacing: 0.005em;
 }
 
 /* Reusable content box class */
+/* IMPORTANT: This is the ONLY contentBox class to use across the application */
+/* All components should use this global class instead of defining their own */
 .contentBox {
-  background-color: rgb(255, 255, 255);
-  border: 1px solid rgb(185, 185, 185);
-  border-radius: 6px;
+  background-color: var(--background-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--box-border-radius);
   display: flex;
   flex-direction: column;
-  padding: 1rem;
+  padding: var(--container-vertical-padding) var(--container-horizontal-padding);
   box-sizing: border-box;
   width: 100%;
-  margin-bottom: 1rem;
+  margin-bottom: var(--container-margin-bottom);
   min-height: 140px;
   position: relative;
 }
 
+/* For table boxes that need different padding */
+.contentBox.tableContainer {
+  padding: 0;
+  overflow: hidden; /* Ensure border radius clips content */
+}
+
 /* Reusable content box class with transparent border */
 .contentBoxTransparent {
-  background-color: rgb(255, 255, 255);
+  background-color: var(--background-color);
   border: 1px solid transparent; /* Transparent border */
-  border-radius: 6px;
+  border-radius: var(--box-border-radius);
   display: flex;
   flex-direction: column;
-  padding: 1rem;
+  padding: var(--container-vertical-padding) var(--container-horizontal-padding);
   box-sizing: border-box;
   width: 100%;
-  margin-bottom: 1rem;
+  margin-bottom: var(--container-margin-bottom);
   min-height: 140px;
   position: relative;
 }

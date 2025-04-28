@@ -5,7 +5,7 @@ export default function ContentBoxWithTitle({ title, children, backgroundColor =
   return (
     <div className={`${styles.container} ${className}`}>
       <div className={styles.titleBox} style={{ backgroundColor }}>{title}</div>
-      <div className={styles.contentBox}>
+      <div className="contentBox">
         {children}
       </div>
     </div>

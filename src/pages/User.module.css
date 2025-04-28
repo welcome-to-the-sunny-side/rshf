@@ -12,21 +12,6 @@
   margin-bottom: 1rem;
 }
 
-/* Reusable content box class with the same styling as profileBox */
-.contentBox {
-  background-color: rgb(255, 255, 255);
-  border: 1px solid rgb(185, 185, 185);
-  border-radius: 6px;
-  display: flex;
-  flex-direction: column;
-  padding: 1rem;
-  box-sizing: border-box;
-  width: 100%;
-  min-height: 140px;
-  position: relative;
-  margin-bottom: 1rem;
-}
-
 .username {
   font-size: 1.5rem;
   font-weight: 600;

@@ -38,28 +38,28 @@
 .groupTable td {
   padding: 0.5rem;
   text-align: left;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-light-color);
 }
 
 .groupTable th {
   font-weight: 600;
-  color: #666;
+  color: var(--light-text-color);
 }
 
 .groupTable td:last-child {
   text-align: right;
-  color: #666;
+  color: var(--light-text-color);
 }
 
 .groupLink {
   text-decoration: none;
-  color: #007bff;
+  color: var(--primary-color);
   transition: all 0.2s ease;
 }
 
 .groupLink:hover {
   text-decoration: underline;
-  color: #0056b3;
+  color: var(--primary-hover-color);
 }
 
 h3 {

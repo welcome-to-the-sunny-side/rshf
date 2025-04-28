@@ -99,7 +99,7 @@ export default function User() {
 
   return (
     <div className="page-container">
-      <div className={styles.contentBox}>
+      <div className="contentBox">
         <div className={styles.profileContent}>
           <div className={styles.profileInfo}>
             {/* Rank and group name above username */}
@@ -173,8 +173,8 @@ export default function User() {
       </div>
       
       {/* Second content box with the Rating Graph */}
-      <div className={styles.contentBox}>
-             <RatingGraph ratingHistory={currentRatingHistory} />
+      <div className="contentBox">
+        <RatingGraph ratingHistory={currentRatingHistory} />
       </div>
     </div>
   );
