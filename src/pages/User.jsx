@@ -98,8 +98,8 @@ export default function User() {
   const currentRatingHistory = dummyRatingData[selectedGroup[0]] || [];
 
   return (
-    <>
-      <div className={styles.profileBox}>
+    <div className="page-container">
+      <div className={styles.contentBox}>
         <div className={styles.profileContent}>
           <div className={styles.profileInfo}>
             {/* Rank and group name above username */}
@@ -175,7 +175,7 @@ export default function User() {
       {/* Second content box with the Rating Graph */}
       <div className={styles.contentBox}>
              <RatingGraph ratingHistory={currentRatingHistory} />
-        </div>
-    </>
+      </div>
+    </div>
   );
 }

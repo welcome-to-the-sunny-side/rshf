@@ -1,0 +1,41 @@
+.container {
+  width: 100%;
+  margin: 0;
+}
+
+.titleBox {
+  border: 1px solid rgb(185, 185, 185);
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  margin-bottom: -1px; /* Connect with the content box */
+  display: inline-block;
+  font-size: 0.95rem;
+  font-weight: 400;
+  font-family: 'Roboto Condensed', sans-serif;
+}
+
+.titleLink {
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s ease;
+}
+
+.titleLink:hover {
+  text-decoration: underline;
+  color: #007bff;
+  cursor: pointer;
+}
+
+.contentBox {
+  background-color: rgb(255, 255, 255);
+  border: 1px solid rgb(185, 185, 185);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  box-sizing: border-box;
+  width: 100%;
+  margin-bottom: 1rem;
+  min-height: 140px;
+  position: relative;
+} 

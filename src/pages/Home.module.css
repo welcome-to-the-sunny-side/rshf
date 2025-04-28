@@ -1,0 +1,69 @@
+.content-container {
+  display: flex;
+  gap: 20px;
+  align-items: stretch;
+}
+
+.left-sidebar {
+  width: 40%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.main-content {
+  width: 60%;
+  flex-grow: 1;
+}
+
+.contests {
+  min-height: 320px;
+}
+
+.ranklist {
+  min-height: 250px;
+}
+
+.groups {
+  min-height: 150px;
+}
+
+.groupTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+}
+
+.groupTable th,
+.groupTable td {
+  padding: 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.groupTable th {
+  font-weight: 600;
+  color: #666;
+}
+
+.groupTable td:last-child {
+  text-align: right;
+  color: #666;
+}
+
+.groupLink {
+  text-decoration: none;
+  color: #007bff;
+  transition: all 0.2s ease;
+}
+
+.groupLink:hover {
+  text-decoration: underline;
+  color: #0056b3;
+}
+
+h3 {
+  margin-top: 0;
+  font-weight: normal;
+  margin-bottom: 15px;
+} 

@@ -33,8 +33,8 @@ export default function Layout({ children, isLoggedIn, currentUser }) {
       <nav className={styles.navBar}>
         <Link to="/" className={styles.navLink}>Home</Link>
         <Link to="/groups" className={styles.navLink}>Groups</Link>
-        <Link to="/users" className={styles.navLink}>Users</Link>
         <Link to="/contests" className={styles.navLink}>Contests</Link>
+        <Link to="/users" className={styles.navLink}>Users</Link>
         <Link to="/posts" className={styles.navLink}>Posts</Link>
       </nav>
       <main className={styles.main}>{children}</main>

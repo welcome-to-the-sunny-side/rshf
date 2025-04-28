@@ -1,6 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;600&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600&display=swap');
 
 body {
   margin: 0;
@@ -15,3 +17,141 @@ h1 {
   font-weight: 600;
   margin: 2rem 0 0.5rem 0;
 }
+
+/* Global page container - use this for consistent page margins */
+/* IMPORTANT: All pages should use this container class to maintain consistent margins */
+/* This ensures uniformity across the entire application */
+.page-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+/* Global font classes */
+.columnHeadingFont {
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.tableDataFont {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 400;
+  letter-spacing: 0.005em;
+}
+
+/* Reusable content box class */
+.contentBox {
+  background-color: rgb(255, 255, 255);
+  border: 1px solid rgb(185, 185, 185);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  box-sizing: border-box;
+  width: 100%;
+  margin-bottom: 1rem;
+  min-height: 140px;
+  position: relative;
+}
+
+/* Reusable content box class with transparent border */
+.contentBoxTransparent {
+  background-color: rgb(255, 255, 255);
+  border: 1px solid transparent; /* Transparent border */
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  box-sizing: border-box;
+  width: 100%;
+  margin-bottom: 1rem;
+  min-height: 140px;
+  position: relative;
+}
+
+/* Highlighted content box based on .roundbox */
+.highlightedContentBox {
+    border: 1px solid rgb(185, 185, 185);
+    position: relative;
+    margin-bottom: 1rem; /* Added margin for spacing */
+}
+
+.highlightedContentBox .caption {
+    color:#3B5998;
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin: 0.2em 0;
+    position: relative;
+}
+
+.highlightedContentBox .titled {
+    padding: 0 0 0.3em 0.5em;
+    border-bottom:1px solid rgb(185, 185, 185);
+}
+
+.highlightedContentBox .caption .top-links {
+    font-size: 1.1rem;
+    font-family: arial;
+    position: absolute;
+    right: 0.5em;
+    top: 0.3em;
+}
+
+.highlightedContentBox .bottom-links {
+    font-family: arial;
+    font-size: 1.1rem;
+    border-top:1px solid rgb(185, 185, 185);
+    background-color: #F5F5F5;
+    padding: 0.45em;
+}
+
+.highlightedContentBox .dark {
+    background-color: #F5F5F5;
+}
+
+.highlightedContentBox .bottom-links a {
+    margin: 0.1em;
+}
+
+.highlightedContentBox table.rtable {
+    width: 100%;
+    margin-top: -4px;
+    border: none;
+}
+
+.highlightedContentBox .rtable td, .highlightedContentBox .rtable th {
+    border: 1px solid rgb(185, 185, 185);
+    border-right: none;
+    border-top: none;
+    padding: 4px;
+    text-align: center;
+    font-size: 0.9em;
+}
+
+.highlightedContentBox .rtable th {
+    /*font-weight: bolder;*/
+    font-size: 1em;
+    padding-top: 7px;
+    font-weight: bold; /* Explicitly added from .rtable th rule */
+}
+
+.highlightedContentBox .rtable .left {
+    border-left: none;
+}
+
+.highlightedContentBox .rtable .bottom {
+    border-bottom: none;
+}
+
+/* Note: Corner styles using background images are omitted as the image paths are likely incorrect */
+/* Consider using CSS border-radius for rounded corners if needed */
+
+/* .highlightedContentBox .rtable .corner { ... } */
+/* .highlightedContentBox .roundbox-lt { ... } */
+/* .highlightedContentBox .roundbox-rt { ... } */
+/* .highlightedContentBox .roundbox-lb { ... } */
+/* .highlightedContentBox .roundbox-rb { ... } */
