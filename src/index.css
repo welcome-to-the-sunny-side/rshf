@@ -4,41 +4,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600&display=swap');
 
-:root {
-  /* Global layout variables */
-  --max-content-width: 1200px;
-  --container-horizontal-padding: 1rem;
-  --container-vertical-padding: 1rem;
-  --container-margin-bottom: 1rem;
-  
-  /* Colors */
-  --border-color: rgb(185, 185, 185);
-  --background-color: rgb(255, 255, 255);
-  --light-gray-bg: rgb(248, 249, 250);
-  --medium-gray-bg: rgb(240, 240, 240);
-  --hover-bg: rgb(242, 245, 250);
-  --primary-color: #007bff;
-  --primary-hover-color: #0056b3;
-  --text-color: #222;
-  --light-text-color: #444;
-  --border-light-color: #eee;
-  
-  /* Border radius */
-  --box-border-radius: 6px;
-  
-  /* Typography */
-  --font-primary: 'Inter', Arial, sans-serif;
-  --font-heading: 'Roboto Condensed', sans-serif;
-  --font-table-heading: 'Source Sans 3', sans-serif;
-  --font-table-data: 'DM Sans', sans-serif;
-}
-
 body {
   margin: 0;
   padding: 0;
-  font-family: var(--font-primary);
-  background: var(--background-color);
-  color: var(--text-color);
+  font-family: 'Inter', Arial, sans-serif;
+  background: #fff;
+  color: #222;
 }
 
 h1 {
@@ -52,39 +23,59 @@ h1 {
 /* This ensures uniformity across the entire application */
 .page-container {
   width: 100%;
-  max-width: var(--max-content-width);
+  max-width: 1200px;
   margin: 0 auto;
   padding: 0;
 }
 
 /* Global font classes */
 .columnHeadingFont {
-  font-family: var(--font-table-heading);
+  font-family: 'Source Sans 3', sans-serif;
   font-size: 0.92rem;
   font-weight: 600;
   letter-spacing: 0.01em;
 }
 
 .tableDataFont {
-  font-family: var(--font-table-data);
+  font-family: 'DM Sans', sans-serif;
   font-size: 0.88rem;
   font-weight: 400;
   letter-spacing: 0.005em;
+}
+
+/* Standard text font for profile details and other text elements */
+.standardTextFont {
+  font-family: 'Inter', Arial, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #333;
+}
+
+/* Global table cell link style - IMPORTANT: Use this for all links in tables */
+.tableCellLink {
+  text-decoration: none;
+  color: #3B5998;
+  font-weight: 500;
+}
+
+.tableCellLink:hover {
+  text-decoration: underline;
 }
 
 /* Reusable content box class */
 /* IMPORTANT: This is the ONLY contentBox class to use across the application */
 /* All components should use this global class instead of defining their own */
 .contentBox {
-  background-color: var(--background-color);
-  border: 1px solid var(--border-color);
-  border-radius: var(--box-border-radius);
+  background-color: rgb(255, 255, 255);
+  border: 1px solid rgb(185, 185, 185);
+  border-radius: 6px;
   display: flex;
   flex-direction: column;
-  padding: var(--container-vertical-padding) var(--container-horizontal-padding);
+  padding: 1rem;
   box-sizing: border-box;
   width: 100%;
-  margin-bottom: var(--container-margin-bottom);
+  margin-bottom: 1rem;
   min-height: 140px;
   position: relative;
 }
@@ -97,17 +88,61 @@ h1 {
 
 /* Reusable content box class with transparent border */
 .contentBoxTransparent {
-  background-color: var(--background-color);
+  background-color: rgb(255, 255, 255);
   border: 1px solid transparent; /* Transparent border */
-  border-radius: var(--box-border-radius);
+  border-radius: 6px;
   display: flex;
   flex-direction: column;
-  padding: var(--container-vertical-padding) var(--container-horizontal-padding);
+  padding: 1rem;
   box-sizing: border-box;
   width: 100%;
-  margin-bottom: var(--container-margin-bottom);
+  margin-bottom: 1rem;
   min-height: 140px;
   position: relative;
+}
+
+/* Floating button box for navigation buttons */
+.floatingButtonBox {
+  display: flex;
+  background-color: transparent;
+  border: none;
+  padding: 0;
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+.floatingButtonBox button, .floatingButtonBox a {
+  padding: 4px 8px; /* 50% smaller padding */
+  background-color: white;
+  border: none;
+  font-family: 'Inter', Arial, sans-serif;
+  font-size: 0.75rem; /* Smaller font size */
+  font-weight: 600;
+  cursor: pointer;
+  text-transform: uppercase;
+  color: #333;
+  text-decoration: none;
+  display: inline-block;
+  transition: background-color 0.2s;
+  border-radius: 6px; /* Add rounded borders to all buttons */
+  margin: 0 2px; /* Add small gaps between buttons */
+}
+
+.floatingButtonBox button:first-child, .floatingButtonBox a:first-child {
+  background-color: #e0e0e0;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+  margin-left: 0;
+}
+
+.floatingButtonBox button:last-child, .floatingButtonBox a:last-child {
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+  margin-right: 0;
+}
+
+.floatingButtonBox button:hover, .floatingButtonBox a:hover {
+  background-color: #d0d0d0;
 }
 
 /* Highlighted content box based on .roundbox */

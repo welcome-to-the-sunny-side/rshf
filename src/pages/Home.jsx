@@ -2,15 +2,17 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import styles from './Home.module.css';
 import TableBox from '../components/TableBox';
+import BasicTableBox from '../components/BasicTableBox';
+import PagedTableBox from '../components/PagedTableBox';
 import titleStyles from '../components/ContentBoxWithTitle.module.css';
 
 // Sample group data - in real app this would come from backend
 const sampleGroups = [
-  { id: 1, name: "Competitive Programming", memberCount: 1247 },
-  { id: 2, name: "Web Development", memberCount: 856 },
-  { id: 3, name: "Machine Learning", memberCount: 943 },
-  { id: 4, name: "Algorithm Study", memberCount: 621 },
-  { id: 5, name: "System Design", memberCount: 734 }
+  { id: 1, name: "CompetitiveProgramming", memberCount: 1247 },
+  { id: 2, name: "WebDevelopment", memberCount: 856 },
+  { id: 3, name: "MachineLearning", memberCount: 943 },
+  { id: 4, name: "AlgorithmStudy", memberCount: 621 },
+  { id: 5, name: "SystemDesign", memberCount: 734 }
 ];
 
 // Sample posts data - in real app this would come from backend
@@ -29,7 +31,12 @@ const samplePosts = [
   { date: "2024-03-15", link: "/post/124", title: "Group Study Session Recordings" },
   { date: "2024-03-14", link: "/post/123", title: "Monthly Programming Challenge Results" },
   { date: "2024-03-14", link: "/post/122", title: "New Learning Paths Launched" },
-  { date: "2024-03-13", link: "/post/121", title: "Community Guidelines Update" }
+  { date: "2024-03-13", link: "/post/121", title: "Community Guidelines Update" },
+  { date: "2024-03-12", link: "/post/120", title: "Coding Contest Winners April" },
+  { date: "2024-03-11", link: "/post/119", title: "New Platform Feature: Rating Charts" },
+  { date: "2024-03-10", link: "/post/118", title: "Top Performers of the Month" },
+  { date: "2024-03-09", link: "/post/117", title: "API Documentation Update" },
+  { date: "2024-03-08", link: "/post/116", title: "Women in Tech: Special Event" }
 ].sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by date, newest first
 
 // Sample contests data - in real app this would come from backend and be sorted
@@ -44,13 +51,13 @@ const sampleContests = [
 // Transform the data for the TableBox components
 const groupColumns = ["Group", "Members"];
 const groupData = sampleGroups.map(group => [
-  <Link to={`/group/${group.id}`} className={styles.groupLink}>{group.name}</Link>,
+  <Link to={`/group/${group.name}`} className="tableCellLink">{group.name}</Link>,
   group.memberCount.toLocaleString()
 ]);
 
 const postColumns = ["Post", "Date"];
 const postData = samplePosts.map(post => [
-  <Link to={post.link} className={styles.groupLink}>{post.title}</Link>,
+  <Link to={post.link} className="tableCellLink">{post.title}</Link>,
   new Date(post.date).toLocaleDateString('en-US', { 
     year: 'numeric',
     month: 'short',
@@ -60,7 +67,7 @@ const postData = samplePosts.map(post => [
 
 const contestColumns = ["Contest", "Date"];
 const contestData = sampleContests.map(contest => [
-  <Link to={contest.link} className={styles.groupLink}>{contest.name}</Link>,
+  <Link to={contest.link} className="tableCellLink">{contest.name}</Link>,
   new Date(contest.date).toLocaleString('en-US', { 
     year: 'numeric',
     month: 'short',
@@ -90,12 +97,14 @@ export default function Home() {
           />
         </div>
         
-        <TableBox 
+        {/* Using PagedTableBox for Posts */}
+        <PagedTableBox 
           title={<Link to="/posts" className={titleStyles.titleLink}>Posts</Link>}
           columns={postColumns}
           data={postData}
           backgroundColor="rgb(255, 230, 230)"
           className={styles['main-content']}
+          itemsPerPage={15}
         />
       </div>
     </div>

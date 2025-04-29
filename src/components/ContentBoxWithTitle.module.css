@@ -4,14 +4,14 @@
 }
 
 .titleBox {
-  border: 1px solid var(--border-color);
-  border-radius: var(--box-border-radius);
-  padding: 0.5rem var(--container-horizontal-padding);
+  border: 1px solid rgb(185, 185, 185);
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
   margin-bottom: -1px; /* Connect with the content box */
   display: inline-block;
   font-size: 0.95rem;
   font-weight: 400;
-  font-family: var(--font-heading);
+  font-family: 'Roboto Condensed', sans-serif;
 }
 
 .titleLink {
@@ -22,6 +22,6 @@
 
 .titleLink:hover {
   text-decoration: underline;
-  color: var(--primary-color);
+  color: #007bff;
   cursor: pointer;
 } 

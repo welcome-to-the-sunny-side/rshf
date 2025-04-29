@@ -55,15 +55,15 @@ export default function User() {
   // Assume cf_username is the same as username for now. In a real app, these might differ.
   const cf_username = username;
   
-  // Dummy group data: [group_name, group_rating, group_rank, group_rank_color, max_group_rating, max_group_rank, max_group_rank_color]
-  // Group names updated to use underscores instead of spaces
+  // Enhanced group data: 
+  // [group_name, group_rating, group_rank, group_rank_color, max_group_rating, max_group_rank, max_group_rank_color, member_since, role, rated_contests]
   const groups = [
-    ['root_group', 2185, 'Master', 'rgb(255, 140, 0)', 2185, 'Master', 'rgb(255, 140, 0)'],
-    ['Global', 1450, 'Specialist', 'rgb(30, 150, 255)', 1500, 'Specialist', 'rgb(30, 150, 255)'],
-    ['Math_Club', 1890, 'Candidate Master', 'rgb(170, 0, 170)', 1950, 'Candidate Master', 'rgb(170, 0, 170)'],
-    ['Chess_Enthusiasts', 900, 'Pupil', 'rgb(0, 180, 0)', 1000, 'Pupil', 'rgb(0, 180, 0)'],
-    ['Developers', 1200, 'Apprentice', 'rgb(170, 170, 170)', 1250, 'Apprentice', 'rgb(170, 170, 170)'],
-    ['Writers_Group', 2100, 'Candidate Master', 'rgb(170, 0, 170)', 2170, 'Master', 'rgb(255, 140, 0)']
+    ['root_group', 2185, 'Master', 'rgb(255, 140, 0)', 2185, 'Master', 'rgb(255, 140, 0)', '2022-01-15', 'moderator', 24],
+    ['Global', 1450, 'Specialist', 'rgb(30, 150, 255)', 1500, 'Specialist', 'rgb(30, 150, 255)', '2022-01-15', 'member', 32],
+    ['Math_Club', 1890, 'Candidate Master', 'rgb(170, 0, 170)', 1950, 'Candidate Master', 'rgb(170, 0, 170)', '2022-02-10', 'member', 18],
+    ['Chess_Enthusiasts', 900, 'Pupil', 'rgb(0, 180, 0)', 1000, 'Pupil', 'rgb(0, 180, 0)', '2022-03-22', 'moderator', 12],
+    ['Developers', 1200, 'Apprentice', 'rgb(170, 170, 170)', 1250, 'Apprentice', 'rgb(170, 170, 170)', '2022-04-07', 'member', 8],
+    ['Writers_Group', 2100, 'Candidate Master', 'rgb(170, 0, 170)', 2170, 'Master', 'rgb(255, 140, 0)', '2022-05-14', 'member', 15]
   ];
   // Use React state for selected group index
   const [selectedGroupIdx, setSelectedGroupIdx] = React.useState(0);
@@ -93,14 +93,29 @@ export default function User() {
     if (score >= 20) return 'rgb(220, 50, 0)';     // Light red
     return 'rgb(180, 0, 0)';                      // Dark red for very low
   };
+  
+  // Function to format date in a readable format
+  const formatDate = (dateString) => {
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
 
   // Get the rating history for the currently selected group
   const currentRatingHistory = dummyRatingData[selectedGroup[0]] || [];
 
   return (
     <div className="page-container">
-      <div className="contentBox">
-        <div className={styles.profileContent}>
+      {/* Updated floating button box with Links */}
+      <div className="floatingButtonBox">
+        <Link to={`/user/${username}`}>{username}</Link>
+        <Link to={`/user/${username}/groups`}>groups</Link>
+        <Link to={`/user/${username}/settings`}>settings</Link>
+      </div>
+      
+      {/* Two content boxes side by side */}
+      <div className={styles.contentBoxRow}>
+        {/* Left content box with user info */}
+        <div className={`contentBox ${styles.contentBoxLeft}`}>
           <div className={styles.profileInfo}>
             {/* Rank and group name above username */}
             <div style={{ fontSize: '1rem', marginBottom: '0.08rem' }}>
@@ -108,7 +123,7 @@ export default function User() {
               {/* Group name is now a link */}
               <Link 
                 to={`/group/${selectedGroup[0]}`} 
-                style={{ color: '#111', textDecoration: 'none' }}
+                className="tableCellLink"
               >
                 [{selectedGroup[0]}]
               </Link>
@@ -118,23 +133,23 @@ export default function User() {
               href={`https://codeforces.com/profile/${cf_username}`} 
               target="_blank" 
               rel="noopener noreferrer"
-              className={styles.usernameLink} // Add a class for styling if needed
+              className={styles.usernameLink}
             >
               <span 
                 className={styles.username} 
-                style={{ color: selectedGroup[3], marginBottom: '0.76rem', display: 'inline-block' }} // changed display to inline-block
+                style={{ color: selectedGroup[3], marginBottom: '0.76rem', display: 'inline-block' }}
               >
                 {cf_username}
               </span>
             </a>
             {/* Stats List */}
-            <div className={styles.statsList}>
+            <div className={`${styles.statsList} standardTextFont`}>
               <div className={styles.statItem}>
                 {/* Contest Rating group name is now a link */}
                 Contest Rating [
                 <Link 
                   to={`/group/${selectedGroup[0]}`} 
-                  style={{ color: 'inherit', textDecoration: 'none' }} // Remove underline
+                  className="tableCellLink"
                 >
                   {selectedGroup[0]}
                 </Link>
@@ -150,29 +165,37 @@ export default function User() {
                 Registered: <span>{registrationDate}</span>
               </div>
             </div>
-            {/* Group dropdown */}
-            <div className={styles.groupRatingRow}>
-              <span style={{ fontSize: '0.95rem', color: '#444' }}> Group: </span>
-              <select className={styles.groupDropdown} value={selectedGroupIdx} onChange={handleGroupChange}>
-                {groups.map((group, idx) => (
-                  <option key={group[0] + idx} value={idx}>{group[0]}</option>
-                ))}
-              </select>
-            </div>
+          </div>
+        </div>
+        
+        {/* Right content box with group details */}
+        <div className={`contentBox ${styles.contentBoxRight}`}>
+          {/* Group dropdown moved to top of right box */}
+          <div className={`${styles.groupRatingRow} standardTextFont`} style={{ marginBottom: '15px' }}>
+            <h3 style={{ margin: 0, marginRight: '10px' }}>Group: </h3>
+            <select className={styles.groupDropdown} value={selectedGroupIdx} onChange={handleGroupChange}>
+              {groups.map((group, idx) => (
+                <option key={group[0] + idx} value={idx}>{group[0]}</option>
+              ))}
+            </select>
           </div>
           
-          {/* Profile Picture Container */}
-          <div className={styles.profilePictureContainer}>
-            <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="50" cy="35" r="25" fill="#ccc" />
-              <circle cx="50" cy="100" r="50" fill="#ccc" />
-              <text x="50" y="42" fontSize="12" textAnchor="middle" fill="#888">Profile</text>
-            </svg>
+          {/* Group information with the same styling as the left box */}
+          <div className={`${styles.statsList} standardTextFont`}>
+            <div className={styles.statItem}>
+              Role: <span style={{ textTransform: 'capitalize' }}>{selectedGroup[8]}</span>
+            </div>
+            <div className={styles.statItem}>
+              Rated Contests: <span>{selectedGroup[9]}</span>
+            </div>
+            <div className={styles.statItem}>
+              Member Since: <span>{formatDate(selectedGroup[7])}</span>
+            </div>
           </div>
         </div>
       </div>
       
-      {/* Second content box with the Rating Graph */}
+      {/* Rating Graph box (full width) */}
       <div className="contentBox">
         <RatingGraph ratingHistory={currentRatingHistory} />
       </div>

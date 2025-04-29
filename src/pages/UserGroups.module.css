@@ -1,0 +1,16 @@
+/* UserGroups module styles */
+.pageTitle {
+  margin: 1rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.groupLink {
+  text-decoration: none;
+  color: #3B5998;
+  font-weight: 500;
+}
+
+.groupLink:hover {
+  text-decoration: underline;
+} 

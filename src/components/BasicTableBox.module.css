@@ -1,22 +1,12 @@
-.wrapper {
+.container {
   width: 100%;
   margin: 0;
-}
-
-.titleBox {
-  border: 1px solid rgb(185, 185, 185);
-  border-radius: 6px;
-  padding: 0.5rem 1rem;
-  margin-bottom: -1px; /* Connect with the content box */
-  display: inline-block;
-  font-size: 0.95rem;
-  font-weight: 400;
-  font-family: 'Roboto Condensed', sans-serif;
 }
 
 .table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed; /* Improve table layout stability */
 }
 
 .table th {
@@ -63,4 +53,15 @@
 /* Add hover effect to rows */
 .table tbody tr:hover {
   background-color: rgb(242, 245, 250);
+}
+
+/* Styles for sortable columns */
+.sortableColumn {
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.sortableColumn:hover {
+  background-color: rgb(230, 230, 230);
 } 

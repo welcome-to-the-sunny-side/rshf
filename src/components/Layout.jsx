@@ -8,7 +8,7 @@ export default function Layout({ children, isLoggedIn, currentUser }) {
     <div className={styles.wrapper}>
       <header className={styles.header}>
         <Link to="/">
-          <img src={logo} alt="Skill-Comp Logo" className={styles.logo} />
+          <img src={logo} alt="RSHF Logo" className={styles.logo} />
         </Link>
         {isLoggedIn && currentUser && (
           <div className={styles.userActions}>
@@ -34,8 +34,6 @@ export default function Layout({ children, isLoggedIn, currentUser }) {
         <Link to="/" className={styles.navLink}>Home</Link>
         <Link to="/groups" className={styles.navLink}>Groups</Link>
         <Link to="/contests" className={styles.navLink}>Contests</Link>
-        <Link to="/users" className={styles.navLink}>Users</Link>
-        <Link to="/posts" className={styles.navLink}>Posts</Link>
       </nav>
       <main className={styles.main}>{children}</main>
       <footer className={styles.footer}>
