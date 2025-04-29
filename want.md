@@ -20,3 +20,10 @@
     - cf contest name
     - contest time
 ]
+- create a report object:
+[
+    - report id
+    - group id
+    - the user the report is against
+    - string that contains the actual report
+]

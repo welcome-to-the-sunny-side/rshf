@@ -8,6 +8,9 @@ import UserGroups from './pages/UserGroups';
 import UserSettings from './pages/UserSettings'; // Import UserSettings
 import Groups from './pages/Groups';
 import Group from './pages/Group';
+import GroupMembers from './pages/GroupMembers'; // Import GroupMembers
+import GroupContests from './pages/GroupContests'; // Import GroupContests
+import GroupSettings from './pages/GroupSettings'; // Import GroupSettings
 import About from './pages/About';
 import Contests from './pages/Contests';
 import Contact from './pages/Contact'; // Import Contact page
@@ -31,6 +34,9 @@ export default function App() {
         <Route path="/user/:username/settings" element={<UserSettings />} />
         <Route path="/groups" element={<Groups />} />
         <Route path="/group/:groupId" element={<Group />} />
+        <Route path="/group/:groupId/members" element={<GroupMembers />} />
+        <Route path="/group/:groupId/contests" element={<GroupContests />} />
+        <Route path="/group/:groupId/settings" element={<GroupSettings />} />
         <Route path="/contests" element={<Contests />} />
         <Route path="/contest/:contest_id" element={<ContestPage />} />
         <Route path="/about" element={<About />} />

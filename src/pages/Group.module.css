@@ -1,0 +1,52 @@
+.groupInfo {
+  width: 100%;
+}
+
+.contentBoxRow {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+.contentBoxLeft {
+  flex: 7.5; /* Takes 70% of available space */
+  min-width: 0; /* Prevent overflow */
+}
+
+.contentBoxRight {
+  flex: 2.5; /* Takes 30% of available space */
+  min-width: 0; /* Prevent overflow */
+}
+
+.statItem {
+  position: relative;
+  padding-left: 1rem;
+  font-size: 0.95rem;
+  color: #444;
+  margin-bottom: 0.6rem;
+}
+
+.statItem:before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #777;
+}
+
+.statsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Responsive design - stack on mobile */
+@media (max-width: 768px) {
+  .contentBoxRow {
+    flex-direction: column;
+  }
+  
+  .contentBoxLeft,
+  .contentBoxRight {
+    flex: 1; /* On mobile, both take full width */
+  }
+}
