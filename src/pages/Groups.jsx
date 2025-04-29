@@ -1,21 +1,21 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import SortablePagedTableBox from '../components/SortablePagedTableBox';
 import titleStyles from '../components/ContentBoxWithTitle.module.css';
 
 export default function Groups() {
-  // Create a "main" group that will be pinned at the top
-  const mainGroup = {
+  // Re-define the main group
+  const mainGroup = useMemo(() => ({
     id: 1,
     name: "main",
     type: "restricted membership",
     created: "2022-01-01",
     memberCount: 2543,
-    isPinned: true
-  };
+    isPinned: true // Keep this for potential future use, though not directly used by table
+  }), []);
 
-  // Generate 20 dummy group entries (excluding id 1 which is now the main group)
-  const groupsData = [
+  // Generate dummy group entries (excluding the main group again)
+  const groupsData = useMemo(() => [
     { id: 2, name: "CompetitiveProgramming", type: "anyone can join", created: "2022-03-15", memberCount: 1247 },
     { id: 3, name: "WebDevelopment", type: "anyone can join", created: "2022-04-22", memberCount: 856 },
     { id: 4, name: "MachineLearning", type: "restricted membership", created: "2022-05-10", memberCount: 943 },
@@ -36,7 +36,7 @@ export default function Groups() {
     { id: 19, name: "QualityAssurance", type: "anyone can join", created: "2023-08-09", memberCount: 267 },
     { id: 20, name: "APIDesign", type: "anyone can join", created: "2023-09-30", memberCount: 318 },
     { id: 21, name: "SoftwareArchitecture", type: "restricted membership", created: "2023-10-17", memberCount: 502 }
-  ];
+  ], []);
 
   // Function to format the date
   const formatDate = (dateString) => {
@@ -44,7 +44,7 @@ export default function Groups() {
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
-  // Pin icon SVG component
+  // Re-add Pin icon SVG component
   const PinIcon = () => (
     <svg 
       xmlns="http://www.w3.org/2000/svg" 
@@ -63,8 +63,8 @@ export default function Groups() {
   // Define columns for the table
   const columns = ["Group", "Type", "Date of Creation", "Members"];
   
-  // Create main group row first
-  const mainGroupRow = [
+  // Create main group row using useMemo for stability
+  const mainGroupRow = useMemo(() => [
     <div style={{ display: 'flex', alignItems: 'center' }}>
       <PinIcon />
       <Link to={`/group/${mainGroup.name}`} className="tableCellLink" style={{ fontWeight: 600 }}>{mainGroup.name}</Link>
@@ -72,23 +72,25 @@ export default function Groups() {
     <span style={{ fontWeight: 500 }}>{mainGroup.type}</span>,
     <span style={{ fontWeight: 500 }}>{formatDate(mainGroup.created)}</span>,
     <span style={{ fontWeight: 500 }}>{mainGroup.memberCount.toLocaleString()}</span>
-  ];
+  ], [mainGroup]); // Depend on mainGroup object
   
-  // Transform the rest of the data for the PagedTableBox component
-  const otherGroupsRows = groupsData.map(group => [
-    <Link to={`/group/${group.name}`} className="tableCellLink">{group.name}</Link>,
-    group.type,
-    formatDate(group.created),
-    group.memberCount.toLocaleString()
-  ]);
+  // Transform the rest of the data using useMemo
+  const otherGroupsRows = useMemo(() => {
+    return groupsData.map(group => [
+      <Link to={`/group/${group.name}`} className="tableCellLink">{group.name}</Link>,
+      group.type,
+      formatDate(group.created),
+      group.memberCount.toLocaleString()
+    ]);
+  }, [groupsData]); // Depend on groupsData array
 
   return (
     <div className="page-container">
       <SortablePagedTableBox 
         title={<span className={titleStyles.titleText}>Groups</span>}
         columns={columns}
-        data={otherGroupsRows}
-        pinnedRows={[mainGroupRow]}
+        data={otherGroupsRows} // Pass the sortable rows
+        pinnedRows={[mainGroupRow]} // Pass the pinned row(s) in an array
         backgroundColor="rgb(230, 240, 255)"
         itemsPerPage={15}
         initialSortColumnIndex={3} // Member Count column
