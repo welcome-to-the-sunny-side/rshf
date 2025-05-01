@@ -1,5 +1,6 @@
 import React from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
+import GroupNavBar from '../components/GroupNavBar';
 
 export default function GroupSettings() {
   const { groupId } = useParams();
@@ -15,12 +16,7 @@ export default function GroupSettings() {
   return (
     <div className="page-container">
       {/* Floating button box */}
-      <div className="floatingButtonBox">
-        <Link to={`/group/${groupId}`}>{groupId}</Link>
-        <Link to={`/group/${groupId}/members`}>members</Link>
-        <Link to={`/group/${groupId}/contests`}>contests</Link>
-        <Link to={`/group/${groupId}/settings`}>settings</Link>
-      </div>
+      <GroupNavBar groupId={groupId} showSettingsButton={true} />
       
       {/* Settings content */}
       <div className="contentBox">

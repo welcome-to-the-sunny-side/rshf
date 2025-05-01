@@ -1,60 +1,10 @@
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceArea, ResponsiveContainer } from 'recharts';
 import styles from './RatingGraph.module.css';
-
-const RANK_COLORS = {
-  newbie      : '#ccc',    //   < 1200
-  pupil       : '#7f7',    // 1200 – 1399
-  specialist  : '#77ddbb', // 1400 – 1599
-  expert      : '#aaf',    // 1600 – 1899
-  candmaster  : '#f8f',    // 1900 – 2099
-  master      : '#ffcc88', // 2100 – 2299
-  intmaster   : '#ffbb55', // 2300 - 2399
-  grandmaster : '#f77',    // 2400 – 2599
-  intgrandmaster: '#f33',  // 2600 - 2999
-  legend      : '#a00'     // >= 3000 (Legendary GM)
-};
+import { RANK_COLORS, RANK_BANDS, getRatingColor, getRankName } from '../utils/ratingUtils';
 
 // Color change boundaries for Y-axis ticks
 const COLOR_BOUNDARIES = [0, 1200, 1400, 1600, 1900, 2100, 2300, 2400, 2600, 3000];
-
-const rankBands = [
-  { y1: 0,    y2: 1200, color: RANK_COLORS.newbie },
-  { y1: 1200, y2: 1400, color: RANK_COLORS.pupil },
-  { y1: 1400, y2: 1600, color: RANK_COLORS.specialist },
-  { y1: 1600, y2: 1900, color: RANK_COLORS.expert },
-  { y1: 1900, y2: 2100, color: RANK_COLORS.candmaster },
-  { y1: 2100, y2: 2300, color: RANK_COLORS.master },
-  { y1: 2300, y2: 2400, color: RANK_COLORS.intmaster },
-  { y1: 2400, y2: 2600, color: RANK_COLORS.grandmaster },
-  { y1: 2600, y2: 3000, color: RANK_COLORS.intgrandmaster },
-  { y1: 3000,          color: RANK_COLORS.legend } // y2 determined dynamically
-];
-
-// Function to get the color for a rating value
-const getColorForRating = (rating) => {
-  for (const band of rankBands) {
-    if (rating >= band.y1 && (band.y2 === undefined || rating < band.y2)) {
-      return band.color;
-    }
-  }
-  // Default fallback color (should never reach here)
-  return RANK_COLORS.newbie;
-};
-
-// Function to get rank name based on rating
-const getRankName = (rating) => {
-  if (rating < 1200) return "Newbie";
-  if (rating < 1400) return "Pupil";
-  if (rating < 1600) return "Specialist";
-  if (rating < 1900) return "Expert";
-  if (rating < 2100) return "Candidate Master";
-  if (rating < 2300) return "Master";
-  if (rating < 2400) return "International Master";
-  if (rating < 2600) return "Grandmaster";
-  if (rating < 3000) return "International Grandmaster";
-  return "Legendary Grandmaster";
-};
 
 // Only generate ticks for the first day of each year
 const generateYearlyTicks = (dataMin, dataMax) => {
@@ -139,7 +89,7 @@ const ClickableActiveDot = (props) => {
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     const { rating } = payload[0].payload;
-    const bandColor = getColorForRating(rating);
+    const bandColor = getRatingColor(rating);
     const rankName = getRankName(rating);
     
     return (
@@ -189,21 +139,21 @@ export default function RatingGraph({ ratingHistory }) {
   // Generate ticks for January 1st of each year
   const yearlyTicks = generateYearlyTicks(minTimestamp, maxTimestamp);
 
-  // Add y2 to the last rank band, pointing to the new simple yMax
-  const finalRankBands = rankBands.map((band, index) => {
-    if (index === rankBands.length - 1) {
-      // Make the last band cover up to yMax
-      return { ...band, y2: yMax };
-    }
-    return band;
-  });
-
   // Generate Y-axis ticks: include color boundaries below yMax, plus yMax itself
   const yAxisTicks = COLOR_BOUNDARIES.filter(tick => tick <= yMax);
   if (!yAxisTicks.includes(yMax)) {
     yAxisTicks.push(yMax);
   }
   yAxisTicks.sort((a, b) => a - b);
+
+  // Add y2 to the last rank band, pointing to the new simple yMax
+  const finalRankBands = RANK_BANDS.map((band, index) => {
+    if (index === RANK_BANDS.length - 1) {
+      // Make the last band cover up to yMax
+      return { ...band, y2: yMax };
+    }
+    return band;
+  });
 
   return (
     <div className={styles.ratingChart}>

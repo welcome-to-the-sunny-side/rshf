@@ -83,14 +83,14 @@ export default function Home() {
       <div className={styles['content-container']}>
         <div className={styles['left-sidebar']}>
           <TableBox 
-            title={<Link to="/groups" className={titleStyles.titleLink}>Groups</Link>}
+            title={<Link to="/groups" className={titleStyles.titleLink}>Top Groups</Link>}
             columns={groupColumns}
             data={groupData}
             backgroundColor="rgb(230, 240, 255)"
           />
 
           <TableBox 
-            title={<Link to="/contests" className={titleStyles.titleLink}>Contests</Link>}
+            title={<Link to="/contests" className={titleStyles.titleLink}>Active/Upcoming Contests</Link>}
             columns={contestColumns}
             data={contestData}
             backgroundColor="rgb(230, 255, 230)"

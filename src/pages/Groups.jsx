@@ -87,14 +87,13 @@ export default function Groups() {
   return (
     <div className="page-container">
       <SortablePagedTableBox 
-        title={<span className={titleStyles.titleText}>Groups</span>}
         columns={columns}
-        data={otherGroupsRows} // Pass the sortable rows
-        pinnedRows={[mainGroupRow]} // Pass the pinned row(s) in an array
+        data={otherGroupsRows} 
+        pinnedRows={[mainGroupRow]} 
         backgroundColor="rgb(230, 240, 255)"
         itemsPerPage={15}
-        initialSortColumnIndex={3} // Member Count column
-        initialSortDirection="desc" // Descending order
+        initialSortColumnIndex={3} 
+        initialSortDirection="desc" 
       />
     </div>
   );

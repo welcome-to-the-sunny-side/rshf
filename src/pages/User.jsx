@@ -4,6 +4,7 @@ import { useParams, Link } from 'react-router-dom';
 // Renamed component from Profile to User
 import styles from './User.module.css';
 import RatingGraph from '../components/RatingGraph'; // Import the new component
+import UserNavBar from '../components/UserNavBar'; // Import the new component
 
 // Generate varied dummy rating data for different groups
 const generateDummyData = (startRating, numPoints, volatility, groupName) => {
@@ -77,7 +78,7 @@ export default function User() {
   
   // Number of groups the user is a member of
   const numberOfGroups = groups.length;
-
+  const removedNumberOfGroups = 0;
   const handleGroupChange = (e) => {
     setSelectedGroupIdx(Number(e.target.value));
   };
@@ -103,14 +104,54 @@ export default function User() {
   // Get the rating history for the currently selected group
   const currentRatingHistory = dummyRatingData[selectedGroup[0]] || [];
 
+  // Dummy social links data - in real app this would come from the backend
+  const socialLinks = {
+    codeforces: `https://codeforces.com/profile/${username}`, // Present
+    atcoder: `https://atcoder.jp/users/${username}`,         // Present
+    codechef: ""                                             // Not provided
+  };
+
+  // Function to render social icon with conditional styling
+  const renderSocialIcon = (platform, link, svgPath) => {
+    const isActive = link && link.trim() !== "";
+    const color = isActive ? "currentColor" : "#888";
+    const opacity = isActive ? 1 : 0.6;
+    
+    return (
+      <a 
+        href={isActive ? link : "#"} 
+        target="_blank" 
+        rel="noopener noreferrer"
+        style={{ 
+          marginRight: '12px', 
+          cursor: isActive ? 'pointer' : 'default',
+          pointerEvents: isActive ? 'auto' : 'none'
+        }}
+      >
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          width="20" 
+          height="20" 
+          viewBox="0 0 24 24" 
+          style={{ color, opacity }}
+        >
+          <path fill="currentColor" d={svgPath} />
+        </svg>
+      </a>
+    );
+  };
+  
+  // SVG paths for each platform
+  const svgPaths = {
+    codeforces: "M4 19h2v-8H4v8zm3 0h3V5H7v14zM12 19h2v-6h-2v6zm3 0h2v-8h-2v8zm3 0h2v-2h-2v2z", // Simplified CF logo (bar chart)
+    atcoder: "M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.16L20 7v7.9l-8 4-8-4V7l8-2.84z", // Simplified AC logo (pentagon)
+    codechef: "M11.955 2a10 10 0 100 20 10 10 0 000-20zm4.94 14.152a3.45 3.45 0 01-2.542 1.147 3.45 3.45 0 01-2.041-.663 3.29 3.29 0 01-1.148-1.335 3.29 3.29 0 01-1.147 1.335 3.45 3.45 0 01-2.042.663 3.45 3.45 0 01-2.542-1.147 3.293 3.293 0 01-1.004-2.42v-5.462h2.646v5.462c0 .984.834 1.776 1.875 1.776 1.04 0 1.875-.792 1.875-1.776v-5.462h2.646v5.462c0 .984.834 1.776 1.875 1.776 1.04 0 1.875-.792 1.875-1.776v-5.462h2.646v5.462a3.293 3.293 0 01-1.004 2.42z" // Simplified CC logo (chef hat)
+  };
+
   return (
     <div className="page-container">
       {/* Updated floating button box with Links */}
-      <div className="floatingButtonBox">
-        <Link to={`/user/${username}`}>{username}</Link>
-        <Link to={`/user/${username}/groups`}>groups</Link>
-        <Link to={`/user/${username}/settings`}>settings</Link>
-      </div>
+      <UserNavBar username={username} />
       
       {/* Two content boxes side by side */}
       <div className={styles.contentBoxRow}>
@@ -162,7 +203,18 @@ export default function User() {
                 Member of: <span>{numberOfGroups} groups</span>
               </div>
               <div className={styles.statItem}>
+                Removed from: <span>{removedNumberOfGroups} groups</span>
+              </div>
+              <div className={styles.statItem}>
                 Registered: <span>{registrationDate}</span>
+              </div>
+                {/* Social links row */}
+                <div className={styles.statItem}>
+                Social: <span style={{ display: 'inline-flex', alignItems: 'center', marginLeft: '5px' }}>
+                  {renderSocialIcon("codeforces", socialLinks.codeforces, svgPaths.codeforces)}
+                  {renderSocialIcon("atcoder", socialLinks.atcoder, svgPaths.atcoder)}
+                  {renderSocialIcon("codechef", socialLinks.codechef, svgPaths.codechef)}
+                </span>
               </div>
             </div>
           </div>
