@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import SortablePagedTableBox from '../components/SortablePagedTableBox';
-import titleStyles from '../components/ContentBoxWithTitle.module.css';
 
 export default function Groups() {
   // Re-define the main group
@@ -61,7 +60,7 @@ export default function Groups() {
   );
 
   // Define columns for the table
-  const columns = ["Group", "Type", "Date of Creation", "Members"];
+  const columns = ["Group", "Type", "Members", "Date of Creation"];
   
   // Create main group row using useMemo for stability
   const mainGroupRow = useMemo(() => [
@@ -70,8 +69,8 @@ export default function Groups() {
       <Link to={`/group/${mainGroup.name}`} className="tableCellLink" style={{ fontWeight: 600 }}>{mainGroup.name}</Link>
     </div>,
     <span style={{ fontWeight: 500 }}>{mainGroup.type}</span>,
-    <span style={{ fontWeight: 500 }}>{formatDate(mainGroup.created)}</span>,
-    <span style={{ fontWeight: 500 }}>{mainGroup.memberCount.toLocaleString()}</span>
+    <span style={{ fontWeight: 500 }}>{mainGroup.memberCount.toLocaleString()}</span>,
+    <span style={{ fontWeight: 500 }}>{formatDate(mainGroup.created)}</span>
   ], [mainGroup]); // Depend on mainGroup object
   
   // Transform the rest of the data using useMemo
@@ -79,8 +78,8 @@ export default function Groups() {
     return groupsData.map(group => [
       <Link to={`/group/${group.name}`} className="tableCellLink">{group.name}</Link>,
       group.type,
-      formatDate(group.created),
-      group.memberCount.toLocaleString()
+      group.memberCount.toLocaleString(),
+      formatDate(group.created)
     ]);
   }, [groupsData]); // Depend on groupsData array
 
@@ -88,12 +87,12 @@ export default function Groups() {
     <div className="page-container">
       <SortablePagedTableBox 
         columns={columns}
-        data={otherGroupsRows} 
-        pinnedRows={[mainGroupRow]} 
+        data={otherGroupsRows} // Pass the sortable rows
+        pinnedRows={[mainGroupRow]} // Pass the pinned row(s) in an array
         backgroundColor="rgb(230, 240, 255)"
         itemsPerPage={15}
-        initialSortColumnIndex={3} 
-        initialSortDirection="desc" 
+        initialSortColumnIndex={2} // Member Count column
+        initialSortDirection="desc" // Descending order
       />
     </div>
   );

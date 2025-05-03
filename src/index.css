@@ -4,6 +4,20 @@
 @import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600&display=swap');
 
+:root {
+  /* Global button colors */
+  --button-blue: #4a90e2;
+  --button-green: #3c9d50;
+  --button-red: #e27c4a;
+  --button-yellow: #e2b54a;
+  
+  /* Button hover states */
+  --button-blue-hover: #3672c4;
+  --button-green-hover: #2f8640;
+  --button-red-hover: #c65a2d;
+  --button-yellow-hover: #c99a33;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -227,3 +241,125 @@ h1 {
 /* .highlightedContentBox .roundbox-rt { ... } */
 /* .highlightedContentBox .roundbox-lb { ... } */
 /* .highlightedContentBox .roundbox-rb { ... } */
+
+/* Tab selector for moderator views */
+.tabSelector {
+  display: flex;
+  margin-bottom: 20px;
+}
+
+.tabButton {
+  padding: 10px 20px;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-right: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.tabButton:hover {
+  background-color: #e0e0e0;
+}
+
+.tabButton.active {
+  background-color: #4a90e2;
+  color: white;
+  border-color: #3a80d2;
+}
+
+/* Action buttons */
+.actionButton {
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background-color: #f5f5f5;
+  font-size: 12px;
+  cursor: pointer;
+  margin-right: 5px;
+  transition: all 0.2s ease;
+}
+
+.actionButton:hover {
+  background-color: #e0e0e0;
+}
+
+.actionButton.approve {
+  border-color: #4caf50;
+  color: #4caf50;
+}
+
+.actionButton.approve:hover {
+  background-color: #e8f5e9;
+}
+
+.actionButton.deny {
+  border-color: #f44336;
+  color: #f44336;
+}
+
+.actionButton.deny:hover {
+  background-color: #ffebee;
+}
+
+/* Global button style */
+.global-button {
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-block;
+  width: fit-content;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+  font-family: 'Inter', Arial, sans-serif;
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+.global-button:hover {
+  box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+}
+
+/* Button color variants */
+.global-button.blue {
+  background-color: var(--button-blue);
+}
+
+.global-button.blue:hover {
+  background-color: var(--button-blue-hover);
+}
+
+.global-button.green {
+  background-color: var(--button-green);
+}
+
+.global-button.green:hover {
+  background-color: var(--button-green-hover);
+}
+
+.global-button.red {
+  background-color: var(--button-red);
+}
+
+.global-button.red:hover {
+  background-color: var(--button-red-hover);
+}
+
+.global-button.yellow {
+  background-color: var(--button-yellow);
+}
+
+.global-button.yellow:hover {
+  background-color: var(--button-yellow-hover);
+}
+
+/* Small variant for approve/deny buttons */
+.global-button.small {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}

@@ -11,7 +11,7 @@ export default function GroupMembers() {
   const userRole = "moderator"; // Options: "moderator", "member", null (not a member), undefined (logged out)
   
   // Determine which buttons to show based on user role
-  const showSettingsButton = userRole === "moderator";
+  const showModViewButton = userRole === "moderator";
   
   // Generate dummy members data
   const membersData = [
@@ -59,7 +59,7 @@ export default function GroupMembers() {
   return (
     <div className="page-container">
       {/* Floating button box */}
-      <GroupNavBar groupId={groupId} showSettingsButton={showSettingsButton} />
+      <GroupNavBar groupId={groupId} showModViewButton={showModViewButton} />
       
       {/* Members table */}
       <SortablePagedTableBox 

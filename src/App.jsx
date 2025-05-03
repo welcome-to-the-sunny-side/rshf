@@ -10,7 +10,9 @@ import Groups from './pages/Groups';
 import Group from './pages/Group';
 import GroupMembers from './pages/GroupMembers'; // Import GroupMembers
 import GroupContests from './pages/GroupContests'; // Import GroupContests
-import GroupSettings from './pages/GroupSettings'; // Import GroupSettings
+import GroupReports from './pages/GroupReports'; // Import GroupReports
+import ModView from './pages/ModView'; // Import ModView
+import GroupModViewRequests from './pages/GroupModViewRequests'; // Import GroupModViewRequests
 import About from './pages/About';
 import Contests from './pages/Contests';
 import Contact from './pages/Contact'; // Import Contact page
@@ -36,7 +38,9 @@ export default function App() {
         <Route path="/group/:groupId" element={<Group />} />
         <Route path="/group/:groupId/members" element={<GroupMembers />} />
         <Route path="/group/:groupId/contests" element={<GroupContests />} />
-        <Route path="/group/:groupId/settings" element={<GroupSettings />} />
+        <Route path="/group/:groupId/reports" element={<GroupReports />} />
+        <Route path="/group/:groupId/modview" element={<ModView />} />
+        <Route path="/group/:groupId/modview/requests" element={<GroupModViewRequests />} />
         <Route path="/contests" element={<Contests />} />
         <Route path="/contest/:contest_id" element={<ContestPage />} />
         <Route path="/about" element={<About />} />

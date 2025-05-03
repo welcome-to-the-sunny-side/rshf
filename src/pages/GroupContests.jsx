@@ -12,7 +12,7 @@ export default function GroupContests() {
   const isLoggedInUserMember = userRole === "moderator" || userRole === "member";
   
   // Determine which buttons to show based on user role
-  const showSettingsButton = userRole === "moderator";
+  const showModViewButton = userRole === "moderator";
   
   // Generate only past contests data - no upcoming contests
   // Added dummy rank, ratingChange, and finalRating for member/moderator view
@@ -60,7 +60,7 @@ export default function GroupContests() {
   // Transform the data for the table component
   const tableRows = pastContests.map(contest => {
     const baseData = [
-    <Link to={`/contest/${contest.id}`} className="tableCellLink">{contest.name}</Link>,
+    <Link to={`/group/${groupId}/contest/${contest.id}`} className="tableCellLink">{contest.name}</Link>,
     contest.platform,
     formatDateTime(contest.dateTime),
     contest.participants
@@ -84,7 +84,7 @@ export default function GroupContests() {
   return (
     <div className="page-container">
       {/* Floating button box */}
-      <GroupNavBar groupId={groupId} showSettingsButton={showSettingsButton} />
+      <GroupNavBar groupId={groupId} showModViewButton={showModViewButton} />
       
       {/* Contests table */}
       <SortablePagedTableBox 

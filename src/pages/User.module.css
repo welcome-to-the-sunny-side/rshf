@@ -101,3 +101,9 @@
   text-decoration: none;
   display: inline-block;
 }
+
+.socialIcons {
+  display: flex;
+  align-items: center;
+  margin-left: 8px;
+}
