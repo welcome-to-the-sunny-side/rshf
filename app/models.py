@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, Column, String, ForeignKey, Enum, PrimaryKeyConstraint, Boolean
+from sqlalchemy import Integer, Column, String, ForeignKey, Enum, PrimaryKeyConstraint, Boolean, JSON
 from sqlalchemy.orm import relationship
 from app.database import Base
 from app.utils import hash_password
@@ -10,6 +10,12 @@ class Role(str, enum.Enum):
     moderator = "moderator"
     user = "user"
 
+class Status(str, enum.Enum):
+    active = "active"
+    pending_user = "pending_user"
+    pending_group = "pending_group"
+    user_left = "user_left"
+    kicked_out = "kicked_out"
 
 class User(Base):
     __tablename__ = "users"
@@ -17,7 +23,7 @@ class User(Base):
     user_id = Column(String, primary_key=True, index=True) 
     # user_id -> username that user will login through
     role = Column(Enum(Role), nullable=False, default=Role.user) 
-    # Gloabl role
+    create_date = Column(DateTime, server_default=func.now(), nullable=False)
 
     # handles
     cf_handle = Column(String, unique=True, index=True, nullable=False)
@@ -45,6 +51,7 @@ class Group(Base):
     group_name = Column(String, unique=True, index=True, nullable=False)
     group_description = Column(String, nullable=True)
     is_private = Column(Boolean, nullable=False, default=False)
+    create_date = Column(DateTime, server_default=func.now(), nullable=False)
 
     memberships = relationship("GroupMembership", back_populates="group", cascade="all, delete")
     def __repr__(self):
@@ -60,8 +67,8 @@ class GroupMembership(Base):
     role = Column(Enum(Role), nullable=False, default=Role.user)
     user_group_rating = Column(Integer, nullable=False, default=1500)
     user_group_max_rating = Column(Integer, nullable=False, default=1500)
-    is_pending_user = Column(Boolean, nullable=False, default=False)
-    is_pending_group = Column(Boolean, nullable=False, default=False)
+    
+    status = Column(Enum(Status), nullable=False, default=Status.active)
 
     __table_args__ = (PrimaryKeyConstraint('user_id', 'group_id'),)
 
@@ -77,9 +84,10 @@ class Contest(Base):
 
     contest_id = Column(String, primary_key=True, index=True)
     cf_contest_id = Column(Integer, unique=True, nullable=False, index=True)
+    cf_standings = Column(JSON, nullable=True)
+    finished = Column(Boolean, nullable=False, default=False)
 
     participations = relationship("ContestParticipation", back_populates="contest", cascade="all, delete")
-
     def __repr__(self):
         return f"<Contest(id={self.contest_id}, cf_contest_id={self.cf_contest_id})>"
 
@@ -91,10 +99,12 @@ class ContestParticipation(Base):
     user_id = Column(String, ForeignKey("users.user_id"), primary_key=True)
     group_id = Column(String, ForeignKey("groups.group_id"), primary_key=True)
     contest_id = Column(String, ForeignKey("contests.contest_id"), primary_key=True)
-    user_group_rating_before = Column(Integer, nullable=True)
-    user_group_rating_after = Column(Integer, nullable=True)
 
-    user = relationship("User")
+    rank = Column(Integer, nullable=True)
+    rating_before = Column(Integer, nullable=True)
+    rating_after = Column(Integer, nullable=True)
+
+    user = relationship("User")    
     group = relationship("Group")
     contest = relationship("Contest", back_populates="participations")
 
@@ -117,4 +127,15 @@ class Report(Base):
     create_date = Column(DateTime, server_default=func.now(), nullable=False)
 
     resolved = Column(Boolean, nullable=False, default=False)
-    resolve_message = Column(String, nullable=False)
+    resolved_by = Column(String, ForeignKey("users.user_id"), nullable=True)
+    resolve_message = Column(String, nullable=True)
+
+
+class Announcement(Base):
+    __tablename__ = "announcements"
+
+    announcement_id = Column(String, primary_key=True, index=True)
+    group_id = Column(String, ForeignKey("groups.group_id"), nullable=False)
+    create_date = Column(DateTime, server_default=func.now(), nullable=False)
+    title = Column(String, nullable=False)
+    content = Column(String, nullable=False)
