@@ -1,0 +1,365 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600&display=swap');
+
+:root {
+  /* Global button colors */
+  --button-blue: #4a90e2;
+  --button-green: #3c9d50;
+  --button-red: #e27c4a;
+  --button-yellow: #e2b54a;
+  
+  /* Button hover states */
+  --button-blue-hover: #3672c4;
+  --button-green-hover: #2f8640;
+  --button-red-hover: #c65a2d;
+  --button-yellow-hover: #c99a33;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', Arial, sans-serif;
+  background: #fff;
+  color: #222;
+}
+
+h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  margin: 2rem 0 0.5rem 0;
+}
+
+/* Global page container - use this for consistent page margins */
+/* IMPORTANT: All pages should use this container class to maintain consistent margins */
+/* This ensures uniformity across the entire application */
+.page-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+/* Global font classes */
+.columnHeadingFont {
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.tableDataFont {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 400;
+  letter-spacing: 0.005em;
+}
+
+/* Standard text font for profile details and other text elements */
+.standardTextFont {
+  font-family: 'Inter', Arial, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #333;
+}
+
+/* Global table cell link style - IMPORTANT: Use this for all links in tables */
+.tableCellLink {
+  text-decoration: none;
+  color: #3B5998;
+  font-weight: 500;
+}
+
+.tableCellLink:hover {
+  text-decoration: underline;
+}
+
+/* Reusable content box class */
+/* IMPORTANT: This is the ONLY contentBox class to use across the application */
+/* All components should use this global class instead of defining their own */
+.contentBox {
+  background-color: rgb(255, 255, 255);
+  border: 1px solid rgb(185, 185, 185);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  box-sizing: border-box;
+  width: 100%;
+  margin-bottom: 1rem;
+  min-height: 140px;
+  position: relative;
+}
+
+/* For table boxes that need different padding */
+.contentBox.tableContainer {
+  padding: 0;
+  overflow: hidden; /* Ensure border radius clips content */
+}
+
+/* Reusable content box class with transparent border */
+.contentBoxTransparent {
+  background-color: rgb(255, 255, 255);
+  border: 1px solid transparent; /* Transparent border */
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  box-sizing: border-box;
+  width: 100%;
+  margin-bottom: 1rem;
+  min-height: 140px;
+  position: relative;
+}
+
+/* Floating button box for navigation buttons */
+.floatingButtonBox {
+  display: flex;
+  background-color: transparent;
+  border: none;
+  padding: 0;
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+.floatingButtonBox button, .floatingButtonBox a {
+  padding: 4px 8px; /* 50% smaller padding */
+  background-color: white;
+  border: none;
+  font-family: 'Inter', Arial, sans-serif;
+  font-size: 0.75rem; /* Smaller font size */
+  font-weight: 600;
+  cursor: pointer;
+  text-transform: uppercase;
+  color: #333;
+  text-decoration: none;
+  display: inline-block;
+  transition: background-color 0.2s;
+  border-radius: 6px; /* Add rounded borders to all buttons */
+  margin: 0 2px; /* Add small gaps between buttons */
+}
+
+.floatingButtonBox button:first-child, .floatingButtonBox a:first-child {
+  background-color: #e0e0e0;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+  margin-left: 0;
+}
+
+.floatingButtonBox button:last-child, .floatingButtonBox a:last-child {
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+  margin-right: 0;
+}
+
+.floatingButtonBox button:hover, .floatingButtonBox a:hover {
+  background-color: #d0d0d0;
+}
+
+/* Highlighted content box based on .roundbox */
+.highlightedContentBox {
+    border: 1px solid rgb(185, 185, 185);
+    position: relative;
+    margin-bottom: 1rem; /* Added margin for spacing */
+}
+
+.highlightedContentBox .caption {
+    color:#3B5998;
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin: 0.2em 0;
+    position: relative;
+}
+
+.highlightedContentBox .titled {
+    padding: 0 0 0.3em 0.5em;
+    border-bottom:1px solid rgb(185, 185, 185);
+}
+
+.highlightedContentBox .caption .top-links {
+    font-size: 1.1rem;
+    font-family: arial;
+    position: absolute;
+    right: 0.5em;
+    top: 0.3em;
+}
+
+.highlightedContentBox .bottom-links {
+    font-family: arial;
+    font-size: 1.1rem;
+    border-top:1px solid rgb(185, 185, 185);
+    background-color: #F5F5F5;
+    padding: 0.45em;
+}
+
+.highlightedContentBox .dark {
+    background-color: #F5F5F5;
+}
+
+.highlightedContentBox .bottom-links a {
+    margin: 0.1em;
+}
+
+.highlightedContentBox table.rtable {
+    width: 100%;
+    margin-top: -4px;
+    border: none;
+}
+
+.highlightedContentBox .rtable td, .highlightedContentBox .rtable th {
+    border: 1px solid rgb(185, 185, 185);
+    border-right: none;
+    border-top: none;
+    padding: 4px;
+    text-align: center;
+    font-size: 0.9em;
+}
+
+.highlightedContentBox .rtable th {
+    /*font-weight: bolder;*/
+    font-size: 1em;
+    padding-top: 7px;
+    font-weight: bold; /* Explicitly added from .rtable th rule */
+}
+
+.highlightedContentBox .rtable .left {
+    border-left: none;
+}
+
+.highlightedContentBox .rtable .bottom {
+    border-bottom: none;
+}
+
+/* Note: Corner styles using background images are omitted as the image paths are likely incorrect */
+/* Consider using CSS border-radius for rounded corners if needed */
+
+/* .highlightedContentBox .rtable .corner { ... } */
+/* .highlightedContentBox .roundbox-lt { ... } */
+/* .highlightedContentBox .roundbox-rt { ... } */
+/* .highlightedContentBox .roundbox-lb { ... } */
+/* .highlightedContentBox .roundbox-rb { ... } */
+
+/* Tab selector for moderator views */
+.tabSelector {
+  display: flex;
+  margin-bottom: 20px;
+}
+
+.tabButton {
+  padding: 10px 20px;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-right: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.tabButton:hover {
+  background-color: #e0e0e0;
+}
+
+.tabButton.active {
+  background-color: #4a90e2;
+  color: white;
+  border-color: #3a80d2;
+}
+
+/* Action buttons */
+.actionButton {
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background-color: #f5f5f5;
+  font-size: 12px;
+  cursor: pointer;
+  margin-right: 5px;
+  transition: all 0.2s ease;
+}
+
+.actionButton:hover {
+  background-color: #e0e0e0;
+}
+
+.actionButton.approve {
+  border-color: #4caf50;
+  color: #4caf50;
+}
+
+.actionButton.approve:hover {
+  background-color: #e8f5e9;
+}
+
+.actionButton.deny {
+  border-color: #f44336;
+  color: #f44336;
+}
+
+.actionButton.deny:hover {
+  background-color: #ffebee;
+}
+
+/* Global button style */
+.global-button {
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-block;
+  width: fit-content;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+  font-family: 'Inter', Arial, sans-serif;
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+.global-button:hover {
+  box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+}
+
+/* Button color variants */
+.global-button.blue {
+  background-color: var(--button-blue);
+}
+
+.global-button.blue:hover {
+  background-color: var(--button-blue-hover);
+}
+
+.global-button.green {
+  background-color: var(--button-green);
+}
+
+.global-button.green:hover {
+  background-color: var(--button-green-hover);
+}
+
+.global-button.red {
+  background-color: var(--button-red);
+}
+
+.global-button.red:hover {
+  background-color: var(--button-red-hover);
+}
+
+.global-button.yellow {
+  background-color: var(--button-yellow);
+}
+
+.global-button.yellow:hover {
+  background-color: var(--button-yellow-hover);
+}
+
+/* Small variant for approve/deny buttons */
+.global-button.small {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}

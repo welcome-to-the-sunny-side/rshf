@@ -1,0 +1,109 @@
+.profileBox {
+  background-color: rgb(255, 255, 255);
+  border: 1px solid rgb(185, 185, 185);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 140px;
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.username {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: rgb(255, 140, 0); /* Will be dynamic in the future */
+}
+
+.groupRatingRow {
+  margin-top: 0.5rem;
+  font-size: 1rem;
+  color: #222;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.groupDropdown {
+  font-size: 0.95rem;
+  padding: 0.18rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid #aaa;
+  background: #fff;
+}
+
+.statItem {
+  position: relative;
+  padding-left: 1rem;
+  font-size: 0.95rem;
+  color: #444;
+  margin-bottom: 0.6rem;
+}
+
+.statItem:before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #777;
+}
+
+.statsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Trust score gradient colors */
+.trustScore {
+  font-weight: bold;
+}
+
+/* New layout for side-by-side content boxes */
+.contentBoxRow {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+.contentBoxLeft {
+  flex: 7.5; /* Takes 70% of available space */
+  min-width: 0; /* Prevent overflow */
+}
+
+.contentBoxRight {
+  flex: 2.5; /* Takes 30% of available space */
+  min-width: 0; /* Prevent overflow */
+}
+
+/* Responsive design - stack on mobile */
+@media (max-width: 768px) {
+  .contentBoxRow {
+    flex-direction: column;
+  }
+  
+  .contentBoxLeft,
+  .contentBoxRight {
+    flex: 1; /* On mobile, both take full width */
+  }
+}
+
+/* Profile info styles */
+.profileInfo {
+  width: 100%;
+}
+
+/* Username link styles */
+.usernameLink {
+  text-decoration: none;
+  display: inline-block;
+}
+
+.socialIcons {
+  display: flex;
+  align-items: center;
+  margin-left: 8px;
+}

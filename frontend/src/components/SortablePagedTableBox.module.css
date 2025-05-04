@@ -1,0 +1,22 @@
+.sortableHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  padding-right: 16px; /* Space for the sort icon */
+}
+
+.sortableHeader:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.sortIcon {
+  position: absolute;
+  right: 4px;
+  font-size: 0.7rem;
+  color: #000;
+  opacity: 1;
+  font-weight: bold;
+} 

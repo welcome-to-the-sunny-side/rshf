@@ -1,0 +1,16 @@
+.ratingChart {
+  width: 100%;
+  height: 350px; /* Adjust height as needed */
+  margin: 0 auto; /* Center if needed within its container */
+  padding: 0; /* Reset padding */
+}
+
+/* You might need to adjust tooltip styling if you implement hover effects */
+.flot-tooltip {
+  position: absolute;
+  display: none;
+  border: 1px solid #fdd;
+  padding: 2px;
+  background-color: #fee;
+  opacity: 0.80;
+} 

@@ -1,0 +1,60 @@
+.paginationContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  gap: 3px;
+}
+
+.pageButton {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  color: #333;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pageButton:hover {
+  background-color: #f5f5f5;
+  border-color: #ccc;
+}
+
+.pageButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.activePage {
+  background-color: #f0f0f0;
+  border-color: #bbb;
+  font-weight: bold;
+}
+
+.ellipsis {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 26px;
+  height: 26px;
+  color: #666;
+  font-size: 12px;
+}
+
+/* Spacer cell for empty rows */
+.spacerCell {
+  opacity: 0;
+  color: transparent;
+  position: relative;
+  white-space: pre;
+  user-select: none;
+  pointer-events: none;
+} 

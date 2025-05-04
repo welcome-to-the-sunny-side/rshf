@@ -1,0 +1,67 @@
+.container {
+  width: 100%;
+  margin: 0;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed; /* Improve table layout stability */
+}
+
+.table th {
+  padding: 0.5rem 1rem;
+  text-align: left;
+  background-color: rgb(240, 240, 240);
+  color: #333;
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border-right: 1px solid #ddd;
+}
+
+.table td {
+  padding: 0.5rem 1rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 400;
+  letter-spacing: 0.005em;
+  border-right: 1px solid #eee;
+}
+
+.table td:last-child,
+.table th:last-child {
+  text-align: right;
+  padding-right: 1rem;
+  border-right: none;
+}
+
+.table td:first-child,
+.table th:first-child {
+  padding-left: 1rem;
+}
+
+.rowEven {
+  background-color: #fff;
+}
+
+.rowOdd {
+  background-color: rgb(248, 249, 250);
+}
+
+/* Add hover effect to rows */
+.table tbody tr:hover {
+  background-color: rgb(242, 245, 250);
+}
+
+/* Styles for sortable columns */
+.sortableColumn {
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.sortableColumn:hover {
+  background-color: rgb(230, 230, 230);
+} 

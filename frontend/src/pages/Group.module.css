@@ -1,0 +1,123 @@
+.groupInfo {
+  width: 100%;
+}
+
+.contentBoxRow {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+.contentBoxLeft {
+  flex: 0 0 75%; /* Fixed at 75% width */
+  min-width: 0; /* Prevent overflow */
+}
+
+.contentBoxRight {
+  flex: 0 0 25%; /* Fixed at 25% width */
+  min-width: 0; /* Prevent overflow */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.statItem {
+  position: relative;
+  padding-left: 1rem;
+  font-size: 0.95rem;
+  color: #444;
+  margin-bottom: 0.6rem;
+}
+
+.statItem:before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #777;
+}
+
+.statsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 0.5rem; /* Reduced space after the about box */
+}
+
+.groupName {
+  color: #000;
+  font-size: 1.8rem;
+  margin-top: 0;
+  margin-bottom: 0.8rem;
+  text-transform: none;
+  font-weight: bold;
+}
+
+.aboutBox {
+  background-color: #f7f7f7;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 0.7rem;
+  margin-bottom: 0.5rem; /* Minimal spacing below the box */
+}
+
+.aboutBox p {
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: #444;
+  margin: 0;
+}
+
+.actionButtonContainer {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: center;
+}
+
+.leaveButton, .joinButton {
+  padding: 8px 24px;
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-size: 0.9rem;
+}
+
+.leaveButton {
+  background-color: #e74c3c; /* Red */
+  color: white;
+}
+
+.leaveButton:hover {
+  background-color: #c0392b; /* Darker red */
+}
+
+.joinButton {
+  background-color: #2ecc71; /* Green */
+  color: white;
+}
+
+.joinButton:hover {
+  background-color: #27ae60; /* Darker green */
+}
+
+/* Responsive design - stack on mobile */
+@media (max-width: 768px) {
+  .contentBoxRow {
+    flex-direction: column;
+  }
+  
+  .contentBoxLeft,
+  .contentBoxRight {
+    flex: 0 0 100%; /* On mobile, both take full width */
+  }
+  
+  .actionButtonContainer {
+    margin-top: 1rem;
+  }
+}
+
+.fullWidthSection {
+  width: 100%;
+  margin-bottom: 20px;
+}

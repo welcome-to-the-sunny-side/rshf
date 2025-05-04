@@ -1,0 +1,4 @@
+- user state sensitive (logged in, self, mod, member, outside) pages: 
+    - user page
+    - group object view
+    - contest object view

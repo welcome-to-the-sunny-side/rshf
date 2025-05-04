@@ -1,0 +1,60 @@
+/* Contests module styles */
+.contestLink {
+  text-decoration: none;
+  color: #3B5998;
+  font-weight: 500;
+}
+
+.contestLink:hover {
+  text-decoration: underline;
+}
+
+.externalLink {
+  text-decoration: none;
+  color: #3B5998;
+  font-weight: 500;
+  position: relative;
+  padding-right: 16px;
+}
+
+.externalLink:hover {
+  text-decoration: underline;
+}
+
+.externalLink::after {
+  content: '↗';
+  position: absolute;
+  top: -2px;
+  margin-left: 4px;
+  font-size: 0.8rem;
+}
+
+/* Contest table column width styles */
+:global(.contestsPage) :global(table) {
+  table-layout: fixed;
+  width: 100%;
+}
+
+:global(.contestsPage) :global(table th:nth-child(1)),
+:global(.contestsPage) :global(table td:nth-child(1)) {
+  width: 70%;
+}
+
+:global(.contestsPage) :global(table th:nth-child(2)),
+:global(.contestsPage) :global(table td:nth-child(2)) {
+  width: 10%;
+}
+
+:global(.contestsPage) :global(table th:nth-child(3)),
+:global(.contestsPage) :global(table td:nth-child(3)) {
+  width: 20%;
+  text-align: right;
+}
+
+/* For responsive design */
+@media (max-width: 768px) {
+  .contestTable {
+    min-width: 100%;
+    overflow-x: auto;
+  }
+} 
