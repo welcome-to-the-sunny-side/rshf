@@ -5,3 +5,4 @@ vomit.txt
 *.py[cod]
 .ipynb*
 __pycache__/
+*venv*
