@@ -135,6 +135,3 @@ class GroupOut(BaseModel):
 GroupOut.model_rebuild()
 UserOut.model_rebuild()
 
-
-# late binding for forward refs
-GroupOut.model_rebuild()

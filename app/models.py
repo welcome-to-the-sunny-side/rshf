@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 from app.database import Base
 from app.utils import hash_password
 import enum
+from sqlalchemy import DateTime, func
 
 class Role(str, enum.Enum):
     admin = "admin"
@@ -17,7 +18,13 @@ class User(Base):
     # user_id -> username that user will login through
     role = Column(Enum(Role), nullable=False, default=Role.user) 
     # Gloabl role
+
+    # handles
     cf_handle = Column(String, unique=True, index=True, nullable=False)
+    atcoder_handle = Column(String, unique=False, index=True, nullable=True)
+    codechef_handle = Column(String, unique=False, index=True, nullable=True)
+    twitter_handle = Column(String, unique=False, index=True, nullable=True)
+    
     internal_default_rated = Column(Boolean, nullable=False, default=True)
     trusted_score = Column(Integer, nullable=False, default=0)
 
@@ -36,6 +43,7 @@ class Group(Base):
     __tablename__ = "groups"
     group_id = Column(String, primary_key=True, index=True)
     group_name = Column(String, unique=True, index=True, nullable=False)
+    group_description = Column(String, nullable=True)
     is_private = Column(Boolean, nullable=False, default=False)
 
     memberships = relationship("GroupMembership", back_populates="group", cascade="all, delete")
@@ -93,3 +101,20 @@ class ContestParticipation(Base):
     def __repr__(self):
         return f"<ContestParticipation(user_id={self.user_id}, group_id={self.group_id}, contest_id={self.contest_id})>"
 
+
+
+class Report(Base):
+    __tablename__ = "reports"
+
+    report_id = Column(String, primary_key=True, index=True)
+    group_id = Column(String, ForeignKey("groups.group_id"), nullable=False)
+    contest_id = Column(String, ForeignKey("contests.contest_id"), nullable=False)
+
+    reporter_user_id = Column(String, ForeignKey("users.user_id"), nullable=False)
+    respondent_user_id = Column(String, ForeignKey("users.user_id"), nullable=False)
+
+    report_description = Column(String, nullable=False)
+    create_date = Column(DateTime, server_default=func.now(), nullable=False)
+
+    resolved = Column(Boolean, nullable=False, default=False)
+    resolve_message = Column(String, nullable=False)
