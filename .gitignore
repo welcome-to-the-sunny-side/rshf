@@ -1,0 +1,10 @@
+.vscode
+node_modules
+.env
+self.txt
+vomitignore.txt
+vomit.txt
+*.py[cod]
+.ipynb*
+__pycache__/
+*venv*
