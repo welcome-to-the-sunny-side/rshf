@@ -115,14 +115,14 @@ export default function User() {
   };
   
   // Enhanced group data: 
-  // [group_name, group_rating, group_rank, group_rank_color, max_group_rating, max_group_rank, max_group_rank_color, member_since, role, rated_contests]
+  // [group_name, group_rating, group_rank, group_rank_color, max_group_rating, max_group_rank, max_group_rank_color, member_since, role, rated_contests, report_accuracy_accepted, report_accuracy_total]
   const groups = [
-    ['root_group', 2185, 'Master', 'rgb(255, 140, 0)', 2185, 'Master', 'rgb(255, 140, 0)', '2022-01-15', 'moderator', 24],
-    ['Global', 1450, 'Specialist', 'rgb(30, 150, 255)', 1500, 'Specialist', 'rgb(30, 150, 255)', '2022-01-15', 'member', 32],
-    ['Math_Club', 1890, 'Candidate Master', 'rgb(170, 0, 170)', 1950, 'Candidate Master', 'rgb(170, 0, 170)', '2022-02-10', 'member', 18],
-    ['Chess_Enthusiasts', 900, 'Pupil', 'rgb(0, 180, 0)', 1000, 'Pupil', 'rgb(0, 180, 0)', '2022-03-22', 'moderator', 12],
-    ['Developers', 1200, 'Apprentice', 'rgb(170, 170, 170)', 1250, 'Apprentice', 'rgb(170, 170, 170)', '2022-04-07', 'member', 8],
-    ['Writers_Group', 2100, 'Candidate Master', 'rgb(170, 0, 170)', 2170, 'Master', 'rgb(255, 140, 0)', '2022-05-14', 'member', 15]
+    ['root_group', 2185, 'Master', 'rgb(255, 140, 0)', 2185, 'Master', 'rgb(255, 140, 0)', '2022-01-15', 'moderator', 24, 12, 15],
+    ['Global', 1450, 'Specialist', 'rgb(30, 150, 255)', 1500, 'Specialist', 'rgb(30, 150, 255)', '2022-01-15', 'member', 32, 5, 5],
+    ['Math_Club', 1890, 'Candidate Master', 'rgb(170, 0, 170)', 1950, 'Candidate Master', 'rgb(170, 0, 170)', '2022-02-10', 'member', 18, 7, 10],
+    ['Chess_Enthusiasts', 900, 'Pupil', 'rgb(0, 180, 0)', 1000, 'Pupil', 'rgb(0, 180, 0)', '2022-03-22', 'moderator', 12, 3, 9],
+    ['Developers', 1200, 'Apprentice', 'rgb(170, 170, 170)', 1250, 'Apprentice', 'rgb(170, 170, 170)', '2022-04-07', 'member', 8, 8, 12],
+    ['Writers_Group', 2100, 'Candidate Master', 'rgb(170, 0, 170)', 2170, 'Master', 'rgb(255, 140, 0)', '2022-05-14', 'member', 15, 9, 11]
   ];
   // Use React state for selected group index
   const [selectedGroupIdx, setSelectedGroupIdx] = React.useState(0);
@@ -224,8 +224,7 @@ export default function User() {
               </div>
               {/* Social platforms section */}
               <div className={styles.statItem}>
-                Social: 
-                <span className={styles.socialIcons}>
+                Social: <span className={styles.socialIcons}>
                   {socialLinks.codeforces ? (
                     <a 
                       href={socialLinks.codeforces} 
@@ -289,6 +288,11 @@ export default function User() {
             </div>
             <div className={styles.statItem}>
               Rated Contests: <span>{selectedGroup[9]}</span>
+            </div>
+            <div className={styles.statItem}>
+              Report Accuracy: <span title={`${selectedGroup[10]} accepted out of ${selectedGroup[11]} reports`}>
+                {Math.round((selectedGroup[10] / selectedGroup[11]) * 100)}% ({selectedGroup[10]}/{selectedGroup[11]})
+              </span>
             </div>
             <div className={styles.statItem}>
               Member Since: <span>{formatDate(selectedGroup[7])}</span>

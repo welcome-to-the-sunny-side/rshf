@@ -560,7 +560,7 @@ export default function GroupReports() {
         previouslyRemovedContent = <div style={{ color: 'green' }}>No</div>;
       }
       
-      // Create the row data
+      // Create the row data with base columns
       const rowData = [
         report.id,
         contestContent,
@@ -575,6 +575,25 @@ export default function GroupReports() {
         </Link>,
         previouslyRemovedContent,
         formatDate(report.reportDate),
+      ];
+      
+      // Add additional columns for processed reports
+      if (includeHandledBy && report.handledBy) {
+        // Add reportee
+        rowData.push(
+          <Link to={`/user/${report.handledBy.username}`} className="tableCellLink" style={{ color: getRatingColor(report.handledBy.rating), fontWeight: 'bold' }}>
+            {report.handledBy.username}
+          </Link>
+        );
+        
+        // Add response date
+        rowData.push(
+          formatDate(report.responseDate)
+        );
+      }
+      
+      // Add action link as the last column
+      rowData.push(
         <Link 
           to={`/group/${groupId}/report/${report.id}`}
           style={{
@@ -591,22 +610,7 @@ export default function GroupReports() {
         >
           View →
         </Link>
-      ];
-      
-      // Add additional columns for processed reports
-      if (includeHandledBy && report.handledBy) {
-        // Add reportee (previously "Handled by")
-        rowData.push(
-          <Link to={`/user/${report.handledBy.username}`} className="tableCellLink" style={{ color: getRatingColor(report.handledBy.rating), fontWeight: 'bold' }}>
-            {report.handledBy.username}
-          </Link>
-        );
-        
-        // Add response date
-        rowData.push(
-          formatDate(report.responseDate)
-        );
-      }
+      );
       
       return rowData;
     });
@@ -614,7 +618,7 @@ export default function GroupReports() {
 
   // Define columns for the tables
   const activeColumns = ["Report ID", "Contest ID", "Reporter", "Report Accuracy", "Respondent", "Previously Removed", "Report Date", "Action"];
-  const processedColumns = [...activeColumns.slice(0, -1), "Action", "Reportee", "Response Date"];
+  const processedColumns = [...activeColumns.slice(0, -1), "Reportee", "Response Date", "Action"];
   
   // Transform the data for the table components
   const activeTableRows = transformReportsData(activeReports);

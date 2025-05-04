@@ -126,6 +126,9 @@ export default function Group() {
   // Dummy join date
   const joinDate = "2022-08-15";
   
+  // Dummy report accuracy data
+  const reportAccuracy = { accepted: 9, total: 12 };
+  
   // Determine which buttons to show based on user role
   const showModViewButton = userRole === "moderator";
   
@@ -232,7 +235,12 @@ export default function Group() {
                   </span>)
                 </div>
                 <div className={styles.statItem}>
-                  Joined: <span>{formatDate(joinDate)}</span>
+                  Report Accuracy: <span title={`${reportAccuracy.accepted} accepted out of ${reportAccuracy.total} reports`}>
+                    {Math.round((reportAccuracy.accepted / reportAccuracy.total) * 100)}% ({reportAccuracy.accepted}/{reportAccuracy.total})
+                  </span>
+                </div>
+                <div className={styles.statItem}>
+                  Member since: <span>{formatDate(joinDate)}</span>
                 </div>
               </>
             )}
