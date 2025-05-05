@@ -198,8 +198,8 @@ export default function User() {
               </span>
             </a>
             {/* Stats List */}
-            <div className={`${styles.statsList} standardTextFont`}>
-              <div className={styles.statItem}>
+            <div className={`${styles.statsList}`}>
+              <div className={`${styles.statItem} standardTextFont`}>
                 {/* Contest Rating group name is now a link */}
                 Contest Rating [
                 <Link 
@@ -210,60 +210,63 @@ export default function User() {
                 </Link>
                 ]: <span style={{ color: selectedGroup[3], fontWeight: 'bold' }}>{selectedGroup[1]}</span> (max. <span style={{ color: selectedGroup[6], fontWeight: 'bold' }}>{selectedGroup[5]}</span>, <span style={{ color: selectedGroup[6], fontWeight: 'bold' }}>{selectedGroup[4]}</span>)
               </div>
-              <div className={styles.statItem}>
+              <div className={`${styles.statItem} standardTextFont`}>
                 Trust Score: <span className={styles.trustScore} style={{ color: getTrustScoreColor(trustScore) }}>{trustScore}%</span>
               </div>
-              <div className={styles.statItem}>
+              <div className={`${styles.statItem} standardTextFont`}>
                 Member of: <span>{numberOfGroups} groups</span>
               </div>
-              <div className={styles.statItem}>
+              <div className={`${styles.statItem} standardTextFont`}>
                 Removed from: <span>{removedNumberOfGroups} groups</span>
               </div>
-              <div className={styles.statItem}>
+              <div className={`${styles.statItem} standardTextFont`}>
                 Registered: <span>{registrationDate}</span>
               </div>
               {/* Social platforms section */}
-              <div className={styles.statItem}>
-                Social: <span className={styles.socialIcons}>
-                  {socialLinks.codeforces ? (
-                    <a 
-                      href={socialLinks.codeforces} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      title="Codeforces profile"
-                    >
-                      <CodeforcesIcon active={true} />
-                    </a>
-                  ) : (
-                    <CodeforcesIcon active={false} />
-                  )}
-                  
-                  {socialLinks.atcoder ? (
-                    <a 
-                      href={socialLinks.atcoder} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      title="AtCoder profile"
-                    >
-                      <AtCoderIcon active={true} />
-                    </a>
-                  ) : (
-                    <AtCoderIcon active={false} />
-                  )}
-                  
-                  {socialLinks.codechef ? (
-                    <a 
-                      href={socialLinks.codechef} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      title="CodeChef profile"
-                    >
-                      <CodeChefIcon active={true} />
-                    </a>
-                  ) : (
-                    <CodeChefIcon active={false} />
-                  )}
-                </span>
+              <div className={`${styles.statItem} standardTextFont`}>
+                <div className={styles.socialContainer}>
+                  Social: 
+                  <span className={styles.socialIcons}>
+                    {socialLinks.codeforces ? (
+                      <a 
+                        href={socialLinks.codeforces} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        title="Codeforces profile"
+                      >
+                        <CodeforcesIcon active={true} />
+                      </a>
+                    ) : (
+                      <CodeforcesIcon active={false} />
+                    )}
+                    
+                    {socialLinks.atcoder ? (
+                      <a 
+                        href={socialLinks.atcoder} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        title="AtCoder profile"
+                      >
+                        <AtCoderIcon active={true} />
+                      </a>
+                    ) : (
+                      <AtCoderIcon active={false} />
+                    )}
+                    
+                    {socialLinks.codechef ? (
+                      <a 
+                        href={socialLinks.codechef} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        title="CodeChef profile"
+                      >
+                        <CodeChefIcon active={true} />
+                      </a>
+                    ) : (
+                      <CodeChefIcon active={false} />
+                    )}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -272,9 +275,9 @@ export default function User() {
         {/* Right content box with group details */}
         <div className={`contentBox ${styles.contentBoxRight}`}>
           {/* Group dropdown moved to top of right box */}
-          <div className={`${styles.groupRatingRow} standardTextFont`} style={{ marginBottom: '15px' }}>
-            <h3 style={{ margin: 0, marginRight: '10px' }}>Group: </h3>
-            <select className={styles.groupDropdown} value={selectedGroupIdx} onChange={handleGroupChange}>
+          <div className={`${styles.groupRatingRow}`} style={{ marginBottom: '15px' }}>
+            <h3 className="standardTextFont" style={{ margin: 0, marginRight: '10px' }}>Group: </h3>
+            <select className={`${styles.groupDropdown} standardTextFont`} value={selectedGroupIdx} onChange={handleGroupChange}>
               {groups.map((group, idx) => (
                 <option key={group[0] + idx} value={idx}>{group[0]}</option>
               ))}
@@ -282,19 +285,19 @@ export default function User() {
           </div>
           
           {/* Group information with the same styling as the left box */}
-          <div className={`${styles.statsList} standardTextFont`}>
-            <div className={styles.statItem}>
+          <div className={`${styles.statsList}`}>
+            <div className={`${styles.statItem} standardTextFont`}>
               Role: <span style={{ textTransform: 'capitalize' }}>{selectedGroup[8]}</span>
             </div>
-            <div className={styles.statItem}>
+            <div className={`${styles.statItem} standardTextFont`}>
               Rated Contests: <span>{selectedGroup[9]}</span>
             </div>
-            <div className={styles.statItem}>
+            <div className={`${styles.statItem} standardTextFont`}>
               Report Accuracy: <span title={`${selectedGroup[10]} accepted out of ${selectedGroup[11]} reports`}>
                 {Math.round((selectedGroup[10] / selectedGroup[11]) * 100)}% ({selectedGroup[10]}/{selectedGroup[11]})
               </span>
             </div>
-            <div className={styles.statItem}>
+            <div className={`${styles.statItem} standardTextFont`}>
               Member Since: <span>{formatDate(selectedGroup[7])}</span>
             </div>
           </div>
@@ -302,7 +305,7 @@ export default function User() {
       </div>
       
       {/* Rating Graph box (full width) */}
-      <div className="contentBox">
+      <div className="contentBox standardTextFont">
         <RatingGraph ratingHistory={currentRatingHistory} />
       </div>
     </div>

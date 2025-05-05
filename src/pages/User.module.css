@@ -107,3 +107,8 @@
   align-items: center;
   margin-left: 8px;
 }
+
+.socialContainer {
+  display: flex;
+  align-items: center;
+}

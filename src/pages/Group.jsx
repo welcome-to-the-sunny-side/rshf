@@ -66,7 +66,7 @@ const generateDummyParticipationData = (numPoints) => {
   return data;
 };
 
-// Sample announcements data - in real app this would come from backend
+// Sample announcements data - in real app this would come from backend (exactly 17 entries)
 const generateDummyAnnouncements = (groupId) => {
   return [
     { date: "2024-03-20", link: `/group/${groupId}/announcement/135`, title: "New Group Rules Announced" },
@@ -85,10 +85,7 @@ const generateDummyAnnouncements = (groupId) => {
     { date: "2024-02-24", link: `/group/${groupId}/announcement/122`, title: "New Member Welcome Guide" },
     { date: "2024-02-22", link: `/group/${groupId}/announcement/121`, title: "Group Guidelines Update" },
     { date: "2024-02-20", link: `/group/${groupId}/announcement/120`, title: "Coding Contest Winners February" },
-    { date: "2024-02-18", link: `/group/${groupId}/announcement/119`, title: "New Group Features Released" },
-    { date: "2024-02-16", link: `/group/${groupId}/announcement/118`, title: "Top Performers Recognition" },
-    { date: "2024-02-14", link: `/group/${groupId}/announcement/117`, title: "Resource Library Update" },
-    { date: "2024-02-12", link: `/group/${groupId}/announcement/116`, title: "Special Event: Industry Talk" }
+    { date: "2024-02-18", link: `/group/${groupId}/announcement/119`, title: "New Group Features Released" }
   ].sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by date, newest first
 };
 
@@ -104,13 +101,18 @@ export default function Group() {
     description: "A group dedicated to algorithm studies and competitive programming."
   };
   
-  // Dummy top users data for leaderboard
+  // Dummy top users data for leaderboard (top 10 rated members)
   const topUsers = [
     { username: "monica", rating: 2250 },
     { username: "alice", rating: 2185 },
     { username: "frank", rating: 2100 },
     { username: "rachel", rating: 2050 },
-    { username: "bob", rating: 1890 }
+    { username: "bob", rating: 1890 },
+    { username: "david", rating: 1854 },
+    { username: "emily", rating: 1810 },
+    { username: "carlos", rating: 1756 },
+    { username: "sophie", rating: 1725 },
+    { username: "kevin", rating: 1687 }
   ].sort((a, b) => b.rating - a.rating); // Sort by rating descending
   
   // Generate dummy participation data
@@ -191,18 +193,18 @@ export default function Group() {
           
           {/* About section enclosed in a box */}
           <div className={styles.aboutBox}>
-            <p>{groupData.description}</p>
+            <p className="standardTextFont">{groupData.description}</p>
           </div>
           
           {/* Stats list with group information */}
-          <div className={`${styles.statsList} standardTextFont`}>
-            <div className={styles.statItem}>
+          <div className={`${styles.statsList}`}>
+            <div className={`${styles.statItem} standardTextFont`}>
               Type: <span>{groupData.type}</span>
             </div>
-            <div className={styles.statItem}>
+            <div className={`${styles.statItem} standardTextFont`}>
               Members: <span>{groupData.memberCount}</span>
             </div>
-            <div className={styles.statItem}>
+            <div className={`${styles.statItem} standardTextFont`}>
               Created: <span>{formatDate(groupData.created)}</span>
             </div>
           </div>
@@ -211,15 +213,15 @@ export default function Group() {
         {/* Right content box with user-specific info */}
         <div className={`contentBox ${styles.contentBoxRight}`}>
           {/* User stats in relation to the group */}
-          <div className={`${styles.statsList} standardTextFont`}>
-            <div className={styles.statItem}>
+          <div className={`${styles.statsList}`}>
+            <div className={`${styles.statItem} standardTextFont`}>
               Your Role: <span style={{ textTransform: 'capitalize' }}>{userRole || "Not a member"}</span>
             </div>
             
             {/* Only show rating for members or moderators */}
             {userRole && (
               <>
-                <div className={styles.statItem}>
+                <div className={`${styles.statItem} standardTextFont`}>
                   Your Rating: <span style={{ 
                     color: getRatingColor(userRating),
                     fontWeight: 'bold'
@@ -234,12 +236,12 @@ export default function Group() {
                     {userMaxRating}
                   </span>)
                 </div>
-                <div className={styles.statItem}>
+                <div className={`${styles.statItem} standardTextFont`}>
                   Report Accuracy: <span title={`${reportAccuracy.accepted} accepted out of ${reportAccuracy.total} reports`}>
                     {Math.round((reportAccuracy.accepted / reportAccuracy.total) * 100)}% ({reportAccuracy.accepted}/{reportAccuracy.total})
                   </span>
                 </div>
-                <div className={styles.statItem}>
+                <div className={`${styles.statItem} standardTextFont`}>
                   Member since: <span>{formatDate(joinDate)}</span>
                 </div>
               </>
@@ -254,39 +256,39 @@ export default function Group() {
       </div>
       
 
-      
-      {/* Two lower content boxes side by side */}
+      {/* Announcements and Leaderboard in one row */}
       <div className={styles.contentBoxRow}>
-        {/* Lower left content box with Participation Graph */}
+        {/* Announcements section - 75% width */}
         <div className={styles.contentBoxLeft}>
-          <ContentBoxWithTitle title="Participation" backgroundColor="rgb(230, 255, 255)" contentPadding="5px">
-            <ParticipationGraph 
-              participationData={participationData} 
-              groupName={groupId}
-            />
-          </ContentBoxWithTitle>
+          <PagedTableBox 
+            title={<Link to={`/group/${groupId}/announcements`} className={titleStyles.titleLink}>Announcements</Link>}
+            columns={announcementColumns}
+            data={announcementData}
+            backgroundColor="rgb(240, 240, 255)"
+            itemsPerPage={10}
+          />
         </div>
         
-        {/* Lower right content box with Leaderboard */}
+        {/* Leaderboard section - 25% width */}
         <div className={styles.contentBoxRight}>
-          <TableBox 
+          <PagedTableBox 
             title="Leaderboard"
             columns={leaderboardColumns}
             data={leaderboardData}
             backgroundColor="rgb(255, 240, 230)"
+            itemsPerPage={10}
           />
         </div>
       </div>
-
-            {/* Announcements section - full width */}
-            <div className={styles.fullWidthSection}>
-        <PagedTableBox 
-          title={<Link to={`/group/${groupId}/announcements`} className={titleStyles.titleLink}>Announcements</Link>}
-          columns={announcementColumns}
-          data={announcementData}
-          backgroundColor="rgb(240, 240, 255)"
-          itemsPerPage={10}
-        />
+      
+      {/* Participation Graph section */}
+      <div className={`${styles.fullWidthSection} standardTextFont`}>
+        <ContentBoxWithTitle title="Participation" backgroundColor="rgb(230, 255, 255)" contentPadding="5px">
+          <ParticipationGraph 
+            participationData={participationData} 
+            groupName={groupId}
+          />
+        </ContentBoxWithTitle>
       </div>
     </div>
   );

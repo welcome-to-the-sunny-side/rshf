@@ -1,0 +1,23 @@
+/* ContestPage.module.css */
+
+/* Stats list styling - copied from User.module.css */
+.statItem {
+  position: relative;
+  padding-left: 1rem;
+  font-size: 0.95rem;
+  color: #444;
+  margin-bottom: 0.6rem;
+}
+
+.statItem:before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #777;
+}
+
+.statsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}

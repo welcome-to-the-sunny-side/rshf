@@ -109,10 +109,23 @@ const CustomTooltip = ({ active, payload, label }) => {
         border: '1px solid #ccc',
         padding: '8px'
       }}>
-        <p style={{ margin: 0 }}>{formatTooltipLabel(label)}</p>
+        <p style={{ margin: 0, fontWeight: 'bold' }}>{formatTooltipLabel(label)}</p>
+        
+        {/* Add contest name if available */}
+        {data.contest_id && (
+          <p style={{ 
+            margin: '4px 0', 
+            color: '#333',
+            fontSize: '0.95rem'
+          }}>
+            Contest: <span style={{ fontStyle: 'italic' }}>Contest #{data.contest_id}</span>
+          </p>
+        )}
+        
+        {/* Display the data values */}
         {payload.map((entry, index) => (
           <p key={`tooltip-${index}`} style={{ 
-            margin: 0, 
+            margin: '2px 0', 
             color: entry.color,
             fontWeight: 'bold'
           }}>

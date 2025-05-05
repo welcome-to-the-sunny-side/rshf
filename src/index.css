@@ -60,7 +60,7 @@ h1 {
 /* Standard text font for profile details and other text elements */
 .standardTextFont {
   font-family: 'Inter', Arial, sans-serif;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 400;
   line-height: 1.5;
   color: #333;
@@ -126,11 +126,11 @@ h1 {
 }
 
 .floatingButtonBox button, .floatingButtonBox a {
-  padding: 4px 8px; /* 50% smaller padding */
+  padding: 3px 6px; /* Reduced padding */
   background-color: white;
   border: none;
   font-family: 'Inter', Arial, sans-serif;
-  font-size: 0.75rem; /* Smaller font size */
+  font-size: 0.65rem; /* Smaller font size */
   font-weight: 600;
   cursor: pointer;
   text-transform: uppercase;
