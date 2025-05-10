@@ -47,12 +47,17 @@ export default function RatingGraph({ ratingHistory }) {
     // Main contest data series with all details
     for (let i = 0; i < sortedHistory.length; i++) {
       const item = sortedHistory[i];
-      const timestamp = Date.parse(item.date);
+      let timestamp = Date.parse(item.date); // Use let instead of const for timestamp
       const rating = item.rating || 0;
       const title = getRankName(rating);
       const contestId = item.contest_id || '';
       const rank = item.rank || 0;
       const change = item.change || 0;
+      
+      // Ensure timestamp is a proper JS timestamp (milliseconds since epoch)
+      if (timestamp < 10000000000) {
+        timestamp = timestamp * 1000; // Convert seconds to milliseconds if needed
+      }
       
       // Format date in a more readable format for tooltip
       const date = new Date(timestamp);
@@ -61,11 +66,6 @@ export default function RatingGraph({ ratingHistory }) {
         month: 'short', 
         day: 'numeric' 
       });
-      
-      // Ensure timestamp is a proper JS timestamp (milliseconds since epoch)
-      if (timestamp < 10000000000) {
-        timestamp = timestamp * 1000; // Convert seconds to milliseconds if needed
-      }
       
       // Add data point with all metadata for tooltip
       mainData.push([
