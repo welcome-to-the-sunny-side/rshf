@@ -10,6 +10,7 @@ export default function ModView() {
   // References for the content boxes to measure heights
   const requestsBoxRef = useRef(null);
   const statusBoxRef = useRef(null);
+  const recomputeBoxRef = useRef(null);
   
   // Since this is already the mod view, we want to show the mod view button as active
   const showModViewButton = true;
@@ -24,6 +25,9 @@ export default function ModView() {
   // State for user status change form
   const [username, setUsername] = useState('');
   const [newStatus, setNewStatus] = useState('Member');
+  
+  // State for recompute ratings form
+  const [contestId, setContestId] = useState('');
   
   // State to store the max height of the boxes
   const [boxHeight, setBoxHeight] = useState(null);
@@ -46,13 +50,22 @@ export default function ModView() {
     setNewStatus('Member');
   };
   
+  // Handle recompute ratings (placeholder function)
+  const handleRecomputeRatings = () => {
+    console.log('Recomputing ratings for contest:', { contestId });
+    // In a real app, this would call an API to trigger recomputation
+    alert(`Rating recomputation triggered for contest ${contestId}!`);
+    setContestId('');
+  };
+  
   // Use an effect to measure and set the heights of the boxes
   useEffect(() => {
     const updateHeights = () => {
-      if (requestsBoxRef.current && statusBoxRef.current) {
+      if (requestsBoxRef.current && statusBoxRef.current && recomputeBoxRef.current) {
         const requestsHeight = requestsBoxRef.current.offsetHeight;
         const statusHeight = statusBoxRef.current.offsetHeight;
-        setBoxHeight(Math.max(requestsHeight, statusHeight));
+        const recomputeHeight = recomputeBoxRef.current.offsetHeight;
+        setBoxHeight(Math.max(requestsHeight, statusHeight, recomputeHeight));
       }
     };
     
@@ -62,16 +75,18 @@ export default function ModView() {
     // Also set up a resize observer to handle window resizing
     const resizeObserver = new ResizeObserver(updateHeights);
     
-    if (requestsBoxRef.current && statusBoxRef.current) {
+    if (requestsBoxRef.current && statusBoxRef.current && recomputeBoxRef.current) {
       resizeObserver.observe(requestsBoxRef.current);
       resizeObserver.observe(statusBoxRef.current);
+      resizeObserver.observe(recomputeBoxRef.current);
     }
     
     // Clean up the observer on unmount
     return () => {
-      if (requestsBoxRef.current && statusBoxRef.current) {
+      if (requestsBoxRef.current && statusBoxRef.current && recomputeBoxRef.current) {
         resizeObserver.unobserve(requestsBoxRef.current);
         resizeObserver.unobserve(statusBoxRef.current);
+        resizeObserver.unobserve(recomputeBoxRef.current);
       }
     };
   }, []);
@@ -136,10 +151,10 @@ export default function ModView() {
         </div>
       </ContentBoxWithTitle>
       
-      {/* Requests and Change Status Boxes - side by side */}
+      {/* Requests, Change Status, and Recompute Ratings Boxes - side by side */}
       <div style={{ display: 'flex', gap: '20px', alignItems: 'stretch' }}>
         {/* Requests Box */}
-        <ContentBoxWithTitle title="Requests" backgroundColor="rgb(230, 255, 230)" style={{ flex: '1 0 50%' }}>
+        <ContentBoxWithTitle title="Requests" backgroundColor="rgb(230, 255, 230)" style={{ flex: '1 0 33.33%' }}>
           <div 
             ref={requestsBoxRef} 
             className="contentBox standardTextFont" 
@@ -168,7 +183,7 @@ export default function ModView() {
         </ContentBoxWithTitle>
 
         {/* Change Status Box */}
-        <ContentBoxWithTitle title="Change Status" backgroundColor="rgb(230, 255, 230)" style={{ flex: '1 0 50%' }}>
+        <ContentBoxWithTitle title="Change Status" backgroundColor="rgb(230, 255, 230)" style={{ flex: '1 0 33.33%' }}>
           <div 
             ref={statusBoxRef} 
             className="contentBox standardTextFont" 
@@ -232,7 +247,56 @@ export default function ModView() {
             </div>
           </div>
         </ContentBoxWithTitle>
+
+        {/* Recompute Ratings Box */}
+        <ContentBoxWithTitle title="Recompute Ratings" backgroundColor="rgb(230, 255, 230)" style={{ flex: '1 0 33.33%' }}>
+          <div 
+            ref={recomputeBoxRef} 
+            className="contentBox standardTextFont" 
+            style={{ 
+              border: 'none', 
+              boxShadow: 'none', 
+              padding: '15px',
+              height: boxHeight ? `${boxHeight}px` : 'auto',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+          >
+            <div style={{ flex: 1 }}>
+              <div style={{ marginBottom: '15px' }}>
+                <label htmlFor="contest-id" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                  Contest ID:
+                </label>
+                <input
+                  id="contest-id"
+                  type="text"
+                  value={contestId}
+                  onChange={(e) => setContestId(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    borderRadius: '4px',
+                    border: '1px solid #ccc'
+                  }}
+                  placeholder="Enter Contest ID"
+                />
+              </div>
+              <p style={{ fontSize: '1.0em', fontStyle: 'italic', marginTop: '-10px', marginBottom: '15px' }}>
+                Note: You can recompute rating changes only once per contest!
+              </p>
+            </div>
+            
+            <div>
+              <button
+                onClick={handleRecomputeRatings}
+                className="global-button green"
+              >
+                Recompute
+              </button>
+            </div>
+          </div>
+        </ContentBoxWithTitle>
       </div>
     </div>
   );
-} 
+}

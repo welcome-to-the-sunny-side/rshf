@@ -3,14 +3,39 @@
   height: 350px; /* Adjust height as needed */
   margin: 0 auto; /* Center if needed within its container */
   padding: 0; /* Reset padding */
+  position: relative; /* For positioning the zoom tip */
 }
 
-/* You might need to adjust tooltip styling if you implement hover effects */
-.flot-tooltip {
+.ratingGraphContainer {
+  width: 100%;
+  height: 100%;
+  min-height: 300px;
+}
+
+/* Styling for the zoom tip */
+.zoomTip {
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  z-index: 10;
+  display: none;
+}
+
+/* Custom tooltip styling */
+:global(#tooltip) {
   position: absolute;
   display: none;
   border: 1px solid #fdd;
-  padding: 2px;
+  padding: 5px 8px;
   background-color: #fee;
-  opacity: 0.80;
-} 
+  opacity: 0.9;
+  border-radius: 4px;
+  font-size: 12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  z-index: 1000;
+}
