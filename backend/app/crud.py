@@ -166,9 +166,11 @@ def register_contest_participation(
     db: Session, payload: schemas.ContestRegistration
 ) -> models.ContestParticipation:
     participation = models.ContestParticipation(
-        user_id=payload.user_id, group_id=payload.group_id, contest_id=payload.contest_id,
-        user_group_rating_before=payload.user_group_rating_before,
-        user_group_rating_after=payload.user_group_rating_after
+        user_id=payload.user_id,
+        group_id=payload.group_id,
+        contest_id=payload.contest_id,
+        rating_before=payload.rating_before,
+        rating_after=payload.rating_after,
     )
     db.add(participation)
     db.commit()
@@ -218,5 +220,73 @@ def list_groups_for_user(db: Session, user_id: str) -> List[models.Group]:
         .filter(models.GroupMembership.user_id == user_id)
         .all()
     )
+
+# ───────────── reports ─────────────
+
+def create_report(db: Session, payload: schemas.ReportCreate) -> models.Report:
+    rpt = models.Report(**payload.model_dump())
+    db.add(rpt)
+    db.commit()
+    db.refresh(rpt)
+    return rpt
+
+
+def list_reports(
+    db: Session,
+    group_id: Optional[str] = None,
+    unresolved_only: bool = False,
+) -> List[models.Report]:
+    q = db.query(models.Report)
+    if group_id:
+        q = q.filter(models.Report.group_id == group_id)
+    if unresolved_only:
+        q = q.filter(models.Report.resolved.is_(False))
+    return q.all()
+
+
+def resolve_report(db: Session, payload: schemas.ReportResolve) -> Optional[models.Report]:
+    rpt = db.query(models.Report).filter(models.Report.report_id == payload.report_id).first()
+    if not rpt:
+        return None
+    rpt.resolved = True
+    rpt.resolved_by = payload.resolved_by
+    rpt.resolve_message = payload.resolve_message
+    db.commit()
+    db.refresh(rpt)
+    return rpt
+
+
+# ───────────── announcements ─────────────
+
+def create_announcement(db: Session, payload: schemas.AnnouncementCreate) -> models.Announcement:
+    anmt = models.Announcement(**payload.model_dump())
+    db.add(anmt)
+    db.commit()
+    db.refresh(anmt)
+    return anmt
+
+
+def list_announcements(db: Session, group_id: Optional[str] = None) -> List[models.Announcement]:
+    q = db.query(models.Announcement)
+    if group_id:
+        q = q.filter(models.Announcement.group_id == group_id)
+    return q.order_by(models.Announcement.create_date.desc()).all()
+
+
+def update_announcement(db: Session, payload: schemas.AnnouncementUpdate) -> Optional[models.Announcement]:
+    anmt = (
+        db.query(models.Announcement)
+        .filter(models.Announcement.announcement_id == payload.announcement_id)
+        .first()
+    )
+    if not anmt:
+        return None
+    if payload.title is not None:
+        anmt.title = payload.title
+    if payload.content is not None:
+        anmt.content = payload.content
+    db.commit()
+    db.refresh(anmt)
+    return anmt
 
 

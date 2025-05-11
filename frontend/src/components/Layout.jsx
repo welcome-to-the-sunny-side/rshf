@@ -1,9 +1,23 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Outlet, useNavigate } from 'react-router-dom';
 import styles from './Layout.module.css';
 import logo from '../assets/logo.png';
 
-export default function Layout({ children, isLoggedIn, currentUser }) {
+export default function Layout({ isLoggedIn, currentUser, setIsLoggedIn, setCurrentUser }) {
+  const navigate = useNavigate();
+  
+  const handleLogout = () => {
+    // Clear the authentication token and user data
+    localStorage.removeItem('token');
+    localStorage.removeItem('currentUser');
+    
+    // Update state to reflect logged out status
+    setIsLoggedIn(false);
+    setCurrentUser(null);
+    
+    // Redirect to login page
+    navigate('/login');
+  };
   return (
     <div className={styles.wrapper}>
       <header className={styles.header}>
@@ -22,7 +36,7 @@ export default function Layout({ children, isLoggedIn, currentUser }) {
             <Link 
               to="#" 
               className={styles.logoutLink} 
-              // Add onClick handler for logout logic later
+              onClick={handleLogout}
             >
               Logout
             </Link>
@@ -35,7 +49,7 @@ export default function Layout({ children, isLoggedIn, currentUser }) {
         <Link to="/groups" className={styles.navLink}>Groups</Link>
         <Link to="/contests" className={styles.navLink}>Contests</Link>
       </nav>
-      <main className={styles.main}>{children}</main>
+      <main className={styles.main}><Outlet/></main>
       <footer className={styles.footer}>
         <div className={styles.footerContent}>
           <Link to="/about" className={styles.footerLink}>About</Link>

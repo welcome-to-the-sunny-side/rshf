@@ -8,6 +8,7 @@ from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
 from app import crud, database, models, schemas
+from typing import List, Optional
 
 router = APIRouter(prefix="/api")
 
@@ -76,6 +77,12 @@ def assert_group_privilege(
 
     if role_rank[r_mem.role] <= role_rank[t_mem.role]:
         raise HTTPException(status_code=403, detail="insufficient privilege")
+
+# helper (stick near the other helpers)
+def ensure_group_mod(db: Session, uid: str, gid: str):
+    m = crud.get_membership(db, uid, gid)
+    if not m or role_rank[m.role] < role_rank["moderator"]:
+        raise HTTPException(403, "insufficient privilege")
 
 
 # ---------- user endpoints ----------
@@ -202,7 +209,6 @@ def register_rated(
     db: Session = Depends(get_db),
     current: models.User = Depends(get_current_user),
 ):
-    # plain users can self-register; anything else requires moderator+
     if payload.user_id != current.user_id:
         assert_global_privilege(current, "moderator")
     participation = crud.register_contest_participation(db, payload)
@@ -219,3 +225,82 @@ def get_contest_participations(
     if gid is None and uid is None and cid is None:
         raise HTTPException(400, "provide at least one of gid, uid, or cid")
     return crud.filter_contest_participations(db, gid, uid, cid)
+
+# ========== report routes ==========
+
+@router.post("/report", response_model=schemas.ReportOut)
+def create_report(
+    payload: schemas.ReportCreate,
+    db: Session = Depends(get_db),
+    current: models.User = Depends(get_current_user),
+):
+    # any member of the group can file
+    if not crud.get_membership(db, current.user_id, payload.group_id):
+        raise HTTPException(403, "not a member of that group")
+    return crud.create_report(db, payload)
+
+
+@router.get("/report", response_model=List[schemas.ReportOut])
+def list_reports(
+    group_id: Optional[str] = Query(None),
+    unresolved_only: bool = Query(False),
+    db: Session = Depends(get_db),
+    current: models.User = Depends(get_current_user),
+):
+    if group_id and current.role == models.Role.user:
+        if not crud.get_membership(db, current.user_id, group_id):
+            raise HTTPException(403, "insufficient privilege")
+    return crud.list_reports(db, group_id, unresolved_only)
+
+
+@router.put("/report/resolve", response_model=schemas.ReportOut)
+def resolve_report(
+    payload: schemas.ReportResolve,
+    db: Session = Depends(get_db),
+    current: models.User = Depends(get_current_user),
+):
+    rpt = db.query(models.Report).filter(models.Report.report_id == payload.report_id).first()
+    if not rpt:
+        raise HTTPException(404, "report not found")
+    ensure_group_mod(db, current.user_id, rpt.group_id)
+    return crud.resolve_report(db, payload)
+
+# ========== announcement routes ==========
+
+@router.post("/announcement", response_model=schemas.AnnouncementOut)
+def create_announcement(
+    payload: schemas.AnnouncementCreate,
+    db: Session = Depends(get_db),
+    current: models.User = Depends(get_current_user),
+):
+    ensure_group_mod(db, current.user_id, payload.group_id)
+    return crud.create_announcement(db, payload)
+
+
+@router.get("/announcement", response_model=List[schemas.AnnouncementOut])
+def list_announcements(
+    group_id: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current: models.User = Depends(get_current_user),
+):
+    if group_id and current.role == models.Role.user:
+        if not crud.get_membership(db, current.user_id, group_id):
+            raise HTTPException(403, "insufficient privilege")
+    return crud.list_announcements(db, group_id)
+
+
+@router.put("/announcement", response_model=schemas.AnnouncementOut)
+def update_announcement(
+    payload: schemas.AnnouncementUpdate,
+    db: Session = Depends(get_db),
+    current: models.User = Depends(get_current_user),
+):
+    anmt = (
+        db.query(models.Announcement)
+        .filter(models.Announcement.announcement_id == payload.announcement_id)
+        .first()
+    )
+    if not anmt:
+        raise HTTPException(404, "announcement not found")
+    ensure_group_mod(db, current.user_id, anmt.group_id)
+    return crud.update_announcement(db, payload)

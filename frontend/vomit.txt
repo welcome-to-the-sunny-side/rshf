@@ -1,0 +1,5958 @@
+// ===== TOKEN USAGE (≈) =====
+//    1810  src/pages/User.jsx
+//    1694  src/pages/GroupReports.jsx
+//    1272  src/pages/GroupModViewRequests.jsx
+//    1244  src/pages/Group.jsx
+//     996  src/pages/Report.jsx
+//     944  src/components/SortablePagedTableBox.jsx
+//     907  src/index.css
+//     895  src/components/RatingGraph.jsx
+//     718  src/pages/GroupContests.jsx
+//     705  src/pages/ModView.jsx
+//     695  src/components/ParticipationGraph.jsx
+//     658  src/pages/GroupMembers.jsx
+//     586  src/pages/Contests.jsx
+//     555  endpoints.md
+//     553  src/pages/Groups.jsx
+//     549  src/pages/Home.jsx
+//     410  src/components/PagedTableBox.jsx
+//     394  src/utils/ratingUtils.js
+//     282  src/components/Layout.module.css
+//     264  src/App.jsx
+//     263  src/pages/Group.module.css
+//     243  src/pages/User.module.css
+//     236  src/pages/UserGroups.jsx
+//     202  want.md
+//     146  src/components/TableBox.module.css
+//     145  src/components/BasicTableBox.module.css
+//     114  src/pages/Contests.module.css
+//     111  src/components/PagedTableBox.module.css
+//     108  src/pages/Home.module.css
+//     108  src/components/Layout.jsx
+//      88  src/pages/UserSettings.module.css
+//      86  src/components/BasicTableBox.jsx
+//      75  src/pages/UserSettings.jsx
+//      61  src/components/RatingGraph.module.css
+//      60  src/components/ContentBoxWithTitle.module.css
+//      58  src/components/TableBox.jsx
+//      51  src/components/ParticipationGraph.module.css
+//      50  src/components/ContentBoxWithTitle.jsx
+//      48  index.html
+//      48  src/pages/Post.jsx
+//      47  src/components/SortablePagedTableBox.module.css
+//      43  src/pages/ContestPage.jsx
+//      41  package.json
+//      38  src/components/GroupNavBar.jsx
+//      33  src/pages/Contact.jsx
+//      30  src/components/UserNavBar.jsx
+//      29  src/pages/UserGroups.module.css
+//      28  src/main.jsx
+//      26  src/pages/About.jsx
+//      24  src/pages/Posts.jsx
+//      22  notes.md
+//      16  .DS_Store
+//      16  src/.DS_Store
+//      14  src/pages/Enter.jsx
+// ───────────────────────────
+//   18839  TOTAL
+
+
+// ===== BEGIN: index.html =====
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite + React</title>
+
+    <!-- jQuery & Flot Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flot/4.2.2/jquery.flot.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flot/4.2.2/jquery.flot.time.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flot/4.2.2/jquery.colorhelpers.min.js"></script>
+    <!-- End Libraries -->
+
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+// ===== END  : index.html =====
+
+
+// ===== BEGIN: want.md =====
+- user rating in a group, user max rating in a group
+- given a pair (user, group), return list of all contests user has taken part in (wrt group) along with metadata (contest id, rating after this contest)
+- initial rating of a user in a group (when the user joins a group, he enters an initial rating)[by default: 1500] 
+- list of all members in a group
+- to "contest object", add "contest name", "contest data and time"
+- for every user, store the number of groups he is a part of
+- conversely, for every group, store the number of users
+- for every group, store the list of moderators and number of moderators
+- a view of the form (contest, group)
+- user participation in a certain contest wrt a certain group: 
+[
+    - internal_contest_id
+    - rank in contest wrt group
+    - final group rating after this contest
+]
+- within a contest object:
+[
+    - internal contest id
+    - cf contest id
+    - cf contest name
+    - contest time
+]
+- create a report object:
+[
+    - report id
+    - group id
+    - the user the report is against
+    - string that contains the actual report
+]
+// ===== END  : want.md =====
+
+
+// ===== BEGIN: endpoints.md =====
+# unpolluted-elo
+
+
+
+## setup
+
+1. create a virtual environment:
+   ```
+   python3 -m venv .venv
+   source .venv/bin/activate
+   ```
+
+2. install dependencies:
+   ```
+   pip install -r requirements.txt
+   ```
+
+3. run the dev server
+    ```
+    uvicorn app.main:app --reload
+    ```
+
+    open ```http://127.0.0.1:8000/docs``` for api docs
+
+    root endpoint: ```http://127.0.0.1:8000/api ```
+
+
+4. start jupyter lab:
+   ```
+   python3 -m jupyter lab
+   ```
+
+   then open the notebook to interact with the database.
+
+## endpoints
+
+---
+
+### post /api/user/register  
+create a new user.
+
+**request json**
+```json
+{
+  "user_id": "u123",
+  "cf_handle": "ani123",
+  "password": "hunter2",
+  "internal_default_rated": true,
+  "trusted_score": 0
+}
+```
+
+**response json**
+```json
+{
+  "user_id": "u123",
+  "cf_handle": "ani123",
+  "internal_default_rated": true,
+  "trusted_score": 0
+}
+```
+
+---
+
+### post /api/user/login  
+form-encoded login ➜ jwt.
+
+**form fields**
+```
+username=u123        # user_id
+password=hunter2
+```
+
+**response json**
+```json
+{
+  "access_token": "<jwt>",
+  "token_type": "bearer"
+}
+```
+
+---
+
+### get /api/user  
+list all users or single user by query param `uid`.
+
+**query examples**
+```
+/api/user                     # returns list[UserOut]
+/api/user?uid=u123            # returns [single UserOut]
+```
+
+**response snippet**
+```json
+[
+  {
+    "user_id": "u123",
+    "cf_handle": "ani123",
+    "internal_default_rated": true,
+    "trusted_score": 0
+  }
+]
+```
+
+---
+
+### put /api/user  
+update a user. bearer token required.
+
+**query** `user_id=u123`  
+**request json**
+```json
+{
+  "cf_handle": "ani_new",
+  "internal_default_rated": false
+}
+```
+
+**response json** (updated record)
+```json
+{
+  "user_id": "u123",
+  "cf_handle": "ani_new",
+  "internal_default_rated": false,
+  "trusted_score": 0
+}
+```
+
+---
+
+### post /api/group/register  
+create a group.
+
+**request json**
+```json
+{
+  "group_id": "g456",
+  "group_name": "team rocket",
+  "creator_user_id": "u123"
+}
+```
+
+**response json**
+```json
+{
+  "group_id": "g456",
+  "group_name": "team rocket",
+  "memberships": []
+}
+```
+
+---
+
+### get /api/group  
+list all groups or one by `group_id`.
+
+```
+/api/group
+/api/group?group_id=g456
+```
+
+**response snippet**
+```json
+[
+  {
+    "group_id": "g456",
+    "group_name": "team rocket",
+    "memberships": [
+      {
+        "user_id": "u123",
+        "group_id": "g456",
+        "role": "admin",
+        "user_group_rating": 0
+      }
+    ]
+  }
+]
+```
+
+---
+
+### put /api/group  
+update group name.
+
+**request json**
+```json
+{
+  "group_id": "g456",
+  "group_name": "new name"
+}
+```
+
+**response json** same shape as `GroupOut`.
+
+---
+
+### post /api/add_to_group  
+add a user to group.
+
+**request json**
+```json
+{
+  "user_id": "u789",
+  "group_id": "g456",
+  "role": "user",
+  "user_group_rating": 1500
+}
+```
+
+**response json**
+```json
+{
+  "user_id": "u789",
+  "group_id": "g456",
+  "role": "user",
+  "user_group_rating": 1500
+}
+```
+
+---
+
+### post /api/remove_from_group  
+remove membership.
+
+**request json**
+```json
+{
+  "user_id": "u789",
+  "group_id": "g456"
+}
+```
+
+**response json**
+```json
+{ "detail": "membership removed" }
+```
+
+---
+
+### post /api/register_rated  
+record contest participation.
+
+**request json**
+```json
+{
+  "contest_id": "abc/2025",
+  "group_id": "g456",
+  "user_id": "u123"
+}
+```
+
+**response json**
+```json
+{
+  "detail": "participation recorded",
+  "participation_id": "abc/2025"
+}
+```
+
+---
+
+done.
+
+## schema overview
+
+- users: maps user ids to their codeforces handle, group preferences, and trust score.
+- groups: defines rating groups with unique names.
+- group_memberships: links users to groups with a role (admin / moderator / user) and a group-specific rating.
+- contests: stores codeforces contest references using internal and external ids.
+- contest_participations: tracks which contests are rated for which (user, group) pairs.
+
+the schema supports many-to-many user-group relationships and group-specific rating forks from global codeforces ratings.
+
+
+## todo
+
+- [ ] schemas/models/endpoints are currently being written manually to stay flexible.
+- [ ] once schema design stabilizes, introduce a `generate.py` script to dynamically scaffold:
+  - pydantic schemas (`schemas.py`)
+  - sqlalchemy models (`models.py`)
+  - crud functions (`crud.py`)
+  - fastapi route stubs (`endpoints.py`)
+- [ ] potential format: a minimal json/yaml spec describing tables and fields.
+- [ ] revisit automation after 3-4 tables and route patterns are locked in.
+// ===== END  : endpoints.md =====
+
+
+// ===== BEGIN: package.json =====
+{
+  "name": "truskill.com",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "flot": "^4.2.6",
+    "jquery": "^3.7.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.22.3",
+    "recharts": "^2.15.3"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.1.0",
+    "vite": "^4.4.9"
+  }
+}
+// ===== END  : package.json =====
+
+
+// ===== BEGIN: .DS_Store =====
+// [error reading file: 'utf-8' codec can't decode byte 0x80 in position 3131: invalid start byte]
+// ===== END  : .DS_Store =====
+
+
+// ===== BEGIN: notes.md =====
+- user state sensitive (logged in, self, mod, member, outside) pages: 
+    - user page
+    - group object view
+    - contest object view
+// ===== END  : notes.md =====
+
+
+// ===== BEGIN: src/main.jsx =====
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import App from './App';
+import './index.css';
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </React.StrictMode>
+);
+// ===== END  : src/main.jsx =====
+
+
+// ===== BEGIN: src/index.css =====
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600&display=swap');
+
+:root {
+  /* Global button colors */
+  --button-blue: #4a90e2;
+  --button-green: #3c9d50;
+  --button-red: #e27c4a;
+  --button-yellow: #e2b54a;
+  
+  /* Button hover states */
+  --button-blue-hover: #3672c4;
+  --button-green-hover: #2f8640;
+  --button-red-hover: #c65a2d;
+  --button-yellow-hover: #c99a33;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', Arial, sans-serif;
+  background: #fff;
+  color: #222;
+}
+
+h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  margin: 2rem 0 0.5rem 0;
+}
+
+/* Global page container - use this for consistent page margins */
+/* IMPORTANT: All pages should use this container class to maintain consistent margins */
+/* This ensures uniformity across the entire application */
+.page-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+/* Global font classes */
+.columnHeadingFont {
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.tableDataFont {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 400;
+  letter-spacing: 0.005em;
+}
+
+/* Standard text font for profile details and other text elements */
+.standardTextFont {
+  font-family: 'Inter', Arial, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #333;
+}
+
+/* Global table cell link style - IMPORTANT: Use this for all links in tables */
+.tableCellLink {
+  text-decoration: none;
+  color: #3B5998;
+  font-weight: 500;
+}
+
+.tableCellLink:hover {
+  text-decoration: underline;
+}
+
+/* Reusable content box class */
+/* IMPORTANT: This is the ONLY contentBox class to use across the application */
+/* All components should use this global class instead of defining their own */
+.contentBox {
+  background-color: rgb(255, 255, 255);
+  border: 1px solid rgb(185, 185, 185);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  box-sizing: border-box;
+  width: 100%;
+  margin-bottom: 1rem;
+  min-height: 140px;
+  position: relative;
+}
+
+/* For table boxes that need different padding */
+.contentBox.tableContainer {
+  padding: 0;
+  overflow: hidden; /* Ensure border radius clips content */
+}
+
+/* Reusable content box class with transparent border */
+.contentBoxTransparent {
+  background-color: rgb(255, 255, 255);
+  border: 1px solid transparent; /* Transparent border */
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  box-sizing: border-box;
+  width: 100%;
+  margin-bottom: 1rem;
+  min-height: 140px;
+  position: relative;
+}
+
+/* Floating button box for navigation buttons */
+.floatingButtonBox {
+  display: flex;
+  background-color: transparent;
+  border: none;
+  padding: 0;
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+.floatingButtonBox button, .floatingButtonBox a {
+  padding: 4px 8px; /* 50% smaller padding */
+  background-color: white;
+  border: none;
+  font-family: 'Inter', Arial, sans-serif;
+  font-size: 0.75rem; /* Smaller font size */
+  font-weight: 600;
+  cursor: pointer;
+  text-transform: uppercase;
+  color: #333;
+  text-decoration: none;
+  display: inline-block;
+  transition: background-color 0.2s;
+  border-radius: 6px; /* Add rounded borders to all buttons */
+  margin: 0 2px; /* Add small gaps between buttons */
+}
+
+.floatingButtonBox button:first-child, .floatingButtonBox a:first-child {
+  background-color: #e0e0e0;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+  margin-left: 0;
+}
+
+.floatingButtonBox button:last-child, .floatingButtonBox a:last-child {
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+  margin-right: 0;
+}
+
+.floatingButtonBox button:hover, .floatingButtonBox a:hover {
+  background-color: #d0d0d0;
+}
+
+/* Highlighted content box based on .roundbox */
+.highlightedContentBox {
+    border: 1px solid rgb(185, 185, 185);
+    position: relative;
+    margin-bottom: 1rem; /* Added margin for spacing */
+}
+
+.highlightedContentBox .caption {
+    color:#3B5998;
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin: 0.2em 0;
+    position: relative;
+}
+
+.highlightedContentBox .titled {
+    padding: 0 0 0.3em 0.5em;
+    border-bottom:1px solid rgb(185, 185, 185);
+}
+
+.highlightedContentBox .caption .top-links {
+    font-size: 1.1rem;
+    font-family: arial;
+    position: absolute;
+    right: 0.5em;
+    top: 0.3em;
+}
+
+.highlightedContentBox .bottom-links {
+    font-family: arial;
+    font-size: 1.1rem;
+    border-top:1px solid rgb(185, 185, 185);
+    background-color: #F5F5F5;
+    padding: 0.45em;
+}
+
+.highlightedContentBox .dark {
+    background-color: #F5F5F5;
+}
+
+.highlightedContentBox .bottom-links a {
+    margin: 0.1em;
+}
+
+.highlightedContentBox table.rtable {
+    width: 100%;
+    margin-top: -4px;
+    border: none;
+}
+
+.highlightedContentBox .rtable td, .highlightedContentBox .rtable th {
+    border: 1px solid rgb(185, 185, 185);
+    border-right: none;
+    border-top: none;
+    padding: 4px;
+    text-align: center;
+    font-size: 0.9em;
+}
+
+.highlightedContentBox .rtable th {
+    /*font-weight: bolder;*/
+    font-size: 1em;
+    padding-top: 7px;
+    font-weight: bold; /* Explicitly added from .rtable th rule */
+}
+
+.highlightedContentBox .rtable .left {
+    border-left: none;
+}
+
+.highlightedContentBox .rtable .bottom {
+    border-bottom: none;
+}
+
+/* Note: Corner styles using background images are omitted as the image paths are likely incorrect */
+/* Consider using CSS border-radius for rounded corners if needed */
+
+/* .highlightedContentBox .rtable .corner { ... } */
+/* .highlightedContentBox .roundbox-lt { ... } */
+/* .highlightedContentBox .roundbox-rt { ... } */
+/* .highlightedContentBox .roundbox-lb { ... } */
+/* .highlightedContentBox .roundbox-rb { ... } */
+
+/* Tab selector for moderator views */
+.tabSelector {
+  display: flex;
+  margin-bottom: 20px;
+}
+
+.tabButton {
+  padding: 10px 20px;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-right: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.tabButton:hover {
+  background-color: #e0e0e0;
+}
+
+.tabButton.active {
+  background-color: #4a90e2;
+  color: white;
+  border-color: #3a80d2;
+}
+
+/* Action buttons */
+.actionButton {
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background-color: #f5f5f5;
+  font-size: 12px;
+  cursor: pointer;
+  margin-right: 5px;
+  transition: all 0.2s ease;
+}
+
+.actionButton:hover {
+  background-color: #e0e0e0;
+}
+
+.actionButton.approve {
+  border-color: #4caf50;
+  color: #4caf50;
+}
+
+.actionButton.approve:hover {
+  background-color: #e8f5e9;
+}
+
+.actionButton.deny {
+  border-color: #f44336;
+  color: #f44336;
+}
+
+.actionButton.deny:hover {
+  background-color: #ffebee;
+}
+
+/* Global button style */
+.global-button {
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-block;
+  width: fit-content;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+  font-family: 'Inter', Arial, sans-serif;
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+.global-button:hover {
+  box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+}
+
+/* Button color variants */
+.global-button.blue {
+  background-color: var(--button-blue);
+}
+
+.global-button.blue:hover {
+  background-color: var(--button-blue-hover);
+}
+
+.global-button.green {
+  background-color: var(--button-green);
+}
+
+.global-button.green:hover {
+  background-color: var(--button-green-hover);
+}
+
+.global-button.red {
+  background-color: var(--button-red);
+}
+
+.global-button.red:hover {
+  background-color: var(--button-red-hover);
+}
+
+.global-button.yellow {
+  background-color: var(--button-yellow);
+}
+
+.global-button.yellow:hover {
+  background-color: var(--button-yellow-hover);
+}
+
+/* Small variant for approve/deny buttons */
+.global-button.small {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}
+// ===== END  : src/index.css =====
+
+
+// ===== BEGIN: src/App.jsx =====
+import React, { useState } from 'react';
+import { Routes, Route } from 'react-router-dom';
+import Layout from './components/Layout';
+import Home from './pages/Home';
+import Enter from './pages/Enter';
+import User from './pages/User';
+import UserGroups from './pages/UserGroups';
+import UserSettings from './pages/UserSettings'; // Import UserSettings
+import Groups from './pages/Groups';
+import Group from './pages/Group';
+import GroupMembers from './pages/GroupMembers'; // Import GroupMembers
+import GroupContests from './pages/GroupContests'; // Import GroupContests
+import GroupReports from './pages/GroupReports'; // Import GroupReports
+import Report from './pages/Report'; // Import Report
+import ModView from './pages/ModView'; // Import ModView
+import GroupModViewRequests from './pages/GroupModViewRequests'; // Import GroupModViewRequests
+import About from './pages/About';
+import Contests from './pages/Contests';
+import Contact from './pages/Contact'; // Import Contact page
+import Posts from './pages/Posts';
+import Post from './pages/Post';
+import ContestPage from './pages/ContestPage'; // Import ContestPage
+import './index.css';
+
+export default function App() {
+  // Example: Replace with your actual authentication logic
+  const [isLoggedIn, setIsLoggedIn] = useState(true); // Let's assume logged in for example
+  const [currentUser, setCurrentUser] = useState({ username: 'TestUser' }); // Placeholder
+
+  return (
+    <Layout isLoggedIn={isLoggedIn} currentUser={currentUser}>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/enter" element={<Enter />} />
+        <Route path="/user/:username" element={<User />} />
+        <Route path="/user/:username/groups" element={<UserGroups />} />
+        <Route path="/user/:username/settings" element={<UserSettings />} />
+        <Route path="/groups" element={<Groups />} />
+        <Route path="/group/:groupId" element={<Group />} />
+        <Route path="/group/:groupId/members" element={<GroupMembers />} />
+        <Route path="/group/:groupId/contests" element={<GroupContests />} />
+        <Route path="/group/:groupId/reports" element={<GroupReports />} />
+        <Route path="/group/:groupId/report/:reportId" element={<Report />} />
+        <Route path="/group/:groupId/modview" element={<ModView />} />
+        <Route path="/group/:groupId/modview/requests" element={<GroupModViewRequests />} />
+        <Route path="/contests" element={<Contests />} />
+        <Route path="/contest/:contest_id" element={<ContestPage />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/posts" element={<Posts />} />
+        <Route path="/post/:postId" element={<Post />} />
+      </Routes>
+    </Layout>
+  );
+}
+// ===== END  : src/App.jsx =====
+
+
+// ===== BEGIN: src/.DS_Store =====
+// [error reading file: 'utf-8' codec can't decode byte 0xb8 in position 295: invalid start byte]
+// ===== END  : src/.DS_Store =====
+
+
+// ===== BEGIN: src/pages/GroupContests.jsx =====
+import React from 'react';
+import { useParams, Link } from 'react-router-dom';
+import SortablePagedTableBox from '../components/SortablePagedTableBox';
+import { getRatingColor } from '../utils/ratingUtils';
+import GroupNavBar from '../components/GroupNavBar';
+
+export default function GroupContests() {
+  const { groupId } = useParams();
+  
+  // User state simulation (would come from auth context in real app)
+  const userRole = "moderator"; // Options: "moderator", "member", null (not a member), undefined (logged out)
+  const isLoggedInUserMember = userRole === "moderator" || userRole === "member";
+  
+  // Determine which buttons to show based on user role
+  const showModViewButton = userRole === "moderator";
+  
+  // Generate only past contests data - no upcoming contests
+  // Added dummy rank, ratingChange, and finalRating for member/moderator view
+  const pastContests = [
+    { id: "246", name: "Weekly Algorithm Contest #46", platform: "CodeForces", dateTime: "2024-03-23 14:00", participants: 118, rank: 15, ratingChange: 35, finalRating: 1650 },
+    { id: "247", name: "Web Development Challenge", platform: "AtCoder", dateTime: "2024-03-25 15:00", participants: 83, rank: 5, ratingChange: 50, finalRating: 1700 },
+    { id: "223", name: "CodeForces Round #910", platform: "CodeForces", dateTime: "2024-03-20 12:00", participants: 145, rank: 22, ratingChange: 12, finalRating: 1712 },
+    { id: "224", name: "AtCoder Beginner Contest 344", platform: "AtCoder", dateTime: "2024-03-18 08:00", participants: 92, rank: 30, ratingChange: -5, finalRating: 1707 },
+    { id: "248", name: "Machine Learning Competition", platform: "AtCoder", dateTime: "2024-03-28 10:00", participants: 76, rank: 8, ratingChange: 40, finalRating: 1747 },
+    { id: "225", name: "CodeForces Educational Round", platform: "CodeForces", dateTime: "2024-03-15 14:00", participants: 135, rank: 18, ratingChange: 25, finalRating: 1772 },
+    { id: "249", name: "System Design Workshop", platform: "CodeForces", dateTime: "2024-03-30 16:00", participants: 64, rank: 3, ratingChange: 60, finalRating: 1832 },
+    { id: "226", name: "AtCoder Regular Contest 168", platform: "AtCoder", dateTime: "2024-03-10 09:00", participants: 88, rank: 10, ratingChange: 38, finalRating: 1870 },
+    { id: "227", name: "CodeForces Round #909", platform: "CodeForces", dateTime: "2024-03-08 18:00", participants: 137, rank: 25, ratingChange: 8, finalRating: 1878 },
+    { id: "228", name: "AtCoder Beginner Contest 343", platform: "AtCoder", dateTime: "2024-03-05 08:00", participants: 96, rank: 40, ratingChange: -15, finalRating: 1863 },
+    { id: "229", name: "Algorithm Fundamental Contest", platform: "CodeForces", dateTime: "2024-03-03 14:00", participants: 112, rank: 12, ratingChange: 30, finalRating: 1893 },
+    { id: "230", name: "AtCoder Programming Contest", platform: "AtCoder", dateTime: "2024-02-28 08:00", participants: 79, rank: 6, ratingChange: 45, finalRating: 1938 },
+    { id: "231", name: "CodeForces Round #908", platform: "CodeForces", dateTime: "2024-02-25 12:00", participants: 141, rank: 20, ratingChange: 18, finalRating: 1956 },
+    { id: "232", name: "Data Structures Challenge", platform: "CodeForces", dateTime: "2024-02-22 16:00", participants: 108, rank: 9, ratingChange: 42, finalRating: 1998 },
+    { id: "233", name: "AtCoder Beginner Contest 342", platform: "AtCoder", dateTime: "2024-02-20 08:00", participants: 91, rank: 35, ratingChange: -10, finalRating: 1988 },
+    { id: "222", name: "Winter Challenge 2024", platform: "CodeForces", dateTime: "2024-02-18 10:00", participants: 120, rank: 14, ratingChange: 33, finalRating: 2021 },
+    { id: "221", name: "Full Stack Coding Contest", platform: "AtCoder", dateTime: "2024-02-15 14:00", participants: 95, rank: 7, ratingChange: 48, finalRating: 2069 },
+    { id: "220", name: "Algorithm Deep Dive", platform: "CodeForces", dateTime: "2024-02-12 11:00", participants: 128, rank: 16, ratingChange: 28, finalRating: 2097 },
+    { id: "219", name: "Data Science Hackathon", platform: "AtCoder", dateTime: "2024-02-10 09:00", participants: 86, rank: 4, ratingChange: 55, finalRating: 2152 },
+    { id: "218", name: "Security Challenge", platform: "CodeForces", dateTime: "2024-02-08 15:00", participants: 105, rank: 11, ratingChange: 39, finalRating: 2191 }
+  ];
+  
+  // Function to format date
+  const formatDateTime = (dateTimeStr) => {
+    const dateTime = new Date(dateTimeStr);
+    return dateTime.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Define columns for the table
+  let columns = ["Contest", "Platform", "Date/Time", "Participants"];
+  if (isLoggedInUserMember) {
+    columns = [...columns, "Rank", "Rating Change", "Final Rating"];
+  }
+  
+  // Transform the data for the table component
+  const tableRows = pastContests.map(contest => {
+    const baseData = [
+    <Link to={`/group/${groupId}/contest/${contest.id}`} className="tableCellLink">{contest.name}</Link>,
+    contest.platform,
+    formatDateTime(contest.dateTime),
+    contest.participants
+    ];
+    
+    if (isLoggedInUserMember) {
+      const ratingChangeText = contest.ratingChange > 0 ? `+${contest.ratingChange}` : contest.ratingChange.toString();
+      const ratingChangeColor = contest.ratingChange > 0 ? 'green' : (contest.ratingChange < 0 ? 'red' : 'gray');
+      
+      return [
+        ...baseData,
+        contest.rank,
+        <span style={{ color: ratingChangeColor, fontWeight: 'bold' }}>{ratingChangeText}</span>,
+        <span style={{ color: getRatingColor(contest.finalRating), fontWeight: 'bold' }}>{contest.finalRating}</span>
+      ];
+    }
+    
+    return baseData;
+  });
+
+  return (
+    <div className="page-container">
+      {/* Floating button box */}
+      <GroupNavBar groupId={groupId} showModViewButton={showModViewButton} />
+      
+      {/* Contests table */}
+      <SortablePagedTableBox 
+        columns={columns}
+        data={tableRows}
+        backgroundColor="rgb(230, 255, 230)" // Light green
+        itemsPerPage={15}
+        initialSortColumnIndex={isLoggedInUserMember ? 6 : 2} // Date/Time or Final Rating column
+        initialSortDirection="desc" // Descending order
+      />
+    </div>
+  );
+} 
+// ===== END  : src/pages/GroupContests.jsx =====
+
+
+// ===== BEGIN: src/pages/Report.jsx =====
+import React, { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { getRatingColor } from '../utils/ratingUtils';
+import ContentBoxWithTitle from '../components/ContentBoxWithTitle';
+import GroupNavBar from '../components/GroupNavBar';
+import styles from './Group.module.css'; // Import the styles from Group.jsx
+
+export default function Report() {
+  const { groupId, reportId } = useParams();
+  
+  // State for form inputs in the "Take Action" section
+  const [reporterStatus, setReporterStatus] = useState('Member');
+  const [respondentStatus, setRespondentStatus] = useState('Member');
+  const [reviewerNote, setReviewerNote] = useState('');
+  
+  // Sample report data - in a real app, this would come from an API call
+  // Note: isActive field would determine whether this is an active or processed report
+  const [report, setReport] = useState({
+    id: reportId,
+    contestId: 246,
+    isActive: true, // This would come from the backend
+    reporter: {
+      username: "alice",
+      rating: 2185,
+      currentStatus: "Member", // Current status of reporter in the group
+      reportAccuracy: { accepted: 12, total: 15 }
+    },
+    respondent: {
+      username: "frank",
+      rating: 2100,
+      currentStatus: "Member", // Current status of respondent in the group
+      previouslyRemovedFromThisGroup: false,
+      previousReportIds: []
+    },
+    reportDate: "2024-03-20",
+    reportText: "User was found to be using external resources during the contest. The solution was identical to a solution found online with minor modifications.",
+    // Fields below would only be populated for processed reports
+    reviewer: {
+      username: "moderator1",
+      rating: 2300
+    },
+    reviewDate: "2024-03-22",
+    reviewerNote: "Verified the similarities between the solution and online resources. Clear violation of contest rules.",
+    accepted: true,
+    reporterStatusChange: "No change",
+    respondentStatusChange: "Outsider"
+  });
+
+  // Function to format date
+  const formatDate = (dateString) => {
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
+  // Handle action submission (accept or reject)
+  const handleAction = (accepted) => {
+    console.log('Taking action:', { 
+      reportId, 
+      accepted, 
+      reporterStatus, 
+      respondentStatus, 
+      reviewerNote 
+    });
+    // In a real app, this would call an API to process the report
+    alert(`Report ${accepted ? 'accepted' : 'rejected'}!`);
+    
+    // Update local state to show the processed view
+    setReport(prev => ({
+      ...prev,
+      isActive: false,
+      accepted: accepted,
+      reviewer: {
+        username: "moderator1", // In a real app, this would be the current user
+        rating: 2300
+      },
+      reviewDate: new Date().toISOString().split('T')[0],
+      reviewerNote: reviewerNote,
+      reporterStatusChange: reporterStatus,
+      respondentStatusChange: respondentStatus
+    }));
+  };
+
+  return (
+    <div className="page-container">
+      {/* Floating button box */}
+      <GroupNavBar groupId={groupId} showModViewButton={true} />
+      
+      {/* Report Details Box */}
+      <ContentBoxWithTitle title="Report Details" backgroundColor="rgb(240, 240, 255)">
+        <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto', padding: '15px' }}>
+          {/* Display report status at the top */}
+          <div style={{ marginBottom: '15px', fontWeight: 'bold', fontSize: '1.1em' }}>
+            <strong>Report Status:</strong>{' '}
+            <span style={{ 
+              color: report.isActive ? 'rgb(230, 126, 34)' : (report.accepted ? 'rgb(0, 150, 0)' : 'rgb(200, 0, 0)') 
+            }}>
+              {report.isActive ? 'Active' : (report.accepted ? 'Accepted' : 'Rejected')}
+            </span>
+          </div>
+          
+          {/* List of details */}
+          <div style={{ marginBottom: '15px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div>
+                <strong>Report ID:</strong> {report.id}
+              </div>
+              
+              <div>
+                <strong>Contest ID:</strong>{' '}
+                {report.contestId ? (
+                  <Link to={`/group/${groupId}/contest/${report.contestId}`} className="tableCellLink">
+                    {report.contestId}
+                  </Link>
+                ) : (
+                  <span>-</span>
+                )}
+              </div>
+              
+              <div>
+                <strong>Reporter:</strong>{' '}
+                <Link to={`/user/${report.reporter.username}`} className="tableCellLink" style={{ color: getRatingColor(report.reporter.rating), fontWeight: 'bold' }}>
+                  {report.reporter.username}
+                </Link>
+              </div>
+              
+              <div>
+                <strong>Report Accuracy:</strong>{' '}
+                <span title={`${report.reporter.reportAccuracy.accepted} accepted out of ${report.reporter.reportAccuracy.total} reports`}>
+                  {Math.round((report.reporter.reportAccuracy.accepted / report.reporter.reportAccuracy.total) * 100)}% 
+                  ({report.reporter.reportAccuracy.accepted}/{report.reporter.reportAccuracy.total})
+                </span>
+              </div>
+              
+              <div>
+                <strong>Respondent:</strong>{' '}
+                <Link to={`/user/${report.respondent.username}`} className="tableCellLink" style={{ color: getRatingColor(report.respondent.rating), fontWeight: 'bold' }}>
+                  {report.respondent.username}
+                </Link>
+              </div>
+              
+              <div>
+                <strong>Previously Removed:</strong>{' '}
+                {report.respondent.previouslyRemovedFromThisGroup ? (
+                  <div style={{ color: 'red', display: 'inline' }}>
+                    Yes - 
+                    {report.respondent.previousReportIds.map((reportId, index) => (
+                      <span key={reportId}>
+                        {index > 0 && ", "}
+                        <Link to={`/group/${groupId}/report/${reportId}`} className="tableCellLink">
+                          {reportId}
+                        </Link>
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ color: 'green', display: 'inline' }}>No</div>
+                )}
+              </div>
+              
+              <div>
+                <strong>Report Date:</strong> {formatDate(report.reportDate)}
+              </div>
+            </div>
+          </div>
+          
+          {/* Report message box styled like the about box in Group.jsx - moved below the list */}
+          <div className={styles.aboutBox}>
+            <h4 style={{ margin: '0 0 8px 0' }}>Report Message:</h4>
+            <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{report.reportText}</p>
+          </div>
+        </div>
+      </ContentBoxWithTitle>
+      
+      {/* Conditional rendering based on report status */}
+      {report.isActive ? (
+        // For active reports - display the "Take Action" section
+        <ContentBoxWithTitle title="Take Action" backgroundColor="rgb(255, 245, 230)">
+          <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto', padding: '15px' }}>
+            <div style={{ marginBottom: '15px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <label htmlFor="reporter-status" style={{ fontWeight: '500', whiteSpace: 'nowrap' }}>
+                  Modify Reporter Status: <span style={{ fontWeight: 'bold' }}>{report.reporter.currentStatus}</span> →
+                </label>
+                <select
+                  id="reporter-status"
+                  value={reporterStatus}
+                  onChange={(e) => setReporterStatus(e.target.value)}
+                  style={{
+                    padding: '6px',
+                    borderRadius: '4px',
+                    border: '1px solid #ccc',
+                    width: '160px'
+                  }}
+                >
+                  <option value="Moderator">Moderator</option>
+                  <option value="Member">Member</option>
+                  <option value="Outsider">Outsider</option>
+                </select>
+              </div>
+            </div>
+            
+            <div style={{ marginBottom: '15px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <label htmlFor="respondent-status" style={{ fontWeight: '500', whiteSpace: 'nowrap' }}>
+                  Modify Respondent Status: <span style={{ fontWeight: 'bold' }}>{report.respondent.currentStatus}</span> →
+                </label>
+                <select
+                  id="respondent-status"
+                  value={respondentStatus}
+                  onChange={(e) => setRespondentStatus(e.target.value)}
+                  style={{
+                    padding: '6px',
+                    borderRadius: '4px',
+                    border: '1px solid #ccc',
+                    width: '160px'
+                  }}
+                >
+                  <option value="Moderator">Moderator</option>
+                  <option value="Member">Member</option>
+                  <option value="Outsider">Outsider</option>
+                </select>
+              </div>
+            </div>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <label htmlFor="reviewer-note" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                Reviewer's Note:
+              </label>
+              <textarea
+                id="reviewer-note"
+                value={reviewerNote}
+                onChange={(e) => setReviewerNote(e.target.value)}
+                maxLength={1000}
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  border: '1px solid #ccc',
+                  minHeight: '100px',
+                  resize: 'vertical'
+                }}
+              />
+            </div>
+            
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={() => handleAction(true)}
+                className="global-button green"
+              >
+                Accept Report
+              </button>
+              <button
+                onClick={() => handleAction(false)}
+                className="global-button red"
+              >
+                Reject Report
+              </button>
+            </div>
+          </div>
+        </ContentBoxWithTitle>
+      ) : (
+        // For processed reports - display the review outcome
+        <ContentBoxWithTitle 
+          title="Review Outcome" 
+          backgroundColor={report.accepted ? "rgb(230, 255, 240)" : "rgb(255, 230, 230)"}
+        >
+          <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto', padding: '15px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div>
+                <strong>Reviewed By:</strong>{' '}
+                <Link to={`/user/${report.reviewer.username}`} className="tableCellLink" style={{ color: getRatingColor(report.reviewer.rating), fontWeight: 'bold' }}>
+                  {report.reviewer.username}
+                </Link>
+              </div>
+              
+              <div>
+                <strong>Review Date:</strong> {formatDate(report.reviewDate)}
+              </div>
+              
+              <div>
+                <strong>Status:</strong>{' '}
+                <span style={{ 
+                  color: report.accepted ? 'rgb(0, 150, 0)' : 'rgb(200, 0, 0)',
+                  fontWeight: 'bold'
+                }}>
+                  {report.accepted ? 'Accepted' : 'Rejected'}
+                </span>
+              </div>
+              
+              <div>
+                <strong>Reporter Status Change:</strong>{' '}
+                <span style={{ fontWeight: 'bold' }}>{report.reporter.currentStatus}</span> → {report.reporterStatusChange}
+              </div>
+              
+              <div>
+                <strong>Respondent Status Change:</strong>{' '}
+                <span style={{ fontWeight: 'bold' }}>{report.respondent.currentStatus}</span> → {report.respondentStatusChange}
+              </div>
+              
+              <div>
+                <strong>Reviewer's Note:</strong>
+                <p style={{ whiteSpace: 'pre-wrap', margin: '5px 0 0 0' }}>{report.reviewerNote}</p>
+              </div>
+            </div>
+          </div>
+        </ContentBoxWithTitle>
+      )}
+    </div>
+  );
+} 
+// ===== END  : src/pages/Report.jsx =====
+
+
+// ===== BEGIN: src/pages/User.module.css =====
+.profileBox {
+  background-color: rgb(255, 255, 255);
+  border: 1px solid rgb(185, 185, 185);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 140px;
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.username {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: rgb(255, 140, 0); /* Will be dynamic in the future */
+}
+
+.groupRatingRow {
+  margin-top: 0.5rem;
+  font-size: 1rem;
+  color: #222;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.groupDropdown {
+  font-size: 0.95rem;
+  padding: 0.18rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid #aaa;
+  background: #fff;
+}
+
+.statItem {
+  position: relative;
+  padding-left: 1rem;
+  font-size: 0.95rem;
+  color: #444;
+  margin-bottom: 0.6rem;
+}
+
+.statItem:before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #777;
+}
+
+.statsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Trust score gradient colors */
+.trustScore {
+  font-weight: bold;
+}
+
+/* New layout for side-by-side content boxes */
+.contentBoxRow {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+.contentBoxLeft {
+  flex: 7.5; /* Takes 70% of available space */
+  min-width: 0; /* Prevent overflow */
+}
+
+.contentBoxRight {
+  flex: 2.5; /* Takes 30% of available space */
+  min-width: 0; /* Prevent overflow */
+}
+
+/* Responsive design - stack on mobile */
+@media (max-width: 768px) {
+  .contentBoxRow {
+    flex-direction: column;
+  }
+  
+  .contentBoxLeft,
+  .contentBoxRight {
+    flex: 1; /* On mobile, both take full width */
+  }
+}
+
+/* Profile info styles */
+.profileInfo {
+  width: 100%;
+}
+
+/* Username link styles */
+.usernameLink {
+  text-decoration: none;
+  display: inline-block;
+}
+
+.socialIcons {
+  display: flex;
+  align-items: center;
+  margin-left: 8px;
+}
+// ===== END  : src/pages/User.module.css =====
+
+
+// ===== BEGIN: src/pages/Enter.jsx =====
+import React from 'react';
+
+export default function Enter() {
+  return <h1>Login to RSHF</h1>;
+}
+// ===== END  : src/pages/Enter.jsx =====
+
+
+// ===== BEGIN: src/pages/UserSettings.module.css =====
+/* UserSettings module styles */
+.settingsTitle {
+  margin-bottom: 1.5rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.settingsForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.formLabel {
+  font-weight: 500;
+  color: #444;
+}
+
+.formInput {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.formSelect {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.submitButton {
+  margin-top: 1rem;
+  padding: 0.6rem 1.2rem;
+  background-color: #4285f4;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  align-self: flex-start;
+}
+
+.submitButton:hover {
+  background-color: #356ac3;
+} 
+// ===== END  : src/pages/UserSettings.module.css =====
+
+
+// ===== BEGIN: src/pages/ModView.jsx =====
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import GroupNavBar from '../components/GroupNavBar';
+import ContentBoxWithTitle from '../components/ContentBoxWithTitle';
+import styles from './Group.module.css';
+
+export default function ModView() {
+  const { groupId } = useParams();
+  
+  // References for the content boxes to measure heights
+  const requestsBoxRef = useRef(null);
+  const statusBoxRef = useRef(null);
+  
+  // Since this is already the mod view, we want to show the mod view button as active
+  const showModViewButton = true;
+  
+  // Dummy data for pending counts - in a real app, this would come from API
+  const pendingRequestsCount = 7;
+  
+  // State for announcement form
+  const [announcementTitle, setAnnouncementTitle] = useState('');
+  const [announcementLink, setAnnouncementLink] = useState('');
+  
+  // State for user status change form
+  const [username, setUsername] = useState('');
+  const [newStatus, setNewStatus] = useState('Member');
+  
+  // State to store the max height of the boxes
+  const [boxHeight, setBoxHeight] = useState(null);
+  
+  // Handle announcement creation (just a placeholder function)
+  const handleCreateAnnouncement = () => {
+    console.log('Creating announcement:', { title: announcementTitle, link: announcementLink });
+    // In a real app, this would call an API to create the announcement
+    alert('Announcement created!');
+    setAnnouncementTitle('');
+    setAnnouncementLink('');
+  };
+
+  // Handle user status change (placeholder function)
+  const handleStatusChange = () => {
+    console.log('Changing status for user:', { username, newStatus });
+    // In a real app, this would call an API to change the user's status
+    alert(`Status changed to ${newStatus} for ${username}!`);
+    setUsername('');
+    setNewStatus('Member');
+  };
+  
+  // Use an effect to measure and set the heights of the boxes
+  useEffect(() => {
+    const updateHeights = () => {
+      if (requestsBoxRef.current && statusBoxRef.current) {
+        const requestsHeight = requestsBoxRef.current.offsetHeight;
+        const statusHeight = statusBoxRef.current.offsetHeight;
+        setBoxHeight(Math.max(requestsHeight, statusHeight));
+      }
+    };
+    
+    // Run once after initial render
+    updateHeights();
+    
+    // Also set up a resize observer to handle window resizing
+    const resizeObserver = new ResizeObserver(updateHeights);
+    
+    if (requestsBoxRef.current && statusBoxRef.current) {
+      resizeObserver.observe(requestsBoxRef.current);
+      resizeObserver.observe(statusBoxRef.current);
+    }
+    
+    // Clean up the observer on unmount
+    return () => {
+      if (requestsBoxRef.current && statusBoxRef.current) {
+        resizeObserver.unobserve(requestsBoxRef.current);
+        resizeObserver.unobserve(statusBoxRef.current);
+      }
+    };
+  }, []);
+
+  return (
+    <div className="page-container">
+      {/* Floating button box */}
+      <GroupNavBar groupId={groupId} showModViewButton={showModViewButton} />
+      
+      {/* General Settings box */}
+      <ContentBoxWithTitle title="General Settings" backgroundColor="rgb(230, 240, 255)">
+        <div className="contentBox" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto' }}>
+          {/* Empty content for now */}
+        </div>
+      </ContentBoxWithTitle>
+      
+      {/* Create Announcement box */}
+      <ContentBoxWithTitle title="Create Announcement" backgroundColor="rgb(240, 240, 255)">
+        <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto', padding: '15px' }}>
+          <div style={{ marginBottom: '15px' }}>
+            <label htmlFor="announcement-title" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+              Announcement Title:
+            </label>
+            <input
+              id="announcement-title"
+              type="text"
+              value={announcementTitle}
+              onChange={(e) => setAnnouncementTitle(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '8px',
+                borderRadius: '4px',
+                border: '1px solid #ccc'
+              }}
+            />
+          </div>
+          
+          <div style={{ marginBottom: '20px' }}>
+            <label htmlFor="announcement-link" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+              Announcement Link:
+            </label>
+            <input
+              id="announcement-link"
+              type="text"
+              value={announcementLink}
+              onChange={(e) => setAnnouncementLink(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '8px',
+                borderRadius: '4px',
+                border: '1px solid #ccc'
+              }}
+            />
+          </div>
+          
+          <button
+            onClick={handleCreateAnnouncement}
+            className="global-button blue"
+          >
+            Create
+          </button>
+        </div>
+      </ContentBoxWithTitle>
+      
+      {/* Requests and Change Status Boxes - side by side */}
+      <div style={{ display: 'flex', gap: '20px', alignItems: 'stretch' }}>
+        {/* Requests Box */}
+        <ContentBoxWithTitle title="Requests" backgroundColor="rgb(230, 255, 230)" style={{ flex: '1 0 50%' }}>
+          <div 
+            ref={requestsBoxRef} 
+            className="contentBox standardTextFont" 
+            style={{ 
+              border: 'none', 
+              boxShadow: 'none', 
+              padding: '15px',
+              height: boxHeight ? `${boxHeight}px` : 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}
+          >
+            <div className="standardTextFont" style={{ marginBottom: '15px' }}>
+              <strong>Pending Requests:</strong> {pendingRequestsCount}
+            </div>
+            <div>
+              <Link 
+                to={`/group/${groupId}/modview/requests`}
+                className="global-button green"
+              >
+                View All Requests →
+              </Link>
+            </div>
+          </div>
+        </ContentBoxWithTitle>
+
+        {/* Change Status Box */}
+        <ContentBoxWithTitle title="Change Status" backgroundColor="rgb(230, 255, 230)" style={{ flex: '1 0 50%' }}>
+          <div 
+            ref={statusBoxRef} 
+            className="contentBox standardTextFont" 
+            style={{ 
+              border: 'none', 
+              boxShadow: 'none', 
+              padding: '15px',
+              height: boxHeight ? `${boxHeight}px` : 'auto',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+          >
+            <div style={{ flex: 1 }}>
+              <div style={{ marginBottom: '15px' }}>
+                <label htmlFor="username" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                  Username:
+                </label>
+                <input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    borderRadius: '4px',
+                    border: '1px solid #ccc'
+                  }}
+                />
+              </div>
+              
+              <div style={{ marginBottom: '20px' }}>
+                <label htmlFor="new-status" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                  New Status:
+                </label>
+                <select
+                  id="new-status"
+                  value={newStatus}
+                  onChange={(e) => setNewStatus(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    borderRadius: '4px',
+                    border: '1px solid #ccc'
+                  }}
+                >
+                  <option value="Moderator">Moderator</option>
+                  <option value="Member">Member</option>
+                  <option value="Outsider">Outsider</option>
+                </select>
+              </div>
+            </div>
+            
+            <div>
+              <button
+                onClick={handleStatusChange}
+                className="global-button green"
+              >
+                Make Changes
+              </button>
+            </div>
+          </div>
+        </ContentBoxWithTitle>
+      </div>
+    </div>
+  );
+} 
+// ===== END  : src/pages/ModView.jsx =====
+
+
+// ===== BEGIN: src/pages/User.jsx =====
+import React from 'react';
+import { useParams, Link } from 'react-router-dom';
+
+// Renamed component from Profile to User
+import styles from './User.module.css';
+import RatingGraph from '../components/RatingGraph'; // Import the new component
+import UserNavBar from '../components/UserNavBar'; // Import the new component
+
+// Generate varied dummy rating data for different groups
+const generateDummyData = (startRating, numPoints, volatility, groupName) => {
+  const data = [];
+  let currentRating = startRating;
+  let currentDate = new Date(2023, 0, 1); // Start date Jan 1, 2023
+
+  for (let i = 0; i < numPoints; i++) {
+    // Simulate rating change
+    const change = (Math.random() - 0.45) * volatility * (i + 1); // Tend to increase slightly over time
+    currentRating += change;
+    currentRating = Math.max(0, Math.round(currentRating)); // Ensure rating doesn't go below 0
+
+    // Simulate time passing (1-3 months)
+    currentDate.setMonth(currentDate.getMonth() + Math.floor(Math.random() * 3) + 1);
+    // Add some day variation
+    currentDate.setDate(Math.floor(Math.random() * 28) + 1);
+
+    // Format date as YYYY-MM-DD
+    const dateString = currentDate.toISOString().split('T')[0];
+    // Add random contest ID (integer between 1 and 10000)
+    const contest_id = Math.floor(Math.random() * 10000) + 1;
+    data.push({ date: dateString, rating: currentRating, contest_id });
+  }
+  // Add one more point closer to today for better visualization
+  const today = new Date();
+  const lastChange = (Math.random() - 0.4) * volatility;
+  currentRating += lastChange;
+  currentRating = Math.max(0, Math.round(currentRating));
+  const last_contest_id = Math.floor(Math.random() * 10000) + 1;
+  data.push({ date: today.toISOString().split('T')[0], rating: currentRating, contest_id: last_contest_id });
+  
+  // Ensure data is sorted by date just in case
+  data.sort((a, b) => Date.parse(a.date) - Date.parse(b.date));
+  return data;
+};
+
+const dummyRatingData = {
+  'root_group': generateDummyData(2100, 8, 100, 'root_group'),
+  'Global': generateDummyData(1400, 10, 80, 'Global'),
+  'Math_Club': generateDummyData(1850, 12, 120, 'Math_Club'),
+  'Chess_Enthusiasts': generateDummyData(850, 15, 60, 'Chess_Enthusiasts'),
+  'Developers': generateDummyData(1150, 7, 90, 'Developers'),
+  'Writers_Group': generateDummyData(2050, 9, 110, 'Writers_Group')
+};
+
+// Social platform icons components
+const CodeforcesIcon = ({ active }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    style={{ opacity: active ? 1 : 0.4, marginRight: '10px' }}
+  >
+    <path 
+      fill="#2196F3" 
+      d="M4,5A1,1 0 0,0 3,6V18A1,1 0 0,0 4,19H5A1,1 0 0,0 6,18V6A1,1 0 0,0 5,5H4M7,5A1,1 0 0,0 6,6V18A1,1 0 0,0 7,19H8A1,1 0 0,0 9,18V6A1,1 0 0,0 8,5H7M12,5A1,1 0 0,0 11,6V18A1,1 0 0,0 12,19H13A1,1 0 0,0 14,18V6A1,1 0 0,0 13,5H12Z" 
+    />
+  </svg>
+);
+
+const AtCoderIcon = ({ active }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="20"
+    height="20"
+    viewBox="0 0 200 200"
+    style={{ opacity: active ? 1 : 0.4, marginRight: '10px' }}
+  >
+    <path
+      fill="#222222"
+      d="M156,28H90c-5,0-9,4-9,9v25c0,5,4,9,9,9h17v11h-3c-5,0-9,4-9,9v3c0,5,4,9,9,9h35c5,0,9-4,9-9v-3c0-5-4-9-9-9h-3V71h20c5,0,9-4,9-9V37C165,32,161,28,156,28z M125,82h-5V71h5V82z"
+    />
+    <path
+      fill="#222222"
+      d="M65,82H46V53h19c3,0,5-2,5-5v-9c0-3-2-5-5-5H36c-3,0-5,2-5,5v86c0,3,2,5,5,5h29c3,0,5-2,5-5v-38C70,84,68,82,65,82z"
+    />
+  </svg>
+);
+
+const CodeChefIcon = ({ active }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="20"
+    height="20"
+    viewBox="0 0 32 32"
+    style={{ opacity: active ? 1 : 0.4 }}
+  >
+    <path
+      fill="#5B4638"
+      d="M 16 0 C 11.277344 0 7.359375 2.460938 7.359375 5.414062 C 7.359375 6.226562 7.597656 6.976562 8.054688 7.671875 C 7.683594 8.234375 7.460938 8.875 7.460938 9.574219 C 7.460938 10.46875 7.804688 11.1875 8.183594 11.90625 C 7.824219 12.511719 7.621094 13.207031 7.621094 13.949219 C 7.621094 14.621094 7.789062 15.234375 8.082031 15.78125 C 7.828125 16.246094 7.679688 16.761719 7.679688 17.316406 C 7.679688 19.667969 11.425781 21.566406 16 21.566406 C 20.574219 21.566406 24.320312 19.667969 24.320312 17.316406 C 24.320312 16.761719 24.171875 16.246094 23.917969 15.78125 C 24.210938 15.234375 24.378906 14.621094 24.378906 13.949219 C 24.378906 13.210938 24.175781 12.511719 23.816406 11.90625 C 24.195312 11.1875 24.539062 10.46875 24.539062 9.574219 C 24.539062 8.875 24.316406 8.234375 23.945312 7.671875 C 24.402344 6.976562 24.640625 6.226562 24.640625 5.414062 C 24.640625 2.460938 20.722656 0 16 0 Z M 16 1.449219 C 20.046875 1.449219 23.335938 3.304688 23.335938 5.578125 C 23.335938 7.851562 20.046875 9.707031 16 9.707031 C 11.953125 9.707031 8.664062 7.851562 8.664062 5.578125 C 8.664062 3.304688 11.953125 1.449219 16 1.449219 Z M 12.964844 3.011719 C 12.554688 3.011719 12.144531 3.210938 11.914062 3.609375 C 11.46875 4.40625 11.734375 5.558594 12.5 6.089844 C 12.730469 6.230469 12.964844 6.304688 13.199219 6.304688 C 13.605469 6.304688 14.019531 6.109375 14.246094 5.714844 C 14.695312 4.917969 14.425781 3.769531 13.664062 3.234375 C 13.433594 3.089844 13.195312 3.011719 12.964844 3.011719 Z M 19.035156 3.011719 C 18.804688 3.011719 18.566406 3.089844 18.339844 3.234375 C 17.574219 3.769531 17.304688 4.917969 17.753906 5.714844 C 17.980469 6.109375 18.394531 6.304688 18.800781 6.304688 C 19.035156 6.304688 19.269531 6.230469 19.5 6.089844 C 20.265625 5.558594 20.53125 4.40625 20.085938 3.609375 C 19.855469 3.210938 19.445312 3.011719 19.035156 3.011719 Z M 16 3.707031 C 15.582031 3.707031 15.234375 3.933594 15.085938 4.296875 C 14.882812 4.800781 15.136719 5.402344 15.679688 5.664062 C 15.785156 5.714844 15.894531 5.738281 16 5.738281 C 16.417969 5.738281 16.765625 5.511719 16.917969 5.148438 C 17.117188 4.640625 16.863281 4.042969 16.320312 3.78125 C 16.214844 3.730469 16.105469 3.707031 16 3.707031 Z M 13.894531 10.503906 C 13.777344 10.507812 13.65625 10.535156 13.539062 10.578125 C 13.15625 10.726562 12.964844 11.128906 13.023438 11.554688 C 13.140625 12.3125 14.207031 12.761719 14.8125 12.296875 C 15.25 11.953125 15.113281 11.261719 14.535156 10.882812 C 14.335938 10.753906 14.128906 10.691406 13.894531 10.503906 Z M 18.105469 10.503906 C 17.871094 10.691406 17.664062 10.753906 17.464844 10.882812 C 16.886719 11.261719 16.75 11.953125 17.1875 12.296875 C 17.792969 12.761719 18.859375 12.3125 18.976562 11.554688 C 19.035156 11.128906 18.84375 10.726562 18.460938 10.578125 C 18.34375 10.535156 18.226562 10.507812 18.105469 10.503906 Z M 12.027344 13.996094 C 11.917969 14.015625 11.804688 14.054688 11.695312 14.113281 C 10.9375 14.539062 10.972656 15.605469 11.742188 15.992188 C 12.109375 16.167969 12.546875 16.101562 12.835938 15.84375 C 13.214844 15.507812 13.253906 14.894531 12.921875 14.503906 C 12.695312 14.230469 12.355469 14.035156 12.027344 13.996094 Z M 19.972656 13.996094 C 19.644531 14.035156 19.304688 14.230469 19.078125 14.503906 C 18.746094 14.894531 18.785156 15.507812 19.164062 15.84375 C 19.453125 16.101562 19.890625 16.167969 20.257812 15.992188 C 21.027344 15.605469 21.0625 14.539062 20.304688 14.113281 C 20.195312 14.054688 20.082031 14.015625 19.972656 13.996094 Z M 16 14.78125 C 15.695312 14.78125 15.390625 14.921875 15.199219 15.199219 C 14.855469 15.671875 15.003906 16.339844 15.554688 16.628906 C 15.695312 16.710938 15.847656 16.742188 16 16.742188 C 16.304688 16.742188 16.609375 16.601562 16.800781 16.324219 C 17.144531 15.851562 16.996094 15.183594 16.445312 14.894531 C 16.304688 14.8125 16.152344 14.78125 16 14.78125 Z M 13.738281 17.738281 C 13.328125 17.742188 13 18.074219 13 18.488281 C 13 20.316406 14.347656 21.800781 16 21.800781 C 17.652344 21.800781 19 20.316406 19 18.488281 C 19 18.074219 18.671875 17.742188 18.261719 17.738281 C 17.851562 17.742188 17.523438 18.074219 17.523438 18.488281 C 17.523438 19.507812 16.847656 20.320312 16 20.320312 C 15.152344 20.320312 14.476562 19.507812 14.476562 18.488281 C 14.476562 18.074219 14.148438 17.742188 13.738281 17.738281 Z M 15 23 C 13.585938 25.65625 11.507812 28.148438 9.421875 30 L 22.578125 30 C 20.492188 28.148438 18.414062 25.65625 17 23 Z"
+    />
+  </svg>
+);
+
+export default function User() {
+  const { username } = useParams();
+  // Assume cf_username is the same as username for now. In a real app, these might differ.
+  const cf_username = username;
+  
+  // Dummy social platform links (in a real app, these would come from backend)
+  // Empty string means no link provided by user
+  const socialLinks = {
+    codeforces: `https://codeforces.com/profile/${username}`,
+    atcoder: `https://atcoder.jp/users/${username}`,
+    codechef: "" // Example of user not providing this link
+  };
+  
+  // Enhanced group data: 
+  // [group_name, group_rating, group_rank, group_rank_color, max_group_rating, max_group_rank, max_group_rank_color, member_since, role, rated_contests, report_accuracy_accepted, report_accuracy_total]
+  const groups = [
+    ['root_group', 2185, 'Master', 'rgb(255, 140, 0)', 2185, 'Master', 'rgb(255, 140, 0)', '2022-01-15', 'moderator', 24, 12, 15],
+    ['Global', 1450, 'Specialist', 'rgb(30, 150, 255)', 1500, 'Specialist', 'rgb(30, 150, 255)', '2022-01-15', 'member', 32, 5, 5],
+    ['Math_Club', 1890, 'Candidate Master', 'rgb(170, 0, 170)', 1950, 'Candidate Master', 'rgb(170, 0, 170)', '2022-02-10', 'member', 18, 7, 10],
+    ['Chess_Enthusiasts', 900, 'Pupil', 'rgb(0, 180, 0)', 1000, 'Pupil', 'rgb(0, 180, 0)', '2022-03-22', 'moderator', 12, 3, 9],
+    ['Developers', 1200, 'Apprentice', 'rgb(170, 170, 170)', 1250, 'Apprentice', 'rgb(170, 170, 170)', '2022-04-07', 'member', 8, 8, 12],
+    ['Writers_Group', 2100, 'Candidate Master', 'rgb(170, 0, 170)', 2170, 'Master', 'rgb(255, 140, 0)', '2022-05-14', 'member', 15, 9, 11]
+  ];
+  // Use React state for selected group index
+  const [selectedGroupIdx, setSelectedGroupIdx] = React.useState(0);
+  const selectedGroup = groups[selectedGroupIdx];
+
+  // Sample trust score (in a real app, this would come from API)
+  const trustScore = 82;
+  
+  // Dummy registration date
+  const registrationDate = "Sep 15, 2022";
+  
+  // Number of groups the user is a member of
+  const numberOfGroups = groups.length;
+  const removedNumberOfGroups = 0;
+  const handleGroupChange = (e) => {
+    setSelectedGroupIdx(Number(e.target.value));
+  };
+  
+  // Function to determine trust score color based on value
+  const getTrustScoreColor = (score) => {
+    if (score >= 95) return 'rgb(0, 150, 0)';      // Dark green for very high
+    if (score >= 85) return 'rgb(50, 180, 0)';     // Green
+    if (score >= 75) return 'rgb(120, 180, 0)';    // Light green
+    if (score >= 65) return 'rgb(180, 180, 0)';    // Yellow
+    if (score >= 50) return 'rgb(220, 150, 0)';    // Orange
+    if (score >= 35) return 'rgb(230, 100, 0)';    // Dark orange
+    if (score >= 20) return 'rgb(220, 50, 0)';     // Light red
+    return 'rgb(180, 0, 0)';                      // Dark red for very low
+  };
+  
+  // Function to format date in a readable format
+  const formatDate = (dateString) => {
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
+  // Get the rating history for the currently selected group
+  const currentRatingHistory = dummyRatingData[selectedGroup[0]] || [];
+
+  return (
+    <div className="page-container">
+      {/* Updated floating button box with Links */}
+      <UserNavBar username={username} />
+      
+      {/* Two content boxes side by side */}
+      <div className={styles.contentBoxRow}>
+        {/* Left content box with user info */}
+        <div className={`contentBox ${styles.contentBoxLeft}`}>
+          <div className={styles.profileInfo}>
+            {/* Rank and group name above username */}
+            <div style={{ fontSize: '1rem', marginBottom: '0.08rem' }}>
+              <span style={{ color: selectedGroup[3], fontWeight: 'bold' }}>{selectedGroup[2]}</span>{' '}
+              {/* Group name is now a link */}
+              <Link 
+                to={`/group/${selectedGroup[0]}`} 
+                className="tableCellLink"
+              >
+                [{selectedGroup[0]}]
+              </Link>
+            </div>
+            {/* Username - Now displays cf_username and links to Codeforces profile */}
+            <a 
+              href={`https://codeforces.com/profile/${cf_username}`} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className={styles.usernameLink}
+            >
+              <span 
+                className={styles.username} 
+                style={{ color: selectedGroup[3], marginBottom: '0.76rem', display: 'inline-block' }}
+              >
+                {cf_username}
+              </span>
+            </a>
+            {/* Stats List */}
+            <div className={`${styles.statsList} standardTextFont`}>
+              <div className={styles.statItem}>
+                {/* Contest Rating group name is now a link */}
+                Contest Rating [
+                <Link 
+                  to={`/group/${selectedGroup[0]}`} 
+                  className="tableCellLink"
+                >
+                  {selectedGroup[0]}
+                </Link>
+                ]: <span style={{ color: selectedGroup[3], fontWeight: 'bold' }}>{selectedGroup[1]}</span> (max. <span style={{ color: selectedGroup[6], fontWeight: 'bold' }}>{selectedGroup[5]}</span>, <span style={{ color: selectedGroup[6], fontWeight: 'bold' }}>{selectedGroup[4]}</span>)
+              </div>
+              <div className={styles.statItem}>
+                Trust Score: <span className={styles.trustScore} style={{ color: getTrustScoreColor(trustScore) }}>{trustScore}%</span>
+              </div>
+              <div className={styles.statItem}>
+                Member of: <span>{numberOfGroups} groups</span>
+              </div>
+              <div className={styles.statItem}>
+                Removed from: <span>{removedNumberOfGroups} groups</span>
+              </div>
+              <div className={styles.statItem}>
+                Registered: <span>{registrationDate}</span>
+              </div>
+              {/* Social platforms section */}
+              <div className={styles.statItem}>
+                Social: <span className={styles.socialIcons}>
+                  {socialLinks.codeforces ? (
+                    <a 
+                      href={socialLinks.codeforces} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      title="Codeforces profile"
+                    >
+                      <CodeforcesIcon active={true} />
+                    </a>
+                  ) : (
+                    <CodeforcesIcon active={false} />
+                  )}
+                  
+                  {socialLinks.atcoder ? (
+                    <a 
+                      href={socialLinks.atcoder} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      title="AtCoder profile"
+                    >
+                      <AtCoderIcon active={true} />
+                    </a>
+                  ) : (
+                    <AtCoderIcon active={false} />
+                  )}
+                  
+                  {socialLinks.codechef ? (
+                    <a 
+                      href={socialLinks.codechef} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      title="CodeChef profile"
+                    >
+                      <CodeChefIcon active={true} />
+                    </a>
+                  ) : (
+                    <CodeChefIcon active={false} />
+                  )}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Right content box with group details */}
+        <div className={`contentBox ${styles.contentBoxRight}`}>
+          {/* Group dropdown moved to top of right box */}
+          <div className={`${styles.groupRatingRow} standardTextFont`} style={{ marginBottom: '15px' }}>
+            <h3 style={{ margin: 0, marginRight: '10px' }}>Group: </h3>
+            <select className={styles.groupDropdown} value={selectedGroupIdx} onChange={handleGroupChange}>
+              {groups.map((group, idx) => (
+                <option key={group[0] + idx} value={idx}>{group[0]}</option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Group information with the same styling as the left box */}
+          <div className={`${styles.statsList} standardTextFont`}>
+            <div className={styles.statItem}>
+              Role: <span style={{ textTransform: 'capitalize' }}>{selectedGroup[8]}</span>
+            </div>
+            <div className={styles.statItem}>
+              Rated Contests: <span>{selectedGroup[9]}</span>
+            </div>
+            <div className={styles.statItem}>
+              Report Accuracy: <span title={`${selectedGroup[10]} accepted out of ${selectedGroup[11]} reports`}>
+                {Math.round((selectedGroup[10] / selectedGroup[11]) * 100)}% ({selectedGroup[10]}/{selectedGroup[11]})
+              </span>
+            </div>
+            <div className={styles.statItem}>
+              Member Since: <span>{formatDate(selectedGroup[7])}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Rating Graph box (full width) */}
+      <div className="contentBox">
+        <RatingGraph ratingHistory={currentRatingHistory} />
+      </div>
+    </div>
+  );
+}
+// ===== END  : src/pages/User.jsx =====
+
+
+// ===== BEGIN: src/pages/UserGroups.module.css =====
+/* UserGroups module styles */
+.pageTitle {
+  margin: 1rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.groupLink {
+  text-decoration: none;
+  color: #3B5998;
+  font-weight: 500;
+}
+
+.groupLink:hover {
+  text-decoration: underline;
+} 
+// ===== END  : src/pages/UserGroups.module.css =====
+
+
+// ===== BEGIN: src/pages/GroupReports.jsx =====
+import React, { useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import SortablePagedTableBox from '../components/SortablePagedTableBox';
+import { getRatingColor } from '../utils/ratingUtils';
+import GroupNavBar from '../components/GroupNavBar';
+import ContentBoxWithTitle from '../components/ContentBoxWithTitle';
+
+export default function GroupReports() {
+  const { groupId } = useParams();
+  
+  // State for report form
+  const [respondent, setRespondent] = useState('');
+  const [contestIds, setContestIds] = useState('');
+  const [reportText, setReportText] = useState('');
+  
+  // Handle report creation (just a placeholder function)
+  const handleCreateReport = () => {
+    console.log('Creating report:', { respondent, contestIds, reportText });
+    // In a real app, this would call an API to create the report
+    alert('Report created!');
+    setRespondent('');
+    setContestIds('');
+    setReportText('');
+  };
+  
+  // Function to format date
+  const formatDate = (dateString) => {
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
+  // Sample report data - in real app this would come from backend
+  const reportsData = [
+    { 
+      id: 1, 
+      contestId: 246,
+      reporter: {
+        username: "alice",
+        rating: 2185,
+        reportAccuracy: { accepted: 12, total: 15 }
+      },
+      respondent: {
+        username: "frank",
+        rating: 2100,
+        previouslyRemovedFromThisGroup: false,
+        previousReportIds: []
+      },
+      reportDate: "2024-03-20",
+      status: "active"
+    },
+    { 
+      id: 2, 
+      contestId: null,
+      reporter: {
+        username: "bob",
+        rating: 1890,
+        reportAccuracy: { accepted: 7, total: 10 }
+      },
+      respondent: {
+        username: "david",
+        rating: 900,
+        previouslyRemovedFromThisGroup: true,
+        previousReportIds: [101, 203]
+      },
+      reportDate: "2024-03-19",
+      status: "active"
+    },
+    { 
+      id: 3, 
+      contestId: 247,
+      reporter: {
+        username: "charlie",
+        rating: 1450,
+        reportAccuracy: { accepted: 5, total: 5 }
+      },
+      respondent: {
+        username: "eric",
+        rating: 1920,
+        previouslyRemovedFromThisGroup: false,
+        previousReportIds: []
+      },
+      reportDate: "2024-03-18",
+      status: "processed",
+      handledBy: {
+        username: "moderator1",
+        rating: 2300
+      },
+      responseDate: "2024-03-19"
+    },
+    { 
+      id: 4, 
+      contestId: null,
+      reporter: {
+        username: "diana",
+        rating: 2050,
+        reportAccuracy: { accepted: 8, total: 12 }
+      },
+      respondent: {
+        username: "grace",
+        rating: 1750,
+        previouslyRemovedFromThisGroup: true,
+        previousReportIds: [157]
+      },
+      reportDate: "2024-03-17",
+      status: "active"
+    },
+    { 
+      id: 5, 
+      contestId: 245,
+      reporter: {
+        username: "evan",
+        rating: 1780,
+        reportAccuracy: { accepted: 3, total: 9 }
+      },
+      respondent: {
+        username: "henry",
+        rating: 1350,
+        previouslyRemovedFromThisGroup: false,
+        previousReportIds: []
+      },
+      reportDate: "2024-03-16",
+      status: "processed",
+      handledBy: {
+        username: "moderator2",
+        rating: 2250
+      },
+      responseDate: "2024-03-17"
+    },
+    // Additional 20 dummy entries
+    { 
+      id: 6, 
+      contestId: 244,
+      reporter: {
+        username: "fiona",
+        rating: 1650,
+        reportAccuracy: { accepted: 10, total: 14 }
+      },
+      respondent: {
+        username: "oscar",
+        rating: 1680,
+        previouslyRemovedFromThisGroup: false,
+        previousReportIds: []
+      },
+      reportDate: "2024-03-15",
+      status: "active"
+    },
+    { 
+      id: 7, 
+      contestId: null,
+      reporter: {
+        username: "george",
+        rating: 1920,
+        reportAccuracy: { accepted: 9, total: 11 }
+      },
+      respondent: {
+        username: "peter",
+        rating: 1520,
+        previouslyRemovedFromThisGroup: true,
+        previousReportIds: [142]
+      },
+      reportDate: "2024-03-14",
+      status: "processed",
+      handledBy: {
+        username: "moderator3",
+        rating: 2150
+      },
+      responseDate: "2024-03-15"
+    },
+    { 
+      id: 8, 
+      contestId: 243,
+      reporter: {
+        username: "hannah",
+        rating: 2150,
+        reportAccuracy: { accepted: 15, total: 18 }
+      },
+      respondent: {
+        username: "quinn",
+        rating: 1310,
+        previouslyRemovedFromThisGroup: false,
+        previousReportIds: []
+      },
+      reportDate: "2024-03-13",
+      status: "active"
+    },
+    { 
+      id: 9, 
+      contestId: 242,
+      reporter: {
+        username: "isaac",
+        rating: 1800,
+        reportAccuracy: { accepted: 6, total: 8 }
+      },
+      respondent: {
+        username: "rachel",
+        rating: 2050,
+        previouslyRemovedFromThisGroup: false,
+        previousReportIds: []
+      },
+      reportDate: "2024-03-12",
+      status: "processed",
+      handledBy: {
+        username: "moderator1",
+        rating: 2300
+      },
+      responseDate: "2024-03-13"
+    },
+    { 
+      id: 10, 
+      contestId: null,
+      reporter: {
+        username: "julia",
+        rating: 1550,
+        reportAccuracy: { accepted: 11, total: 16 }
+      },
+      respondent: {
+        username: "steve",
+        rating: 1780,
+        previouslyRemovedFromThisGroup: true,
+        previousReportIds: [178]
+      },
+      reportDate: "2024-03-11",
+      status: "active"
+    },
+    { 
+      id: 11, 
+      contestId: 241,
+      reporter: {
+        username: "kevin",
+        rating: 1720,
+        reportAccuracy: { accepted: 8, total: 13 }
+      },
+      respondent: {
+        username: "taylor",
+        rating: 1150,
+        previouslyRemovedFromThisGroup: false,
+        previousReportIds: []
+      },
+      reportDate: "2024-03-10",
+      status: "processed",
+      handledBy: {
+        username: "moderator2",
+        rating: 2250
+      },
+      responseDate: "2024-03-11"
+    },
+    { 
+      id: 12, 
+      contestId: 240,
+      reporter: {
+        username: "laura",
+        rating: 2010,
+        reportAccuracy: { accepted: 14, total: 17 }
+      },
+      respondent: {
+        username: "ursula",
+        rating: 1470,
+        previouslyRemovedFromThisGroup: false,
+        previousReportIds: []
+      },
+      reportDate: "2024-03-09",
+      status: "active"
+    },
+    { 
+      id: 13, 
+      contestId: null,
+      reporter: {
+        username: "mike",
+        rating: 1600,
+        reportAccuracy: { accepted: 4, total: 7 }
+      },
+      respondent: {
+        username: "victor",
+        rating: 1830,
+        previouslyRemovedFromThisGroup: true,
+        previousReportIds: [132, 165]
+      },
+      reportDate: "2024-03-08",
+      status: "processed",
+      handledBy: {
+        username: "moderator3",
+        rating: 2150
+      },
+      responseDate: "2024-03-09"
+    },
+    { 
+      id: 14, 
+      contestId: 239,
+      reporter: {
+        username: "natalie",
+        rating: 1850,
+        reportAccuracy: { accepted: 10, total: 15 }
+      },
+      respondent: {
+        username: "wendy",
+        rating: 1250,
+        previouslyRemovedFromThisGroup: false,
+        previousReportIds: []
+      },
+      reportDate: "2024-03-07",
+      status: "active"
+    },
+    { 
+      id: 15, 
+      contestId: 238,
+      reporter: {
+        username: "oliver",
+        rating: 1980,
+        reportAccuracy: { accepted: 12, total: 14 }
+      },
+      respondent: {
+        username: "xavier",
+        rating: 1580,
+        previouslyRemovedFromThisGroup: false,
+        previousReportIds: []
+      },
+      reportDate: "2024-03-06",
+      status: "processed",
+      handledBy: {
+        username: "moderator1",
+        rating: 2300
+      },
+      responseDate: "2024-03-07"
+    },
+    { 
+      id: 16, 
+      contestId: null,
+      reporter: {
+        username: "patricia",
+        rating: 1520,
+        reportAccuracy: { accepted: 9, total: 12 }
+      },
+      respondent: {
+        username: "yvonne",
+        rating: 1420,
+        previouslyRemovedFromThisGroup: true,
+        previousReportIds: [189]
+      },
+      reportDate: "2024-03-05",
+      status: "active"
+    },
+    { 
+      id: 17, 
+      contestId: 237,
+      reporter: {
+        username: "quentin",
+        rating: 1750,
+        reportAccuracy: { accepted: 7, total: 9 }
+      },
+      respondent: {
+        username: "zach",
+        rating: 1950,
+        previouslyRemovedFromThisGroup: false,
+        previousReportIds: []
+      },
+      reportDate: "2024-03-04",
+      status: "processed",
+      handledBy: {
+        username: "moderator2",
+        rating: 2250
+      },
+      responseDate: "2024-03-05"
+    },
+    { 
+      id: 18, 
+      contestId: 236,
+      reporter: {
+        username: "robert",
+        rating: 2120,
+        reportAccuracy: { accepted: 16, total: 20 }
+      },
+      respondent: {
+        username: "amanda",
+        rating: 1680,
+        previouslyRemovedFromThisGroup: false,
+        previousReportIds: []
+      },
+      reportDate: "2024-03-03",
+      status: "active"
+    },
+    { 
+      id: 19, 
+      contestId: null,
+      reporter: {
+        username: "sarah",
+        rating: 1840,
+        reportAccuracy: { accepted: 6, total: 10 }
+      },
+      respondent: {
+        username: "brandon",
+        rating: 1370,
+        previouslyRemovedFromThisGroup: true,
+        previousReportIds: [145]
+      },
+      reportDate: "2024-03-02",
+      status: "processed",
+      handledBy: {
+        username: "moderator3",
+        rating: 2150
+      },
+      responseDate: "2024-03-03"
+    },
+    { 
+      id: 20, 
+      contestId: 235,
+      reporter: {
+        username: "thomas",
+        rating: 1900,
+        reportAccuracy: { accepted: 11, total: 13 }
+      },
+      respondent: {
+        username: "cathy",
+        rating: 2080,
+        previouslyRemovedFromThisGroup: false,
+        previousReportIds: []
+      },
+      reportDate: "2024-03-01",
+      status: "active"
+    },
+    { 
+      id: 21, 
+      contestId: 234,
+      reporter: {
+        username: "uma",
+        rating: 1670,
+        reportAccuracy: { accepted: 8, total: 11 }
+      },
+      respondent: {
+        username: "derek",
+        rating: 1560,
+        previouslyRemovedFromThisGroup: false,
+        previousReportIds: []
+      },
+      reportDate: "2024-02-29",
+      status: "processed",
+      handledBy: {
+        username: "moderator1",
+        rating: 2300
+      },
+      responseDate: "2024-03-01"
+    },
+    { 
+      id: 22, 
+      contestId: null,
+      reporter: {
+        username: "vincent",
+        rating: 2000,
+        reportAccuracy: { accepted: 13, total: 16 }
+      },
+      respondent: {
+        username: "emily",
+        rating: 1790,
+        previouslyRemovedFromThisGroup: true,
+        previousReportIds: [167, 192]
+      },
+      reportDate: "2024-02-28",
+      status: "active"
+    },
+    { 
+      id: 23, 
+      contestId: 233,
+      reporter: {
+        username: "walter",
+        rating: 1930,
+        reportAccuracy: { accepted: 9, total: 12 }
+      },
+      respondent: {
+        username: "felix",
+        rating: 1640,
+        previouslyRemovedFromThisGroup: false,
+        previousReportIds: []
+      },
+      reportDate: "2024-02-27",
+      status: "processed",
+      handledBy: {
+        username: "moderator2",
+        rating: 2250
+      },
+      responseDate: "2024-02-28"
+    },
+    { 
+      id: 24, 
+      contestId: 232,
+      reporter: {
+        username: "xander",
+        rating: 1720,
+        reportAccuracy: { accepted: 7, total: 10 }
+      },
+      respondent: {
+        username: "gina",
+        rating: 1510,
+        previouslyRemovedFromThisGroup: false,
+        previousReportIds: []
+      },
+      reportDate: "2024-02-26",
+      status: "active"
+    },
+    { 
+      id: 25, 
+      contestId: null,
+      reporter: {
+        username: "yolanda",
+        rating: 1880,
+        reportAccuracy: { accepted: 10, total: 14 }
+      },
+      respondent: {
+        username: "harry",
+        rating: 1970,
+        previouslyRemovedFromThisGroup: true,
+        previousReportIds: [138]
+      },
+      reportDate: "2024-02-25",
+      status: "processed",
+      handledBy: {
+        username: "moderator3",
+        rating: 2150
+      },
+      responseDate: "2024-02-26"
+    }
+  ];
+
+  // Split reports into active and processed
+  const activeReports = reportsData.filter(report => report.status === "active");
+  const processedReports = reportsData.filter(report => report.status === "processed");
+
+  // Function to transform report data into table rows
+  const transformReportsData = (reports, includeHandledBy = false) => {
+    return reports.map(report => {
+      // Create the "Contest ID" content
+      const contestContent = report.contestId ? (
+        <Link to={`/group/${groupId}/contest/${report.contestId}`} className="tableCellLink">
+          {report.contestId}
+        </Link>
+      ) : (
+        <span>-</span>
+      );
+      
+      // Calculate report accuracy percentage
+      const accuracyPercentage = Math.round((report.reporter.reportAccuracy.accepted / report.reporter.reportAccuracy.total) * 100);
+      
+      // Create the "Previously Removed" content
+      let previouslyRemovedContent;
+      if (report.respondent.previouslyRemovedFromThisGroup) {
+        // If previously removed, show links to reports
+        previouslyRemovedContent = (
+          <div style={{ color: 'red' }}>
+            Yes - 
+            {report.respondent.previousReportIds.map((reportId, index) => (
+              <span key={reportId}>
+                {index > 0 && ", "}
+                <Link to={`/group/${groupId}/report/${reportId}`} className="tableCellLink">
+                  {reportId}
+                </Link>
+              </span>
+            ))}
+          </div>
+        );
+      } else {
+        // If not previously removed, show "No" in green
+        previouslyRemovedContent = <div style={{ color: 'green' }}>No</div>;
+      }
+      
+      // Create the row data with base columns
+      const rowData = [
+        report.id,
+        contestContent,
+        <Link to={`/user/${report.reporter.username}`} className="tableCellLink" style={{ color: getRatingColor(report.reporter.rating), fontWeight: 'bold' }}>
+          {report.reporter.username}
+        </Link>,
+        <span title={`${report.reporter.reportAccuracy.accepted} accepted out of ${report.reporter.reportAccuracy.total} reports`}>
+          {accuracyPercentage}% ({report.reporter.reportAccuracy.accepted}/{report.reporter.reportAccuracy.total})
+        </span>,
+        <Link to={`/user/${report.respondent.username}`} className="tableCellLink" style={{ color: getRatingColor(report.respondent.rating), fontWeight: 'bold' }}>
+          {report.respondent.username}
+        </Link>,
+        previouslyRemovedContent,
+        formatDate(report.reportDate),
+      ];
+      
+      // Add additional columns for processed reports
+      if (includeHandledBy && report.handledBy) {
+        // Add reportee
+        rowData.push(
+          <Link to={`/user/${report.handledBy.username}`} className="tableCellLink" style={{ color: getRatingColor(report.handledBy.rating), fontWeight: 'bold' }}>
+            {report.handledBy.username}
+          </Link>
+        );
+        
+        // Add response date
+        rowData.push(
+          formatDate(report.responseDate)
+        );
+      }
+      
+      // Add action link as the last column
+      rowData.push(
+        <Link 
+          to={`/group/${groupId}/report/${report.id}`}
+          style={{
+            display: 'inline-block',
+            backgroundColor: '#4a90e2',
+            padding: '6px 12px',
+            borderRadius: '4px',
+            textDecoration: 'none',
+            color: 'white',
+            fontWeight: '500',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          View →
+        </Link>
+      );
+      
+      return rowData;
+    });
+  };
+
+  // Define columns for the tables
+  const activeColumns = ["Report ID", "Contest ID", "Reporter", "Report Accuracy", "Respondent", "Previously Removed", "Report Date", "Action"];
+  const processedColumns = [...activeColumns.slice(0, -1), "Reportee", "Response Date", "Action"];
+  
+  // Transform the data for the table components
+  const activeTableRows = transformReportsData(activeReports);
+  const processedTableRows = transformReportsData(processedReports, true);
+
+  return (
+    <div className="page-container">
+      {/* Floating button box */}
+      <GroupNavBar groupId={groupId} showModViewButton={true} />
+      
+      {/* Create Report Box */}
+      <ContentBoxWithTitle title="Create Report" backgroundColor="rgb(240, 240, 255)">
+        <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto', padding: '15px' }}>
+          <div style={{ marginBottom: '15px' }}>
+            <label htmlFor="respondent" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+              Respondent:
+            </label>
+            <input
+              id="respondent"
+              type="text"
+              value={respondent}
+              onChange={(e) => setRespondent(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '8px',
+                borderRadius: '4px',
+                border: '1px solid #ccc'
+              }}
+            />
+          </div>
+          
+          <div style={{ marginBottom: '15px' }}>
+            <label htmlFor="contest-ids" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+              Contest ID(s):
+            </label>
+            <input
+              id="contest-ids"
+              type="text"
+              value={contestIds}
+              onChange={(e) => setContestIds(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '8px',
+                borderRadius: '4px',
+                border: '1px solid #ccc'
+              }}
+            />
+          </div>
+          
+          <div style={{ marginBottom: '20px' }}>
+            <label htmlFor="report-text" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+              Report (Max 500 characters):
+            </label>
+            <textarea
+              id="report-text"
+              value={reportText}
+              onChange={(e) => setReportText(e.target.value)}
+              maxLength={500}
+              style={{
+                width: '100%',
+                padding: '8px',
+                borderRadius: '4px',
+                border: '1px solid #ccc',
+                minHeight: '100px',
+                resize: 'vertical'
+              }}
+            />
+          </div>
+          
+          <button
+            onClick={handleCreateReport}
+            className="global-button blue"
+          >
+            Create
+          </button>
+        </div>
+      </ContentBoxWithTitle>
+      
+      {/* Active Reports Table */}
+      <SortablePagedTableBox 
+        title="Active Reports"
+        columns={activeColumns}
+        data={activeTableRows}
+        backgroundColor="rgb(255, 245, 230)" // Light orange
+        itemsPerPage={10}
+        initialSortColumnIndex={0} // Report ID column
+        initialSortDirection="desc" // Descending order
+      />
+      
+      {/* Processed Reports Table */}
+      <SortablePagedTableBox 
+        title="Processed Reports"
+        columns={processedColumns}
+        data={processedTableRows}
+        backgroundColor="rgb(230, 255, 240)" // Light green
+        itemsPerPage={10}
+        initialSortColumnIndex={0} // Report ID column
+        initialSortDirection="desc" // Descending order
+      />
+    </div>
+  );
+} 
+// ===== END  : src/pages/GroupReports.jsx =====
+
+
+// ===== BEGIN: src/pages/UserGroups.jsx =====
+import React from 'react';
+import { useParams, Link } from 'react-router-dom';
+import BasicTableBox from '../components/BasicTableBox';
+import titleStyles from '../components/ContentBoxWithTitle.module.css';
+import { getRatingColor, getRankName } from '../utils/ratingUtils';
+import UserNavBar from '../components/UserNavBar';
+
+// Import styles if needed
+import styles from './UserGroups.module.css';
+
+export default function UserGroups() {
+  const { username } = useParams();
+  
+  // Updated dummy group data with rating, max rating, and join date
+  const userGroups = [
+    { 
+      name: 'root_group', 
+      rating: 2185, 
+      maxRating: 2200, 
+      joined: '2022-09-15' 
+    },
+    { 
+      name: 'Global', 
+      rating: 1450, 
+      maxRating: 1500, 
+      joined: '2022-09-15' 
+    },
+    { 
+      name: 'Math_Club', 
+      rating: 1890, 
+      maxRating: 1950, 
+      joined: '2022-10-03' 
+    },
+    { 
+      name: 'Chess_Enthusiasts', 
+      rating: 900, 
+      maxRating: 1000, 
+      joined: '2022-11-22' 
+    },
+    { 
+      name: 'Developers', 
+      rating: 1200, 
+      maxRating: 1250, 
+      joined: '2023-01-07' 
+    },
+    { 
+      name: 'Writers_Group', 
+      rating: 2100, 
+      maxRating: 2170, 
+      joined: '2023-02-14' 
+    }
+  ];
+  
+  // Function to format the date
+  const formatDate = (dateString) => {
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
+  // Transform the data for the TableBox component
+  const columns = ["Group", "Rating", "Date Joined"];
+  const data = userGroups.map(group => [
+    <Link to={`/group/${group.name}`} className="tableCellLink">{group.name}</Link>,
+    <div>
+      <span style={{ color: getRatingColor(group.rating), fontWeight: 'bold' }}>
+        {group.rating}
+      </span>
+      {' '}
+      (Max: <span style={{ color: getRatingColor(group.maxRating), fontWeight: 'bold' }}>
+        {group.maxRating}
+      </span>)
+    </div>,
+    formatDate(group.joined)
+  ]);
+
+  return (
+    <div className="page-container">
+      {/* Floating button box - same as in User.jsx */}
+      <UserNavBar username={username} />
+      
+      {/* Use BasicTableBox component instead of TableBox */}
+      <BasicTableBox 
+        columns={columns}
+        data={data}
+      />
+    </div>
+  );
+} 
+// ===== END  : src/pages/UserGroups.jsx =====
+
+
+// ===== BEGIN: src/pages/Groups.jsx =====
+import React, { useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import SortablePagedTableBox from '../components/SortablePagedTableBox';
+
+export default function Groups() {
+  // Re-define the main group
+  const mainGroup = useMemo(() => ({
+    id: 1,
+    name: "main",
+    type: "restricted membership",
+    created: "2022-01-01",
+    memberCount: 2543,
+    isPinned: true // Keep this for potential future use, though not directly used by table
+  }), []);
+
+  // Generate dummy group entries (excluding the main group again)
+  const groupsData = useMemo(() => [
+    { id: 2, name: "CompetitiveProgramming", type: "anyone can join", created: "2022-03-15", memberCount: 1247 },
+    { id: 3, name: "WebDevelopment", type: "anyone can join", created: "2022-04-22", memberCount: 856 },
+    { id: 4, name: "MachineLearning", type: "restricted membership", created: "2022-05-10", memberCount: 943 },
+    { id: 5, name: "AlgorithmStudy", type: "anyone can join", created: "2022-06-05", memberCount: 621 },
+    { id: 6, name: "SystemDesign", type: "restricted membership", created: "2022-07-18", memberCount: 734 },
+    { id: 7, name: "DataStructures", type: "anyone can join", created: "2022-08-30", memberCount: 512 },
+    { id: 8, name: "GameDevelopment", type: "anyone can join", created: "2022-09-12", memberCount: 389 },
+    { id: 9, name: "UIUXDesign", type: "restricted membership", created: "2022-10-05", memberCount: 278 },
+    { id: 10, name: "MobileAppDev", type: "anyone can join", created: "2022-11-18", memberCount: 456 },
+    { id: 11, name: "CloudComputing", type: "restricted membership", created: "2022-12-07", memberCount: 321 },
+    { id: 12, name: "DevOps", type: "anyone can join", created: "2023-01-19", memberCount: 298 },
+    { id: 13, name: "Cybersecurity", type: "restricted membership", created: "2023-02-03", memberCount: 345 },
+    { id: 14, name: "ArtificialIntelligence", type: "restricted membership", created: "2023-03-22", memberCount: 587 },
+    { id: 15, name: "Blockchain", type: "anyone can join", created: "2023-04-11", memberCount: 203 },
+    { id: 16, name: "DatabaseDesign", type: "anyone can join", created: "2023-05-29", memberCount: 312 },
+    { id: 17, name: "FrontendMasters", type: "restricted membership", created: "2023-06-14", memberCount: 429 },
+    { id: 18, name: "BackendEngineers", type: "restricted membership", created: "2023-07-26", memberCount: 385 },
+    { id: 19, name: "QualityAssurance", type: "anyone can join", created: "2023-08-09", memberCount: 267 },
+    { id: 20, name: "APIDesign", type: "anyone can join", created: "2023-09-30", memberCount: 318 },
+    { id: 21, name: "SoftwareArchitecture", type: "restricted membership", created: "2023-10-17", memberCount: 502 }
+  ], []);
+
+  // Function to format the date
+  const formatDate = (dateString) => {
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
+  // Re-add Pin icon SVG component
+  const PinIcon = () => (
+    <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      width="14" 
+      height="14" 
+      viewBox="0 0 24 24" 
+      style={{ marginRight: '6px', verticalAlign: 'middle', color: '#555' }}
+    >
+      <path 
+        fill="currentColor" 
+        d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z" 
+      />
+    </svg>
+  );
+
+  // Define columns for the table
+  const columns = ["Group", "Type", "Members", "Date of Creation"];
+  
+  // Create main group row using useMemo for stability
+  const mainGroupRow = useMemo(() => [
+    <div style={{ display: 'flex', alignItems: 'center' }}>
+      <PinIcon />
+      <Link to={`/group/${mainGroup.name}`} className="tableCellLink" style={{ fontWeight: 600 }}>{mainGroup.name}</Link>
+    </div>,
+    <span style={{ fontWeight: 500 }}>{mainGroup.type}</span>,
+    <span style={{ fontWeight: 500 }}>{mainGroup.memberCount.toLocaleString()}</span>,
+    <span style={{ fontWeight: 500 }}>{formatDate(mainGroup.created)}</span>
+  ], [mainGroup]); // Depend on mainGroup object
+  
+  // Transform the rest of the data using useMemo
+  const otherGroupsRows = useMemo(() => {
+    return groupsData.map(group => [
+      <Link to={`/group/${group.name}`} className="tableCellLink">{group.name}</Link>,
+      group.type,
+      group.memberCount.toLocaleString(),
+      formatDate(group.created)
+    ]);
+  }, [groupsData]); // Depend on groupsData array
+
+  return (
+    <div className="page-container">
+      <SortablePagedTableBox 
+        columns={columns}
+        data={otherGroupsRows} // Pass the sortable rows
+        pinnedRows={[mainGroupRow]} // Pass the pinned row(s) in an array
+        backgroundColor="rgb(230, 240, 255)"
+        itemsPerPage={15}
+        initialSortColumnIndex={2} // Member Count column
+        initialSortDirection="desc" // Descending order
+      />
+    </div>
+  );
+}
+// ===== END  : src/pages/Groups.jsx =====
+
+
+// ===== BEGIN: src/pages/Group.module.css =====
+.groupInfo {
+  width: 100%;
+}
+
+.contentBoxRow {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+.contentBoxLeft {
+  flex: 0 0 75%; /* Fixed at 75% width */
+  min-width: 0; /* Prevent overflow */
+}
+
+.contentBoxRight {
+  flex: 0 0 25%; /* Fixed at 25% width */
+  min-width: 0; /* Prevent overflow */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.statItem {
+  position: relative;
+  padding-left: 1rem;
+  font-size: 0.95rem;
+  color: #444;
+  margin-bottom: 0.6rem;
+}
+
+.statItem:before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #777;
+}
+
+.statsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 0.5rem; /* Reduced space after the about box */
+}
+
+.groupName {
+  color: #000;
+  font-size: 1.8rem;
+  margin-top: 0;
+  margin-bottom: 0.8rem;
+  text-transform: none;
+  font-weight: bold;
+}
+
+.aboutBox {
+  background-color: #f7f7f7;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 0.7rem;
+  margin-bottom: 0.5rem; /* Minimal spacing below the box */
+}
+
+.aboutBox p {
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: #444;
+  margin: 0;
+}
+
+.actionButtonContainer {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: center;
+}
+
+.leaveButton, .joinButton {
+  padding: 8px 24px;
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-size: 0.9rem;
+}
+
+.leaveButton {
+  background-color: #e74c3c; /* Red */
+  color: white;
+}
+
+.leaveButton:hover {
+  background-color: #c0392b; /* Darker red */
+}
+
+.joinButton {
+  background-color: #2ecc71; /* Green */
+  color: white;
+}
+
+.joinButton:hover {
+  background-color: #27ae60; /* Darker green */
+}
+
+/* Responsive design - stack on mobile */
+@media (max-width: 768px) {
+  .contentBoxRow {
+    flex-direction: column;
+  }
+  
+  .contentBoxLeft,
+  .contentBoxRight {
+    flex: 0 0 100%; /* On mobile, both take full width */
+  }
+  
+  .actionButtonContainer {
+    margin-top: 1rem;
+  }
+}
+
+.fullWidthSection {
+  width: 100%;
+  margin-bottom: 20px;
+}
+// ===== END  : src/pages/Group.module.css =====
+
+
+// ===== BEGIN: src/pages/UserSettings.jsx =====
+import React from 'react';
+import { useParams, Link } from 'react-router-dom';
+import UserNavBar from '../components/UserNavBar'; // Import the new component
+
+// Import styles if needed
+import styles from './UserSettings.module.css';
+
+export default function UserSettings() {
+  const { username } = useParams();
+  
+  return (
+    <div className="page-container">
+      {/* Floating button box - same as in User.jsx */}
+      <UserNavBar username={username} />
+      
+      {/* Empty content box */}
+      <div className="contentBox">
+        {/* Content will be added later */}
+      </div>
+    </div>
+  );
+} 
+// ===== END  : src/pages/UserSettings.jsx =====
+
+
+// ===== BEGIN: src/pages/Home.module.css =====
+.content-container {
+  display: flex;
+  gap: 20px;
+  align-items: stretch;
+}
+
+.left-sidebar {
+  width: 40%;
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+}
+
+.main-content {
+  width: 60%;
+  flex-grow: 1;
+}
+
+.contests {
+  min-height: 320px;
+}
+
+.ranklist {
+  min-height: 250px;
+}
+
+.groups {
+  min-height: 150px;
+}
+
+.groupTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+}
+
+.groupTable th,
+.groupTable td {
+  padding: 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.groupTable th {
+  font-weight: 600;
+  color: #666;
+}
+
+.groupTable td:last-child {
+  text-align: right;
+  color: #666;
+}
+
+.groupLink {
+  text-decoration: none;
+  color: #007bff;
+  transition: all 0.2s ease;
+}
+
+.groupLink:hover {
+  text-decoration: underline;
+  color: #0056b3;
+}
+
+h3 {
+  margin-top: 0;
+  font-weight: normal;
+  margin-bottom: 15px;
+} 
+// ===== END  : src/pages/Home.module.css =====
+
+
+// ===== BEGIN: src/pages/Group.jsx =====
+import React from 'react';
+import { useParams, Link } from 'react-router-dom';
+import styles from './Group.module.css';
+import { getRatingColor, getRankName } from '../utils/ratingUtils';
+import ContentBoxWithTitle from '../components/ContentBoxWithTitle';
+import TableBox from '../components/TableBox';
+import PagedTableBox from '../components/PagedTableBox';
+import GroupNavBar from '../components/GroupNavBar';
+import ParticipationGraph from '../components/ParticipationGraph';
+import titleStyles from '../components/ContentBoxWithTitle.module.css';
+
+// Generate varied dummy participation data
+const generateDummyParticipationData = (numPoints) => {
+  const data = [];
+  let participation = Math.floor(Math.random() * 50) + 20; // Start between 20-70
+  let strength = Math.floor(Math.random() * 60) + 30;     // Start between 30-90
+  let currentDate = new Date(2023, 0, 1); // Start date Jan 1, 2023
+
+  for (let i = 0; i < numPoints; i++) {
+    // Simulate participation change (can go up or down)
+    const participationChange = Math.floor((Math.random() - 0.4) * 15); // Tends to increase slightly
+    participation = Math.max(5, Math.min(100, participation + participationChange)); // Between 5-100
+    
+    // Simulate strength change (tends to follow participation but smoother)
+    const strengthChange = Math.floor((Math.random() - 0.3) * 10); // Tends to increase slightly
+    strength = Math.max(10, Math.min(100, strength + strengthChange)); // Between 10-100
+    
+    // Simulate time passing (15-45 days)
+    const daysToAdd = Math.floor(Math.random() * 30) + 15;
+    currentDate.setDate(currentDate.getDate() + daysToAdd);
+    
+    // Format date as YYYY-MM-DD
+    const dateString = currentDate.toISOString().split('T')[0];
+    // Add contest ID
+    const contest_id = Math.floor(Math.random() * 10000) + 1;
+    
+    data.push({ 
+      date: dateString, 
+      participation: participation, 
+      strength: strength, 
+      contest_id: contest_id 
+    });
+  }
+  
+  // Add one more point closer to today for better visualization
+  const today = new Date();
+  today.setDate(today.getDate() - Math.floor(Math.random() * 30)); // Within the last 30 days
+  
+  const lastParticipationChange = Math.floor((Math.random() - 0.3) * 10);
+  participation = Math.max(5, Math.min(100, participation + lastParticipationChange));
+  
+  const lastStrengthChange = Math.floor((Math.random() - 0.2) * 8);
+  strength = Math.max(10, Math.min(100, strength + lastStrengthChange));
+  
+  const last_contest_id = Math.floor(Math.random() * 10000) + 1;
+  
+  data.push({ 
+    date: today.toISOString().split('T')[0], 
+    participation: participation, 
+    strength: strength, 
+    contest_id: last_contest_id 
+  });
+  
+  // Ensure data is sorted by date
+  data.sort((a, b) => Date.parse(a.date) - Date.parse(b.date));
+  return data;
+};
+
+// Sample announcements data - in real app this would come from backend
+const generateDummyAnnouncements = (groupId) => {
+  return [
+    { date: "2024-03-20", link: `/group/${groupId}/announcement/135`, title: "New Group Rules Announced" },
+    { date: "2024-03-18", link: `/group/${groupId}/announcement/134`, title: "Upcoming Contest Information" },
+    { date: "2024-03-16", link: `/group/${groupId}/announcement/133`, title: "March Group Challenge Results" },
+    { date: "2024-03-15", link: `/group/${groupId}/announcement/132`, title: "Weekly Winners Announced" },
+    { date: "2024-03-14", link: `/group/${groupId}/announcement/131`, title: "New Learning Resources Added" },
+    { date: "2024-03-12", link: `/group/${groupId}/announcement/130`, title: "Group Meetup Schedule" },
+    { date: "2024-03-10", link: `/group/${groupId}/announcement/129`, title: "Algorithm Contest Series #45" },
+    { date: "2024-03-08", link: `/group/${groupId}/announcement/128`, title: "Member Spotlight: Top Contributors" },
+    { date: "2024-03-06", link: `/group/${groupId}/announcement/127`, title: "Group Highlights: February" },
+    { date: "2024-03-04", link: `/group/${groupId}/announcement/126`, title: "Upcoming Events Calendar" },
+    { date: "2024-03-02", link: `/group/${groupId}/announcement/125`, title: "Group Feature: Rating System Update" },
+    { date: "2024-02-28", link: `/group/${groupId}/announcement/124`, title: "Study Session Recordings" },
+    { date: "2024-02-26", link: `/group/${groupId}/announcement/123`, title: "Monthly Programming Challenge Results" },
+    { date: "2024-02-24", link: `/group/${groupId}/announcement/122`, title: "New Member Welcome Guide" },
+    { date: "2024-02-22", link: `/group/${groupId}/announcement/121`, title: "Group Guidelines Update" },
+    { date: "2024-02-20", link: `/group/${groupId}/announcement/120`, title: "Coding Contest Winners February" },
+    { date: "2024-02-18", link: `/group/${groupId}/announcement/119`, title: "New Group Features Released" },
+    { date: "2024-02-16", link: `/group/${groupId}/announcement/118`, title: "Top Performers Recognition" },
+    { date: "2024-02-14", link: `/group/${groupId}/announcement/117`, title: "Resource Library Update" },
+    { date: "2024-02-12", link: `/group/${groupId}/announcement/116`, title: "Special Event: Industry Talk" }
+  ].sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by date, newest first
+};
+
+export default function Group() {
+  const { groupId } = useParams();
+  
+  // Dummy data for group information
+  const groupData = {
+    name: groupId,
+    type: "anyone can join", // Options: "restricted membership", "anyone can join"
+    created: "2022-06-05",
+    memberCount: 621,
+    description: "A group dedicated to algorithm studies and competitive programming."
+  };
+  
+  // Dummy top users data for leaderboard
+  const topUsers = [
+    { username: "monica", rating: 2250 },
+    { username: "alice", rating: 2185 },
+    { username: "frank", rating: 2100 },
+    { username: "rachel", rating: 2050 },
+    { username: "bob", rating: 1890 }
+  ].sort((a, b) => b.rating - a.rating); // Sort by rating descending
+  
+  // Generate dummy participation data
+  const participationData = generateDummyParticipationData(12);
+  
+  // User state simulation (would come from auth context in real app)
+  const userRole = "moderator"; // Options: "moderator", "member", null (not a member), undefined (logged out)
+  
+  // Dummy user rating and max rating (would come from auth context in real app)
+  const userRating = 1875;
+  const userMaxRating = 1950;
+  
+  // Dummy join date
+  const joinDate = "2022-08-15";
+  
+  // Dummy report accuracy data
+  const reportAccuracy = { accepted: 9, total: 12 };
+  
+  // Determine which buttons to show based on user role
+  const showModViewButton = userRole === "moderator";
+  
+  // Determine join/leave button visibility and text
+  const getActionButton = () => {
+    if (userRole === undefined) {
+      // User is logged out, no button
+      return null;
+    } else if (userRole) {
+      // User is a member or moderator, show "Leave" button
+      return (
+        <button className="global-button red">
+          Leave
+        </button>
+      );
+    } else {
+      // User is not a member, show "Join" or "Request" based on group type
+      const buttonText = groupData.type === "anyone can join" ? "Join" : "Request to Join";
+      return (
+        <button className="global-button blue">
+          {buttonText}
+        </button>
+      );
+    }
+  };
+
+  // Generate dummy announcements for this group
+  const announcements = generateDummyAnnouncements(groupId);
+  
+  // Transform the announcements data for the PagedTableBox component
+  const announcementColumns = ["Announcement", "Date"];
+  const announcementData = announcements.map(announcement => [
+    <Link to={announcement.link} className="tableCellLink">{announcement.title}</Link>,
+    new Date(announcement.date).toLocaleDateString('en-US', { 
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
+  ]);
+  
+  // Transform top users data for the leaderboard table
+  const leaderboardColumns = ["Rank", "User", "Rating"];
+  const leaderboardData = topUsers.map((user, index) => [
+    index + 1,
+    <Link to={`/user/${user.username}`} className="tableCellLink" style={{ color: getRatingColor(user.rating), fontWeight: 'bold' }}>{user.username}</Link>,
+    <span style={{ color: getRatingColor(user.rating), fontWeight: 'bold' }}>{user.rating}</span>
+  ]);
+  
+  return (
+    <div className="page-container">
+      {/* Floating button box */}
+      <GroupNavBar groupId={groupId} showModViewButton={showModViewButton} />
+      
+      {/* Two content boxes side by side */}
+      <div className={styles.contentBoxRow}>
+        {/* Left content box with group info */}
+        <div className={`contentBox ${styles.contentBoxLeft}`}>
+          {/* Group name displayed in black at top */}
+          <h2 className={styles.groupName}>{groupData.name}</h2>
+          
+          {/* About section enclosed in a box */}
+          <div className={styles.aboutBox}>
+            <p>{groupData.description}</p>
+          </div>
+          
+          {/* Stats list with group information */}
+          <div className={`${styles.statsList} standardTextFont`}>
+            <div className={styles.statItem}>
+              Type: <span>{groupData.type}</span>
+            </div>
+            <div className={styles.statItem}>
+              Members: <span>{groupData.memberCount}</span>
+            </div>
+            <div className={styles.statItem}>
+              Created: <span>{formatDate(groupData.created)}</span>
+            </div>
+          </div>
+        </div>
+        
+        {/* Right content box with user-specific info */}
+        <div className={`contentBox ${styles.contentBoxRight}`}>
+          {/* User stats in relation to the group */}
+          <div className={`${styles.statsList} standardTextFont`}>
+            <div className={styles.statItem}>
+              Your Role: <span style={{ textTransform: 'capitalize' }}>{userRole || "Not a member"}</span>
+            </div>
+            
+            {/* Only show rating for members or moderators */}
+            {userRole && (
+              <>
+                <div className={styles.statItem}>
+                  Your Rating: <span style={{ 
+                    color: getRatingColor(userRating),
+                    fontWeight: 'bold'
+                  }}>
+                    {userRating} ({getRankName(userRating)})
+                  </span>
+                  {' '}
+                  (Max: <span style={{ 
+                    color: getRatingColor(userMaxRating),
+                    fontWeight: 'bold'
+                  }}>
+                    {userMaxRating}
+                  </span>)
+                </div>
+                <div className={styles.statItem}>
+                  Report Accuracy: <span title={`${reportAccuracy.accepted} accepted out of ${reportAccuracy.total} reports`}>
+                    {Math.round((reportAccuracy.accepted / reportAccuracy.total) * 100)}% ({reportAccuracy.accepted}/{reportAccuracy.total})
+                  </span>
+                </div>
+                <div className={styles.statItem}>
+                  Member since: <span>{formatDate(joinDate)}</span>
+                </div>
+              </>
+            )}
+          </div>
+          
+          {/* Action button container */}
+          <div className={styles.actionButtonContainer}>
+            {getActionButton()}
+          </div>
+        </div>
+      </div>
+      
+
+      
+      {/* Two lower content boxes side by side */}
+      <div className={styles.contentBoxRow}>
+        {/* Lower left content box with Participation Graph */}
+        <div className={styles.contentBoxLeft}>
+          <ContentBoxWithTitle title="Participation" backgroundColor="rgb(230, 255, 255)" contentPadding="5px">
+            <ParticipationGraph 
+              participationData={participationData} 
+              groupName={groupId}
+            />
+          </ContentBoxWithTitle>
+        </div>
+        
+        {/* Lower right content box with Leaderboard */}
+        <div className={styles.contentBoxRight}>
+          <TableBox 
+            title="Leaderboard"
+            columns={leaderboardColumns}
+            data={leaderboardData}
+            backgroundColor="rgb(255, 240, 230)"
+          />
+        </div>
+      </div>
+
+            {/* Announcements section - full width */}
+            <div className={styles.fullWidthSection}>
+        <PagedTableBox 
+          title={<Link to={`/group/${groupId}/announcements`} className={titleStyles.titleLink}>Announcements</Link>}
+          columns={announcementColumns}
+          data={announcementData}
+          backgroundColor="rgb(240, 240, 255)"
+          itemsPerPage={10}
+        />
+      </div>
+    </div>
+  );
+}
+
+// Helper function to format date
+const formatDate = (dateString) => {
+  const options = { year: 'numeric', month: 'short', day: 'numeric' };
+  return new Date(dateString).toLocaleDateString(undefined, options);
+};
+// ===== END  : src/pages/Group.jsx =====
+
+
+// ===== BEGIN: src/pages/ContestPage.jsx =====
+import React from 'react';
+import { useParams } from 'react-router-dom';
+
+export default function ContestPage() {
+  const { contest_id } = useParams();
+
+  return (
+    <div>
+      <h1>Contest Details</h1>
+      <p>Displaying information for Contest ID: <strong>{contest_id}</strong></p>
+      {/* Add more contest details here later */}
+    </div>
+  );
+} 
+// ===== END  : src/pages/ContestPage.jsx =====
+
+
+// ===== BEGIN: src/pages/About.jsx =====
+import React from 'react';
+
+export default function About() {
+  return (
+    <div>
+      <p>This is the about page.</p>
+      {/* Add more content here */}
+    </div>
+  );
+} 
+// ===== END  : src/pages/About.jsx =====
+
+
+// ===== BEGIN: src/pages/Contact.jsx =====
+import React from 'react';
+
+export default function Contact() {
+  return (
+    <div>
+      <h1>Contact Us</h1>
+      <p>You can reach us via email at contact@RSHF.example.com</p>
+      {/* Or add a contact form here */}
+    </div>
+  );
+} 
+// ===== END  : src/pages/Contact.jsx =====
+
+
+// ===== BEGIN: src/pages/Home.jsx =====
+import React from 'react';
+import { Link } from 'react-router-dom';
+import styles from './Home.module.css';
+import TableBox from '../components/TableBox';
+import BasicTableBox from '../components/BasicTableBox';
+import PagedTableBox from '../components/PagedTableBox';
+import titleStyles from '../components/ContentBoxWithTitle.module.css';
+
+// Sample group data - in real app this would come from backend
+const sampleGroups = [
+  { id: 1, name: "CompetitiveProgramming", memberCount: 1247 },
+  { id: 2, name: "WebDevelopment", memberCount: 856 },
+  { id: 3, name: "MachineLearning", memberCount: 943 },
+  { id: 4, name: "AlgorithmStudy", memberCount: 621 },
+  { id: 5, name: "SystemDesign", memberCount: 734 }
+];
+
+// Sample posts data - in real app this would come from backend
+const samplePosts = [
+  { date: "2024-03-20", link: "/post/135", title: "New Rating System Announcement" },
+  { date: "2024-03-20", link: "/post/134", title: "Important: Server Maintenance Schedule" },
+  { date: "2024-03-19", link: "/post/133", title: "March Contest Results" },
+  { date: "2024-03-19", link: "/post/132", title: "Weekly Challenge Winners" },
+  { date: "2024-03-18", link: "/post/131", title: "Interview Preparation Guide" },
+  { date: "2024-03-18", link: "/post/130", title: "New Learning Resources Added" },
+  { date: "2024-03-17", link: "/post/129", title: "Weekly Algorithm Challenge #45" },
+  { date: "2024-03-17", link: "/post/128", title: "Community Spotlight: Top Contributors" },
+  { date: "2024-03-16", link: "/post/127", title: "Community Highlights: February" },
+  { date: "2024-03-16", link: "/post/126", title: "Upcoming Contest Schedule" },
+  { date: "2024-03-15", link: "/post/125", title: "Site Update: New Features Released" },
+  { date: "2024-03-15", link: "/post/124", title: "Group Study Session Recordings" },
+  { date: "2024-03-14", link: "/post/123", title: "Monthly Programming Challenge Results" },
+  { date: "2024-03-14", link: "/post/122", title: "New Learning Paths Launched" },
+  { date: "2024-03-13", link: "/post/121", title: "Community Guidelines Update" },
+  { date: "2024-03-12", link: "/post/120", title: "Coding Contest Winners April" },
+  { date: "2024-03-11", link: "/post/119", title: "New Platform Feature: Rating Charts" },
+  { date: "2024-03-10", link: "/post/118", title: "Top Performers of the Month" },
+  { date: "2024-03-09", link: "/post/117", title: "API Documentation Update" },
+  { date: "2024-03-08", link: "/post/116", title: "Women in Tech: Special Event" }
+].sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by date, newest first
+
+// Sample contests data - in real app this would come from backend and be sorted
+const sampleContests = [
+  { name: "Weekly Algorithm Contest #46", link: "/contest/246", date: "2024-03-23 14:00" },
+  { name: "Web Development Challenge", link: "/contest/247", date: "2024-03-25 15:00" },
+  { name: "Machine Learning Competition", link: "/contest/248", date: "2024-03-28 10:00" },
+  { name: "System Design Workshop", link: "/contest/249", date: "2024-03-30 16:00" },
+  { name: "Code Sprint Challenge", link: "/contest/250", date: "2024-04-01 13:00" }
+];
+
+// Transform the data for the TableBox components
+const groupColumns = ["Group", "Members"];
+const groupData = sampleGroups.map(group => [
+  <Link to={`/group/${group.name}`} className="tableCellLink">{group.name}</Link>,
+  group.memberCount.toLocaleString()
+]);
+
+const postColumns = ["Post", "Date"];
+const postData = samplePosts.map(post => [
+  <Link to={post.link} className="tableCellLink">{post.title}</Link>,
+  new Date(post.date).toLocaleDateString('en-US', { 
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  })
+]);
+
+const contestColumns = ["Contest", "Date"];
+const contestData = sampleContests.map(contest => [
+  <Link to={contest.link} className="tableCellLink">{contest.name}</Link>,
+  new Date(contest.date).toLocaleString('en-US', { 
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+]);
+
+export default function Home() {
+  return (
+    <div className="page-container">
+      <div className={styles['content-container']}>
+        <div className={styles['left-sidebar']}>
+          <TableBox 
+            title={<Link to="/groups" className={titleStyles.titleLink}>Top Groups</Link>}
+            columns={groupColumns}
+            data={groupData}
+            backgroundColor="rgb(230, 240, 255)"
+          />
+
+          <TableBox 
+            title={<Link to="/contests" className={titleStyles.titleLink}>Active/Upcoming Contests</Link>}
+            columns={contestColumns}
+            data={contestData}
+            backgroundColor="rgb(230, 255, 230)"
+          />
+        </div>
+        
+        {/* Using PagedTableBox for Posts */}
+        <PagedTableBox 
+          title={<Link to="/posts" className={titleStyles.titleLink}>Posts</Link>}
+          columns={postColumns}
+          data={postData}
+          backgroundColor="rgb(255, 230, 230)"
+          className={styles['main-content']}
+          itemsPerPage={15}
+        />
+      </div>
+    </div>
+  );
+}
+// ===== END  : src/pages/Home.jsx =====
+
+
+// ===== BEGIN: src/pages/Posts.jsx =====
+import React from 'react';
+
+export default function Posts() {
+  // This would eventually fetch and list posts
+  return (
+    <div>
+      <p>posts</p>
+    </div>
+  );
+}
+// ===== END  : src/pages/Posts.jsx =====
+
+
+// ===== BEGIN: src/pages/Post.jsx =====
+import React from 'react';
+import { useParams } from 'react-router-dom';
+
+export default function Post() {
+  const { postId } = useParams();
+  // This would eventually fetch the post by id
+  return (
+    <div>
+      <h1>Post ID: {postId}</h1>
+      <p>This is the post page for post ID {postId}.</p>
+    </div>
+  );
+}
+// ===== END  : src/pages/Post.jsx =====
+
+
+// ===== BEGIN: src/pages/Contests.jsx =====
+import React from 'react';
+import { Link } from 'react-router-dom';
+import TableBox from '../components/TableBox';
+import BasicTableBox from '../components/BasicTableBox';
+import PagedTableBox from '../components/PagedTableBox';
+import titleStyles from '../components/ContentBoxWithTitle.module.css';
+import styles from './Contests.module.css';
+
+export default function Contests() {
+  // Dummy data for active/upcoming contests
+  // Format: [name, link, platform, dateTime]
+  const upcomingContests = [
+    { 
+      name: "Weekly Algorithm Contest #47", 
+      link: "/contest/251", 
+      platform: "CodeForces", 
+      dateTime: "2024-04-06 14:00",
+      id: "251"
+    },
+    { 
+      name: "Front-End Development Challenge", 
+      link: "/contest/252", 
+      platform: "CodeForces", 
+      dateTime: "2024-04-08 15:30",
+      id: "252" 
+    },
+    { 
+      name: "April CodeForces Round", 
+      link: "/contest/253", 
+      platform: "CodeForces", 
+      dateTime: "2024-04-10 12:00",
+      id: "253" 
+    },
+    { 
+      name: "AtCoder Beginner Contest 345", 
+      link: "/contest/255", 
+      platform: "AtCoder", 
+      dateTime: "2024-04-15 08:00",
+      id: "255" 
+    }
+  ];
+
+  // Dummy data for past contests
+  // Format: [name, link, platform, dateTime]
+  const pastContests = [
+    { 
+      name: "Weekly Algorithm Contest #46", 
+      link: "/contest/246", 
+      platform: "CodeForces", 
+      dateTime: "2024-03-23 14:00",
+      id: "246"
+    },
+    { 
+      name: "Web Development Challenge", 
+      link: "/contest/247", 
+      platform: "AtCoder", 
+      dateTime: "2024-03-25 15:00",
+      id: "247"
+    },
+    { 
+      name: "CodeForces Round #910", 
+      link: "/contest/223", 
+      platform: "CodeForces", 
+      dateTime: "2024-03-20 12:00",
+      id: "223"
+    },
+    { 
+      name: "AtCoder Beginner Contest 344", 
+      link: "/contest/224", 
+      platform: "AtCoder", 
+      dateTime: "2024-03-18 08:00",
+      id: "224"
+    },
+    { 
+      name: "Machine Learning Competition", 
+      link: "/contest/248", 
+      platform: "AtCoder", 
+      dateTime: "2024-03-28 10:00",
+      id: "248"
+    },
+    { 
+      name: "CodeForces Educational Round", 
+      link: "/contest/225", 
+      platform: "CodeForces", 
+      dateTime: "2024-03-15 14:00",
+      id: "225"
+    },
+    { 
+      name: "System Design Workshop", 
+      link: "/contest/249", 
+      platform: "CodeForces", 
+      dateTime: "2024-03-30 16:00",
+      id: "249"
+    },
+    { 
+      name: "AtCoder Regular Contest 168", 
+      link: "/contest/226", 
+      platform: "AtCoder", 
+      dateTime: "2024-03-10 09:00",
+      id: "226"
+    },
+    { 
+      name: "CodeForces Round #909", 
+      link: "/contest/227", 
+      platform: "CodeForces", 
+      dateTime: "2024-03-08 18:00",
+      id: "227"
+    },
+    { 
+      name: "AtCoder Beginner Contest 343", 
+      link: "/contest/228", 
+      platform: "AtCoder", 
+      dateTime: "2024-03-05 08:00",
+      id: "228"
+    },
+    { 
+      name: "Algorithm Fundamental Contest", 
+      link: "/contest/229", 
+      platform: "CodeForces", 
+      dateTime: "2024-03-03 14:00",
+      id: "229"
+    },
+    { 
+      name: "AtCoder Programming Contest", 
+      link: "/contest/230", 
+      platform: "AtCoder", 
+      dateTime: "2024-02-28 08:00",
+      id: "230"
+    },
+    { 
+      name: "CodeForces Round #908", 
+      link: "/contest/231", 
+      platform: "CodeForces", 
+      dateTime: "2024-02-25 12:00",
+      id: "231"
+    },
+    { 
+      name: "Data Structures Challenge", 
+      link: "/contest/232", 
+      platform: "CodeForces", 
+      dateTime: "2024-02-22 16:00",
+      id: "232"
+    },
+    { 
+      name: "AtCoder Beginner Contest 342", 
+      link: "/contest/233", 
+      platform: "AtCoder", 
+      dateTime: "2024-02-20 08:00",
+      id: "233"
+    },
+    { 
+      name: "CodeForces Educational Round #2", 
+      link: "/contest/234", 
+      platform: "CodeForces", 
+      dateTime: "2024-02-18 14:00",
+      id: "234"
+    },
+    { 
+      name: "Web Frontend Contest", 
+      link: "/contest/235", 
+      platform: "CodeForces", 
+      dateTime: "2024-02-15 16:00",
+      id: "235"
+    },
+    { 
+      name: "AtCoder Regular Contest 167", 
+      link: "/contest/236", 
+      platform: "AtCoder", 
+      dateTime: "2024-02-12 08:00",
+      id: "236"
+    },
+    { 
+      name: "CodeForces Round #907", 
+      link: "/contest/237", 
+      platform: "CodeForces", 
+      dateTime: "2024-02-10 12:00",
+      id: "237"
+    },
+    { 
+      name: "Competitive Programming Kickstart", 
+      link: "/contest/238", 
+      platform: "CodeForces", 
+      dateTime: "2024-02-08 10:00",
+      id: "238"
+    }
+  ];
+
+  // Transform the data for the TableBox component
+  const columns = ["Contest", "Platform", "Date/Time"];
+  
+  // Function to create a Link component for all contests
+  const createContestLink = (contest) => {
+    return <Link to={`/contest/${contest.id}`} className="tableCellLink">{contest.name}</Link>;
+  };
+
+  // Function to format date for display
+  const formatDateTime = (dateTimeStr) => {
+    const dateTime = new Date(dateTimeStr);
+    return dateTime.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+  
+  // Format data for upcoming contests
+  const upcomingData = upcomingContests.map(contest => [
+    createContestLink(contest),
+    contest.platform,
+    formatDateTime(contest.dateTime)
+  ]);
+  
+  // Format data for past contests
+  const pastData = pastContests.map(contest => [
+    createContestLink(contest),
+    contest.platform,
+    formatDateTime(contest.dateTime)
+  ]);
+
+  return (
+    <div className="page-container contestsPage">
+      {/* Active/Upcoming Contests */}
+      <TableBox 
+        title={<span className={titleStyles.titleText}>Active/Upcoming Contests</span>}
+        columns={columns}
+        data={upcomingData}
+        backgroundColor="rgb(230, 255, 230)" // Light green background
+      />
+
+      {/* Past Contests - Using PagedTableBox */}
+      <PagedTableBox 
+        title={<span className={titleStyles.titleText}>Past Contests</span>}
+        columns={columns}
+        data={pastData}
+        backgroundColor="rgb(245, 245, 245)" // Light gray background
+        itemsPerPage={15}
+      />
+    </div>
+  );
+}
+// ===== END  : src/pages/Contests.jsx =====
+
+
+// ===== BEGIN: src/pages/GroupMembers.jsx =====
+import React from 'react';
+import { useParams, Link } from 'react-router-dom';
+import SortablePagedTableBox from '../components/SortablePagedTableBox';
+import { getRatingColor } from '../utils/ratingUtils';
+import GroupNavBar from '../components/GroupNavBar';
+
+export default function GroupMembers() {
+  const { groupId } = useParams();
+  
+  // User state simulation (would come from auth context in real app)
+  const userRole = "moderator"; // Options: "moderator", "member", null (not a member), undefined (logged out)
+  
+  // Determine which buttons to show based on user role
+  const showModViewButton = userRole === "moderator";
+  
+  // Generate dummy members data
+  const membersData = [
+    { username: "alice", role: "moderator", rating: 2185, maxRating: 2300, ratedContests: 24, reportAccuracy: { accepted: 12, total: 15 }, dateJoined: "2022-01-15" },
+    { username: "bob", role: "moderator", rating: 1890, maxRating: 2050, ratedContests: 18, reportAccuracy: { accepted: 7, total: 10 }, dateJoined: "2022-02-10" },
+    { username: "charlie", role: "member", rating: 1450, maxRating: 1700, ratedContests: 32, reportAccuracy: { accepted: 5, total: 5 }, dateJoined: "2022-01-15" },
+    { username: "david", role: "member", rating: 900, maxRating: 1200, ratedContests: 12, reportAccuracy: { accepted: 2, total: 7 }, dateJoined: "2022-03-22" },
+    { username: "eve", role: "member", rating: 1200, maxRating: 1350, ratedContests: 8, reportAccuracy: { accepted: 4, total: 8 }, dateJoined: "2022-04-07" },
+    { username: "frank", role: "member", rating: 2100, maxRating: 2250, ratedContests: 15, reportAccuracy: { accepted: 6, total: 9 }, dateJoined: "2022-05-14" },
+    { username: "grace", role: "member", rating: 1750, maxRating: 1900, ratedContests: 20, reportAccuracy: { accepted: 11, total: 13 }, dateJoined: "2022-06-20" },
+    { username: "hank", role: "member", rating: 1350, maxRating: 1550, ratedContests: 16, reportAccuracy: { accepted: 3, total: 6 }, dateJoined: "2022-07-05" },
+    { username: "isabel", role: "member", rating: 1020, maxRating: 1220, ratedContests: 10, reportAccuracy: { accepted: 8, total: 12 }, dateJoined: "2022-08-12" },
+    { username: "jack", role: "member", rating: 950, maxRating: 1150, ratedContests: 7, reportAccuracy: { accepted: 2, total: 4 }, dateJoined: "2022-09-03" },
+    { username: "karen", role: "member", rating: 1800, maxRating: 1950, ratedContests: 25, reportAccuracy: { accepted: 15, total: 18 }, dateJoined: "2022-10-17" },
+    { username: "leo", role: "member", rating: 1560, maxRating: 1700, ratedContests: 14, reportAccuracy: { accepted: 6, total: 11 }, dateJoined: "2022-11-29" },
+    { username: "monica", role: "member", rating: 2250, maxRating: 2400, ratedContests: 30, reportAccuracy: { accepted: 14, total: 17 }, dateJoined: "2022-12-08" },
+    { username: "nina", role: "member", rating: 1100, maxRating: 1300, ratedContests: 9, reportAccuracy: { accepted: 3, total: 5 }, dateJoined: "2023-01-15" },
+    { username: "oscar", role: "member", rating: 1680, maxRating: 1850, ratedContests: 22, reportAccuracy: { accepted: 10, total: 14 }, dateJoined: "2023-02-23" },
+    // Additional dummy data to show pagination
+    { username: "peter", role: "member", rating: 1520, maxRating: 1700, ratedContests: 19, reportAccuracy: { accepted: 9, total: 12 }, dateJoined: "2023-03-05" },
+    { username: "quinn", role: "member", rating: 1310, maxRating: 1450, ratedContests: 11, reportAccuracy: { accepted: 4, total: 7 }, dateJoined: "2023-03-18" },
+    { username: "rachel", role: "member", rating: 2050, maxRating: 2150, ratedContests: 27, reportAccuracy: { accepted: 13, total: 16 }, dateJoined: "2023-04-02" },
+    { username: "steve", role: "member", rating: 1780, maxRating: 1900, ratedContests: 23, reportAccuracy: { accepted: 11, total: 15 }, dateJoined: "2023-04-15" },
+    { username: "taylor", role: "member", rating: 1150, maxRating: 1320, ratedContests: 8, reportAccuracy: { accepted: 2, total: 6 }, dateJoined: "2023-05-01" }
+  ];
+  
+  // Function to format date
+  const formatDate = (dateString) => {
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
+  // Define columns for the table
+  const columns = ["User", "Role", "Rating", "Max Rating", "Rated Contests", "Report Accuracy", "Date Joined"];
+  
+  // Transform the data for the table component
+  const tableRows = membersData.map(member => [
+    <Link to={`/user/${member.username}`} className="tableCellLink" style={{ color: getRatingColor(member.rating), fontWeight: 'bold' }}>{member.username}</Link>,
+    <span style={{ textTransform: 'capitalize' }}>{member.role}</span>,
+    <span style={{ color: getRatingColor(member.rating), fontWeight: 'bold' }}>{member.rating}</span>,
+    <span style={{ color: getRatingColor(member.maxRating), fontWeight: 'bold' }}>{member.maxRating}</span>,
+    member.ratedContests,
+    <span title={`${member.reportAccuracy.accepted} accepted out of ${member.reportAccuracy.total} reports`}>
+      {Math.round((member.reportAccuracy.accepted / member.reportAccuracy.total) * 100)}% ({member.reportAccuracy.accepted}/{member.reportAccuracy.total})
+    </span>,
+    formatDate(member.dateJoined)
+  ]);
+
+  return (
+    <div className="page-container">
+      {/* Floating button box */}
+      <GroupNavBar groupId={groupId} showModViewButton={showModViewButton} />
+      
+      {/* Members table */}
+      <SortablePagedTableBox 
+        columns={columns}
+        data={tableRows}
+        backgroundColor="rgb(230, 240, 255)"
+        itemsPerPage={15}
+        initialSortColumnIndex={2} // Rating column
+        initialSortDirection="desc" // Descending order
+      />
+    </div>
+  );
+} 
+// ===== END  : src/pages/GroupMembers.jsx =====
+
+
+// ===== BEGIN: src/pages/GroupModViewRequests.jsx =====
+import React from 'react';
+import { useParams, Link } from 'react-router-dom';
+import SortablePagedTableBox from '../components/SortablePagedTableBox';
+import { getRatingColor } from '../utils/ratingUtils';
+import GroupNavBar from '../components/GroupNavBar';
+
+// Social platform icons components from User.jsx
+const CodeforcesIcon = ({ active }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    style={{ opacity: active ? 1 : 0.4, marginRight: '10px' }}
+  >
+    <path 
+      fill="#2196F3" 
+      d="M4,5A1,1 0 0,0 3,6V18A1,1 0 0,0 4,19H5A1,1 0 0,0 6,18V6A1,1 0 0,0 5,5H4M7,5A1,1 0 0,0 6,6V18A1,1 0 0,0 7,19H8A1,1 0 0,0 9,18V6A1,1 0 0,0 8,5H7M12,5A1,1 0 0,0 11,6V18A1,1 0 0,0 12,19H13A1,1 0 0,0 14,18V6A1,1 0 0,0 13,5H12Z" 
+    />
+  </svg>
+);
+
+const AtCoderIcon = ({ active }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="20"
+    height="20"
+    viewBox="0 0 200 200"
+    style={{ opacity: active ? 1 : 0.4, marginRight: '10px' }}
+  >
+    <path
+      fill="#222222"
+      d="M156,28H90c-5,0-9,4-9,9v25c0,5,4,9,9,9h17v11h-3c-5,0-9,4-9,9v3c0,5,4,9,9,9h35c5,0,9-4,9-9v-3c0-5-4-9-9-9h-3V71h20c5,0,9-4,9-9V37C165,32,161,28,156,28z M125,82h-5V71h5V82z"
+    />
+    <path
+      fill="#222222"
+      d="M65,82H46V53h19c3,0,5-2,5-5v-9c0-3-2-5-5-5H36c-3,0-5,2-5,5v86c0,3,2,5,5,5h29c3,0,5-2,5-5v-38C70,84,68,82,65,82z"
+    />
+  </svg>
+);
+
+const CodeChefIcon = ({ active }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="20"
+    height="20"
+    viewBox="0 0 32 32"
+    style={{ opacity: active ? 1 : 0.4 }}
+  >
+    <path
+      fill="#5B4638"
+      d="M 16 0 C 11.277344 0 7.359375 2.460938 7.359375 5.414062 C 7.359375 6.226562 7.597656 6.976562 8.054688 7.671875 C 7.683594 8.234375 7.460938 8.875 7.460938 9.574219 C 7.460938 10.46875 7.804688 11.1875 8.183594 11.90625 C 7.824219 12.511719 7.621094 13.207031 7.621094 13.949219 C 7.621094 14.621094 7.789062 15.234375 8.082031 15.78125 C 7.828125 16.246094 7.679688 16.761719 7.679688 17.316406 C 7.679688 19.667969 11.425781 21.566406 16 21.566406 C 20.574219 21.566406 24.320312 19.667969 24.320312 17.316406 C 24.320312 16.761719 24.171875 16.246094 23.917969 15.78125 C 24.210938 15.234375 24.378906 14.621094 24.378906 13.949219 C 24.378906 13.210938 24.175781 12.511719 23.816406 11.90625 C 24.195312 11.1875 24.539062 10.46875 24.539062 9.574219 C 24.539062 8.875 24.316406 8.234375 23.945312 7.671875 C 24.402344 6.976562 24.640625 6.226562 24.640625 5.414062 C 24.640625 2.460938 20.722656 0 16 0 Z M 16 1.449219 C 20.046875 1.449219 23.335938 3.304688 23.335938 5.578125 C 23.335938 7.851562 20.046875 9.707031 16 9.707031 C 11.953125 9.707031 8.664062 7.851562 8.664062 5.578125 C 8.664062 3.304688 11.953125 1.449219 16 1.449219 Z M 12.964844 3.011719 C 12.554688 3.011719 12.144531 3.210938 11.914062 3.609375 C 11.46875 4.40625 11.734375 5.558594 12.5 6.089844 C 12.730469 6.230469 12.964844 6.304688 13.199219 6.304688 C 13.605469 6.304688 14.019531 6.109375 14.246094 5.714844 C 14.695312 4.917969 14.425781 3.769531 13.664062 3.234375 C 13.433594 3.089844 13.195312 3.011719 12.964844 3.011719 Z M 19.035156 3.011719 C 18.804688 3.011719 18.566406 3.089844 18.339844 3.234375 C 17.574219 3.769531 17.304688 4.917969 17.753906 5.714844 C 17.980469 6.109375 18.394531 6.304688 18.800781 6.304688 C 19.035156 6.304688 19.269531 6.230469 19.5 6.089844 C 20.265625 5.558594 20.53125 4.40625 20.085938 3.609375 C 19.855469 3.210938 19.445312 3.011719 19.035156 3.011719 Z M 16 3.707031 C 15.582031 3.707031 15.234375 3.933594 15.085938 4.296875 C 14.882812 4.800781 15.136719 5.402344 15.679688 5.664062 C 15.785156 5.714844 15.894531 5.738281 16 5.738281 C 16.417969 5.738281 16.765625 5.511719 16.917969 5.148438 C 17.117188 4.640625 16.863281 4.042969 16.320312 3.78125 C 16.214844 3.730469 16.105469 3.707031 16 3.707031 Z M 13.894531 10.503906 C 13.777344 10.507812 13.65625 10.535156 13.539062 10.578125 C 13.15625 10.726562 12.964844 11.128906 13.023438 11.554688 C 13.140625 12.3125 14.207031 12.761719 14.8125 12.296875 C 15.25 11.953125 15.113281 11.261719 14.535156 10.882812 C 14.335938 10.753906 14.128906 10.691406 13.894531 10.503906 Z M 18.105469 10.503906 C 17.871094 10.691406 17.664062 10.753906 17.464844 10.882812 C 16.886719 11.261719 16.75 11.953125 17.1875 12.296875 C 17.792969 12.761719 18.859375 12.3125 18.976562 11.554688 C 19.035156 11.128906 18.84375 10.726562 18.460938 10.578125 C 18.34375 10.535156 18.226562 10.507812 18.105469 10.503906 Z M 12.027344 13.996094 C 11.917969 14.015625 11.804688 14.054688 11.695312 14.113281 C 10.9375 14.539062 10.972656 15.605469 11.742188 15.992188 C 12.109375 16.167969 12.546875 16.101562 12.835938 15.84375 C 13.214844 15.507812 13.253906 14.894531 12.921875 14.503906 C 12.695312 14.230469 12.355469 14.035156 12.027344 13.996094 Z M 19.972656 13.996094 C 19.644531 14.035156 19.304688 14.230469 19.078125 14.503906 C 18.746094 14.894531 18.785156 15.507812 19.164062 15.84375 C 19.453125 16.101562 19.890625 16.167969 20.257812 15.992188 C 21.027344 15.605469 21.0625 14.539062 20.304688 14.113281 C 20.195312 14.054688 20.082031 14.015625 19.972656 13.996094 Z M 16 14.78125 C 15.695312 14.78125 15.390625 14.921875 15.199219 15.199219 C 14.855469 15.671875 15.003906 16.339844 15.554688 16.628906 C 15.695312 16.710938 15.847656 16.742188 16 16.742188 C 16.304688 16.742188 16.609375 16.601562 16.800781 16.324219 C 17.144531 15.851562 16.996094 15.183594 16.445312 14.894531 C 16.304688 14.8125 16.152344 14.78125 16 14.78125 Z M 13.738281 17.738281 C 13.328125 17.742188 13 18.074219 13 18.488281 C 13 20.316406 14.347656 21.800781 16 21.800781 C 17.652344 21.800781 19 20.316406 19 18.488281 C 19 18.074219 18.671875 17.742188 18.261719 17.738281 C 17.851562 17.742188 17.523438 18.074219 17.523438 18.488281 C 17.523438 19.507812 16.847656 20.320312 16 20.320312 C 15.152344 20.320312 14.476562 19.507812 14.476562 18.488281 C 14.476562 18.074219 14.148438 17.742188 13.738281 17.738281 Z M 15 23 C 13.585938 25.65625 11.507812 28.148438 9.421875 30 L 22.578125 30 C 20.492188 28.148438 18.414062 25.65625 17 23 Z"
+    />
+  </svg>
+);
+
+// Component for rendering social links
+const SocialLinks = ({ user }) => {
+  // Dummy social platform links (in a real app, these would come from backend)
+  // Empty string means no link provided by user
+  const socialLinks = {
+    codeforces: user.username ? `https://codeforces.com/profile/${user.username}` : "",
+    atcoder: user.username ? `https://atcoder.jp/users/${user.username}` : "",
+    codechef: user.hasCodechef ? `https://codechef.com/users/${user.username}` : "" // Example of user not providing this link
+  };
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center' }}>
+      {socialLinks.codeforces ? (
+        <a 
+          href={socialLinks.codeforces} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          title="Codeforces profile"
+        >
+          <CodeforcesIcon active={true} />
+        </a>
+      ) : (
+        <CodeforcesIcon active={false} />
+      )}
+      
+      {socialLinks.atcoder ? (
+        <a 
+          href={socialLinks.atcoder} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          title="AtCoder profile"
+        >
+          <AtCoderIcon active={true} />
+        </a>
+      ) : (
+        <AtCoderIcon active={false} />
+      )}
+      
+      {socialLinks.codechef ? (
+        <a 
+          href={socialLinks.codechef} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          title="CodeChef profile"
+        >
+          <CodeChefIcon active={true} />
+        </a>
+      ) : (
+        <CodeChefIcon active={false} />
+      )}
+    </div>
+  );
+};
+
+export default function GroupModViewRequests() {
+  const { groupId } = useParams();
+  
+  // Function to format date
+  const formatDate = (dateString) => {
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
+  // Sample request data - in real app this would come from backend
+  const requestsData = [
+    { 
+      id: 1, 
+      user: { 
+        username: "james", 
+        rating: 1850,
+        hasCodechef: true,
+        memberIn: ["CompetitiveProgramming", "WebDevelopment"],
+        moderatorIn: [],
+        removedFrom: ["AlgorithmStudy"],
+        previouslyRemovedFromThisGroup: false,
+        previousReportIds: []
+      },
+      requestDate: "2024-03-20"
+    },
+    { 
+      id: 2, 
+      user: { 
+        username: "karen", 
+        rating: 1650,
+        hasCodechef: false,
+        memberIn: ["MachineLearning"],
+        moderatorIn: ["DataScience"],
+        removedFrom: [],
+        previouslyRemovedFromThisGroup: true,
+        previousReportIds: [101, 203]
+      },
+      requestDate: "2024-03-19"
+    },
+    { 
+      id: 3, 
+      user: { 
+        username: "larry", 
+        rating: 1920,
+        hasCodechef: true,
+        memberIn: ["WebDevelopment", "FrontendDevelopers"],
+        moderatorIn: ["JavaScript"],
+        removedFrom: ["ReactJS"],
+        previouslyRemovedFromThisGroup: true,
+        previousReportIds: [157]
+      },
+      requestDate: "2024-03-18"
+    },
+    { 
+      id: 4, 
+      user: { 
+        username: "mary", 
+        rating: 1780,
+        hasCodechef: false,
+        memberIn: ["CompetitiveProgramming", "AlgorithmStudy"],
+        moderatorIn: [],
+        removedFrom: [],
+        previouslyRemovedFromThisGroup: false,
+        previousReportIds: []
+      },
+      requestDate: "2024-03-17"
+    },
+    { 
+      id: 5, 
+      user: { 
+        username: "nathan", 
+        rating: 2050,
+        hasCodechef: true,
+        memberIn: ["DataScience", "MachineLearning"],
+        moderatorIn: ["AI"],
+        removedFrom: [],
+        previouslyRemovedFromThisGroup: false,
+        previousReportIds: []
+      },
+      requestDate: "2024-03-16"
+    }
+  ];
+
+  // Define columns for the table
+  const columns = ["Request ID", "User", "Socials", "Member In (groups)", "Moderator In (groups)", "Removed From (groups)", "Previously Removed (from this group)", "Request Date", "Action"];
+  
+  // Transform the data for the table component
+  const tableRows = requestsData.map(request => {
+    // Create the "Previously Removed" content
+    let previouslyRemovedContent;
+    if (request.user.previouslyRemovedFromThisGroup) {
+      // If previously removed, show links to reports
+      previouslyRemovedContent = (
+        <div style={{ color: 'red' }}>
+          Yes - 
+          {request.user.previousReportIds.map((reportId, index) => (
+            <span key={reportId}>
+              {index > 0 && ", "}
+              <Link to={`/group/${groupId}/report/${reportId}`} className="tableCellLink">
+                {reportId}
+              </Link>
+            </span>
+          ))}
+        </div>
+      );
+    } else {
+      // If not previously removed, show "No" in green
+      previouslyRemovedContent = <div style={{ color: 'green' }}>No</div>;
+    }
+    
+    return [
+      request.id,
+      <Link to={`/user/${request.user.username}`} className="tableCellLink" style={{ fontWeight: 'bold' }}>
+        {request.user.username}
+      </Link>,
+      <SocialLinks user={request.user} />,
+      <div>{request.user.memberIn.length}</div>,
+      <div>{request.user.moderatorIn.length}</div>,
+      <div>{request.user.removedFrom.length}</div>,
+      previouslyRemovedContent,
+      formatDate(request.requestDate),
+      <div style={{ display: 'flex', gap: '8px' }}>
+        <button 
+          className="global-button small green"
+          title="Approve request"
+        >
+          &#10004;
+        </button>
+        <button 
+          className="global-button small red"
+          title="Deny request"
+        >
+          &#10008;
+        </button>
+      </div>
+    ];
+  });
+
+  return (
+    <div className="page-container">
+      {/* Floating button box */}
+      <GroupNavBar groupId={groupId} showModViewButton={true} />
+      
+      {/* Requests Table */}
+      <SortablePagedTableBox 
+        columns={columns}
+        data={tableRows}
+        backgroundColor="rgb(230, 255, 230)" // Light green
+        itemsPerPage={15}
+        initialSortColumnIndex={7} // Request Date column
+        initialSortDirection="desc" // Descending order
+      />
+    </div>
+  );
+}
+// ===== END  : src/pages/GroupModViewRequests.jsx =====
+
+
+// ===== BEGIN: src/pages/Contests.module.css =====
+/* Contests module styles */
+.contestLink {
+  text-decoration: none;
+  color: #3B5998;
+  font-weight: 500;
+}
+
+.contestLink:hover {
+  text-decoration: underline;
+}
+
+.externalLink {
+  text-decoration: none;
+  color: #3B5998;
+  font-weight: 500;
+  position: relative;
+  padding-right: 16px;
+}
+
+.externalLink:hover {
+  text-decoration: underline;
+}
+
+.externalLink::after {
+  content: '↗';
+  position: absolute;
+  top: -2px;
+  margin-left: 4px;
+  font-size: 0.8rem;
+}
+
+/* Contest table column width styles */
+:global(.contestsPage) :global(table) {
+  table-layout: fixed;
+  width: 100%;
+}
+
+:global(.contestsPage) :global(table th:nth-child(1)),
+:global(.contestsPage) :global(table td:nth-child(1)) {
+  width: 70%;
+}
+
+:global(.contestsPage) :global(table th:nth-child(2)),
+:global(.contestsPage) :global(table td:nth-child(2)) {
+  width: 10%;
+}
+
+:global(.contestsPage) :global(table th:nth-child(3)),
+:global(.contestsPage) :global(table td:nth-child(3)) {
+  width: 20%;
+  text-align: right;
+}
+
+/* For responsive design */
+@media (max-width: 768px) {
+  .contestTable {
+    min-width: 100%;
+    overflow-x: auto;
+  }
+} 
+// ===== END  : src/pages/Contests.module.css =====
+
+
+// ===== BEGIN: src/components/SortablePagedTableBox.jsx =====
+import React, { useState, useEffect, useMemo } from 'react';
+import TableBox from './TableBox';
+import BasicTableBox from './BasicTableBox';
+import styles from './PagedTableBox.module.css';
+import sortStyles from './SortablePagedTableBox.module.css';
+
+// Helper functions moved outside the component for stability
+const getTextContentFromCell = (cell) => {
+  // Handle null/undefined values
+  if (cell === null || cell === undefined) return '';
+  // If it's a primitive (string, number, etc.), convert to string
+  if (typeof cell !== 'object') return String(cell);
+  // If it's a React element, try to access text content
+  if (React.isValidElement(cell)) {
+    const props = cell.props;
+    // Get content directly from Link components
+    if (cell.type && cell.type.name === 'Link' && props.children) {
+      return String(props.children);
+    }
+    // Handle spans with text content
+    if (cell.type === 'span' && props.children) {
+      return String(props.children);
+    }
+    // For other elements, try the children
+    if (props.children) {
+      if (typeof props.children === 'string' || typeof props.children === 'number') {
+        return String(props.children);
+      } else if (Array.isArray(props.children)) {
+        return props.children
+          .filter(child => typeof child === 'string' || typeof child === 'number')
+          .join('');
+      }
+    }
+  }
+  // Fallback
+  return '';
+};
+
+const getComparableValue = (value) => {
+  if (!value) return value;
+  const cleanedValue = value.replace(/,/g, '');
+  const numberValue = parseFloat(cleanedValue);
+  if (!isNaN(numberValue)) {
+    return numberValue;
+  }
+  const dateValue = new Date(value);
+  if (!isNaN(dateValue.getTime())) {
+    return dateValue.getTime();
+  }
+  return value;
+};
+
+const SortablePagedTableBox = ({ 
+  title, 
+  columns, 
+  data, // This should be memoized by the parent component
+  backgroundColor, 
+  itemsPerPage = 15, 
+  className,
+  initialSortColumnIndex = -1,
+  initialSortDirection = 'desc',
+  pinnedRows = [] // Parent should memoize this if it's not static
+}) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortColumnIndex, setSortColumnIndex] = useState(initialSortColumnIndex);
+  const [sortDirection, setSortDirection] = useState(initialSortDirection);
+
+  // Memoize the sorting logic to produce stable sortedData
+  const sortedData = useMemo(() => {
+    let dataToSort = [...data]; // Work with a copy of the potentially memoized data prop
+    if (sortColumnIndex >= 0 && sortColumnIndex < columns.length) {
+      dataToSort.sort((a, b) => {
+        const textA = getTextContentFromCell(a[sortColumnIndex]);
+        const textB = getTextContentFromCell(b[sortColumnIndex]);
+        const valueA = getComparableValue(textA);
+        const valueB = getComparableValue(textB);
+
+        if (typeof valueA === 'number' && typeof valueB === 'number') {
+          return sortDirection === 'asc' ? valueA - valueB : valueB - valueA;
+        }
+        return sortDirection === 'asc' 
+          ? String(valueA).localeCompare(String(valueB)) 
+          : String(valueB).localeCompare(String(valueA));
+      });
+    }
+    // Always return the combined data (pinned first, then sorted/unsorted)
+    return [...pinnedRows, ...dataToSort];
+  }, [data, pinnedRows, sortColumnIndex, sortDirection, columns.length]);
+
+  // Effect to reset page only when sorting changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [sortColumnIndex, sortDirection]);
+  
+  // Calculate total pages based on the memoized sortedData
+  const totalPages = Math.ceil(sortedData.length / itemsPerPage);
+
+  // Ensure currentPage is valid after data/sorting changes
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages); // Go to last page if current is out of bounds
+    } else if (currentPage < 1 && totalPages > 0) {
+        setCurrentPage(1)
+    }
+  }, [currentPage, totalPages]);
+
+  // Calculate the current page's data slice based on sortedData
+  const currentData = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    let pageData = sortedData.slice(startIndex, endIndex);
+
+    // Add empty rows logic (remains the same)
+    if (currentPage === totalPages && sortedData.length % itemsPerPage !== 0 && sortedData.length > 0) {
+      const emptyRowsNeeded = itemsPerPage - (sortedData.length % itemsPerPage);
+      const templateRow = sortedData.length > 0 ? sortedData[0] : columns.map(() => "");
+      for (let i = 0; i < emptyRowsNeeded; i++) {
+        const emptyRow = templateRow.map((_, idx) => (
+          <span key={`empty-${i}-${idx}`} className={styles.spacerCell}>&nbsp;</span>
+        ));
+        pageData.push(emptyRow);
+      }
+    }
+    return pageData;
+  }, [currentPage, sortedData, itemsPerPage, totalPages, columns]); // Include columns for templateRow stability
+  
+  // --- Pagination Handlers (remain the same) ---
+  const goToPage = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  // --- Page Number Generation (remains the same) ---
+  const getPageNumbers = () => {
+    const pageNumbers = [];
+    if (totalPages <= 1) return pageNumbers;
+    pageNumbers.push(1);
+    if (currentPage > 3) {
+      pageNumbers.push('...');
+    }
+    for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+      pageNumbers.push(i);
+    }
+    if (currentPage < totalPages - 2) {
+      pageNumbers.push('...');
+    }
+    pageNumbers.push(totalPages);
+    return pageNumbers;
+  };
+
+  // --- Sort Handler (remains the same) ---
+  const handleHeaderClick = (columnIndex) => {
+    if (columnIndex === sortColumnIndex) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumnIndex(columnIndex);
+      setSortDirection('asc'); // Default to ascending when changing column
+    }
+  };
+
+  // --- Render Sortable Columns (remains the same, but uses stable columns prop) ---
+  const sortableColumns = useMemo(() => {
+      return columns.map((column, index) => (
+        <div 
+          key={`header-${index}`}
+          className={sortStyles.sortableHeader}
+          onClick={() => handleHeaderClick(index)}
+          role="button" // Add accessibility role
+          tabIndex={0}  // Make it focusable
+          onKeyPress={(e) => (e.key === 'Enter' || e.key === ' ') && handleHeaderClick(index)} // Keyboard activation
+        >
+          {column}
+          {sortColumnIndex === index && (
+            <span className={sortStyles.sortIcon}>
+              {sortDirection === 'asc' ? '▲' : '▼'}
+            </span>
+          )}
+        </div>
+      ));
+  }, [columns, sortColumnIndex, sortDirection]); // Depend on columns reference
+  
+  return (
+    <div className={className}>
+      {title ? (
+        <TableBox 
+          title={title}
+          columns={sortableColumns}
+          data={currentData}
+          backgroundColor={backgroundColor}
+          sortable={true}
+        />
+      ) : (
+        <BasicTableBox 
+          columns={sortableColumns}
+          data={currentData}
+          backgroundColor={backgroundColor}
+          sortable={true}
+        />
+      )}
+      
+      {totalPages > 1 && (
+        <div className={styles.paginationContainer}>
+          <button 
+            className={styles.pageButton} 
+            onClick={goToPreviousPage}
+            disabled={currentPage === 1}
+            aria-label="Previous Page" // Add accessibility label
+          >
+            ←
+          </button>
+          
+          {getPageNumbers().map((page, index) => (
+            page === '...' ? (
+              <span key={`ellipsis-${index}`} className={styles.ellipsis}>...</span>
+            ) : (
+              <button
+                key={page}
+                className={`${styles.pageButton} ${currentPage === page ? styles.activePage : ''}`}
+                onClick={() => goToPage(page)}
+                aria-current={currentPage === page ? 'page' : undefined} // Accessibility
+                aria-label={`Go to page ${page}`} // Accessibility
+              >
+                {page}
+              </button>
+            )
+          ))}
+          
+          <button 
+            className={styles.pageButton} 
+            onClick={goToNextPage}
+            disabled={currentPage === totalPages}
+            aria-label="Next Page" // Add accessibility label
+          >
+            →
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default SortablePagedTableBox; 
+// ===== END  : src/components/SortablePagedTableBox.jsx =====
+
+
+// ===== BEGIN: src/components/TableBox.jsx =====
+import React from 'react';
+import BasicTableBox from './BasicTableBox';
+import styles from './TableBox.module.css';
+
+export default function TableBox({ 
+  title, 
+  columns, 
+  data,
+  backgroundColor = 'rgb(230, 240, 255)', // Same default as TitledBox
+  className = '',
+  sortable = false
+}) {
+  return (
+    <div className={styles.wrapper}>
+      <div className={styles.titleBox} style={{ backgroundColor }}>
+        {title}
+      </div>
+      <BasicTableBox
+        columns={columns}
+        data={data}
+        backgroundColor={backgroundColor}
+        className={className}
+        sortable={sortable}
+      />
+    </div>
+  );
+} 
+// ===== END  : src/components/TableBox.jsx =====
+
+
+// ===== BEGIN: src/components/ParticipationGraph.module.css =====
+.participationChart {
+  width: 100%;
+  height: 350px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+/* Styling for tooltip */
+.tooltipContainer {
+  background-color: rgba(255, 255, 255, 0.8);
+  border: 1px solid #ccc;
+  padding: 8px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Style for links within the chart */
+.dotLink {
+  cursor: pointer;
+} 
+// ===== END  : src/components/ParticipationGraph.module.css =====
+
+
+// ===== BEGIN: src/components/PagedTableBox.module.css =====
+.paginationContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  gap: 3px;
+}
+
+.pageButton {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  color: #333;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pageButton:hover {
+  background-color: #f5f5f5;
+  border-color: #ccc;
+}
+
+.pageButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.activePage {
+  background-color: #f0f0f0;
+  border-color: #bbb;
+  font-weight: bold;
+}
+
+.ellipsis {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 26px;
+  height: 26px;
+  color: #666;
+  font-size: 12px;
+}
+
+/* Spacer cell for empty rows */
+.spacerCell {
+  opacity: 0;
+  color: transparent;
+  position: relative;
+  white-space: pre;
+  user-select: none;
+  pointer-events: none;
+} 
+// ===== END  : src/components/PagedTableBox.module.css =====
+
+
+// ===== BEGIN: src/components/GroupNavBar.jsx =====
+import React from 'react';
+import { Link } from 'react-router-dom';
+
+export default function GroupNavBar({ groupId, showModViewButton }) {
+  return (
+    <div className="floatingButtonBox">
+      <Link to={`/group/${groupId}`}>{groupId}</Link>
+      <Link to={`/group/${groupId}/members`}>members</Link>
+      <Link to={`/group/${groupId}/contests`}>contests</Link>
+      <Link to={`/group/${groupId}/reports`}>reports</Link>
+      {showModViewButton && <Link to={`/group/${groupId}/modview`}>mod view</Link>}
+    </div>
+  );
+} 
+// ===== END  : src/components/GroupNavBar.jsx =====
+
+
+// ===== BEGIN: src/components/BasicTableBox.module.css =====
+.container {
+  width: 100%;
+  margin: 0;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed; /* Improve table layout stability */
+}
+
+.table th {
+  padding: 0.5rem 1rem;
+  text-align: left;
+  background-color: rgb(240, 240, 240);
+  color: #333;
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border-right: 1px solid #ddd;
+}
+
+.table td {
+  padding: 0.5rem 1rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 400;
+  letter-spacing: 0.005em;
+  border-right: 1px solid #eee;
+}
+
+.table td:last-child,
+.table th:last-child {
+  text-align: right;
+  padding-right: 1rem;
+  border-right: none;
+}
+
+.table td:first-child,
+.table th:first-child {
+  padding-left: 1rem;
+}
+
+.rowEven {
+  background-color: #fff;
+}
+
+.rowOdd {
+  background-color: rgb(248, 249, 250);
+}
+
+/* Add hover effect to rows */
+.table tbody tr:hover {
+  background-color: rgb(242, 245, 250);
+}
+
+/* Styles for sortable columns */
+.sortableColumn {
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.sortableColumn:hover {
+  background-color: rgb(230, 230, 230);
+} 
+// ===== END  : src/components/BasicTableBox.module.css =====
+
+
+// ===== BEGIN: src/components/ContentBoxWithTitle.jsx =====
+import React from 'react';
+import styles from './ContentBoxWithTitle.module.css';
+
+export default function ContentBoxWithTitle({ title, children, backgroundColor = 'rgb(230, 240, 255)', contentPadding, className = '' }) {
+  return (
+    <div className={`${styles.container} ${className}`}>
+      <div className={styles.titleBox} style={{ backgroundColor }}>{title}</div>
+      <div className="contentBox" style={contentPadding ? { padding: contentPadding } : {}}>
+        {children}
+      </div>
+    </div>
+  );
+} 
+// ===== END  : src/components/ContentBoxWithTitle.jsx =====
+
+
+// ===== BEGIN: src/components/Layout.module.css =====
+.wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+.header {
+  background: #fff;
+  padding: 0.59rem 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  /* border-bottom: 1px solid #ccc; */ /* Removed border */
+}
+
+.logo {
+  height: 48px;
+  width: auto;
+  object-fit: contain;
+}
+
+.usernameLink {
+  font-weight: 400;
+  color: #007bff;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.usernameLink:hover {
+  text-decoration: underline;
+}
+
+/* New styles for user actions container */
+.userActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+  margin-top: 30px; /* Lower the profile and logout buttons */
+}
+
+.userActionSeparator {
+  color: #ccc;
+  font-size: 14px;
+}
+
+/* Style for logout link (can reuse usernameLink or be specific) */
+.logoutLink {
+  font-weight: 400;
+  color: #007bff;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.logoutLink:hover {
+  text-decoration: underline;
+}
+
+/* Styles for the new navigation bar */
+.navBar {
+  background-color: rgb(255, 255, 255);
+  border: 1px solid rgb(185, 185, 185);
+  border-radius: 6px;
+  display: flex;
+  height: 40px;
+  line-height: 40px;
+  padding: 0 1rem;
+  box-sizing: border-box;
+  gap: 1rem;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  align-items: center;
+}
+
+.navLink {
+  color: #333;
+  text-decoration: none;
+  font-weight: 400;
+  font-family: 'Roboto Condensed', sans-serif;
+  font-size: 16px;
+  padding: 0 5px;
+  line-height: normal;
+}
+
+.navLink:hover {
+  color: #007bff;
+  text-decoration: underline;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 0;
+  background: #fff;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.footer {
+  background: #fff;
+  border-top: 1px solid #eee;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.footerContent {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.footerLink {
+  color: #555;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.footerLink:hover {
+  text-decoration: underline;
+}
+// ===== END  : src/components/Layout.module.css =====
+
+
+// ===== BEGIN: src/components/ContentBoxWithTitle.module.css =====
+.container {
+  width: 100%;
+  margin: 0;
+}
+
+.titleBox {
+  border: 1px solid rgb(185, 185, 185);
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  margin-bottom: -1px; /* Connect with the content box */
+  display: inline-block;
+  font-size: 0.95rem;
+  font-weight: 400;
+  font-family: 'Roboto Condensed', sans-serif;
+}
+
+.titleLink {
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s ease;
+}
+
+.titleLink:hover {
+  text-decoration: underline;
+  color: #007bff;
+  cursor: pointer;
+} 
+// ===== END  : src/components/ContentBoxWithTitle.module.css =====
+
+
+// ===== BEGIN: src/components/RatingGraph.jsx =====
+import React from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceArea, ResponsiveContainer } from 'recharts';
+import styles from './RatingGraph.module.css';
+import { RANK_COLORS, RANK_BANDS, getRatingColor, getRankName } from '../utils/ratingUtils';
+
+// Color change boundaries for Y-axis ticks
+const COLOR_BOUNDARIES = [0, 1200, 1400, 1600, 1900, 2100, 2300, 2400, 2600, 3000];
+
+// Only generate ticks for the first day of each year
+const generateYearlyTicks = (dataMin, dataMax) => {
+  const ticks = [];
+  const startDate = new Date(dataMin);
+  const endDate = new Date(dataMax);
+  
+  // Start with January 1st of the starting year
+  let currentYear = startDate.getFullYear();
+  const firstTick = new Date(currentYear, 0, 1).getTime();
+  
+  // If the first tick is before the data range, start with next year
+  if (firstTick < dataMin) {
+    currentYear += 1;
+  }
+  
+  // Generate ticks for January 1st of each year
+  while (currentYear <= endDate.getFullYear()) {
+    const tick = new Date(currentYear, 0, 1).getTime();
+    ticks.push(tick);
+    currentYear += 1;
+  }
+  
+  return ticks;
+};
+
+const formatDateTick = (timestamp) => {
+  const date = new Date(timestamp);
+  return date.getFullYear().toString();
+};
+
+const formatTooltipLabel = (timestamp) => {
+  const date = new Date(timestamp);
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+};
+
+// Gold/yellow color for the rating line
+const RATING_LINE_COLOR = '#FFD700'; // Golden color
+
+// Custom dot component that wraps the circle in a link
+const ClickableDot = (props) => {
+  const { cx, cy, stroke, strokeWidth, r, fill, payload } = props;
+  const { contest_id } = payload;
+  const link = contest_id ? `/contest/${contest_id}` : '#'; // Link to contest or fallback
+
+  // We wrap the circle in an SVG <a> element
+  return (
+    <a href={link} target="_blank" rel="noopener noreferrer">
+      <circle
+        cx={cx}
+        cy={cy}
+        r={r}
+        fill={fill}
+        stroke={stroke}
+        strokeWidth={strokeWidth}
+      />
+    </a>
+  );
+};
+
+// Custom active dot component (larger circle for hover, also linked)
+const ClickableActiveDot = (props) => {
+  const { cx, cy, stroke, strokeWidth, r, fill, payload } = props;
+  const { contest_id } = payload;
+  const link = contest_id ? `/contest/${contest_id}` : '#';
+
+  return (
+    <a href={link} target="_blank" rel="noopener noreferrer">
+      <circle
+        cx={cx}
+        cy={cy}
+        r={r} // Use the larger radius passed by activeDot prop
+        fill={fill}
+        stroke={stroke}
+        strokeWidth={strokeWidth}
+      />
+    </a>
+  );
+};
+
+// Custom tooltip component (removed the contest link)
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    const { rating } = payload[0].payload;
+    const bandColor = getRatingColor(rating);
+    const rankName = getRankName(rating);
+    
+    return (
+      <div className="custom-tooltip" style={{ 
+        backgroundColor: 'rgba(255, 255, 255, 0.8)', 
+        border: '1px solid #ccc',
+        padding: '8px'
+      }}>
+        <p style={{ margin: 0 }}>{formatTooltipLabel(label)}</p>
+        <p style={{ 
+          margin: 0, 
+          color: bandColor,
+          fontWeight: 'bold'
+        }}>
+          {`Rating: ${rating} (${rankName})`}
+        </p>
+        {/* Contest link removed from here */}
+      </div>
+    );
+  }
+
+  return null;
+};
+
+export default function RatingGraph({ ratingHistory }) {
+  if (!ratingHistory || ratingHistory.length === 0) {
+    return <div className={styles.ratingChart}>No rating history available.</div>;
+  }
+
+  // Prepare data for Recharts: convert date strings to timestamps
+  const chartData = ratingHistory.map(p => ({
+    ...p,
+    timestamp: Date.parse(p.date), // Ensure date is valid for Date.parse
+    rating: p.rating,
+    contest_id: p.contest_id // Include contest_id from input data
+  })).sort((a, b) => a.timestamp - b.timestamp); // Ensure data is sorted by time
+
+  // Simple Y-axis max calculation
+  const ratings = chartData.map(p => p.rating);
+  const maxRating = Math.max(...ratings, 0);
+  const yMax = Math.max(1500, Math.ceil((maxRating + 100) / 100) * 100); // Ensure minimum 1500, round up
+
+  // Determine X-axis min/max timestamps
+  const minTimestamp = chartData[0].timestamp;
+  const maxTimestamp = chartData[chartData.length - 1].timestamp;
+
+  // Generate ticks for January 1st of each year
+  const yearlyTicks = generateYearlyTicks(minTimestamp, maxTimestamp);
+
+  // Generate Y-axis ticks: include color boundaries below yMax, plus yMax itself
+  const yAxisTicks = COLOR_BOUNDARIES.filter(tick => tick <= yMax);
+  if (!yAxisTicks.includes(yMax)) {
+    yAxisTicks.push(yMax);
+  }
+  yAxisTicks.sort((a, b) => a - b);
+
+  // Add y2 to the last rank band, pointing to the new simple yMax
+  const finalRankBands = RANK_BANDS.map((band, index) => {
+    if (index === RANK_BANDS.length - 1) {
+      // Make the last band cover up to yMax
+      return { ...band, y2: yMax };
+    }
+    return band;
+  });
+
+  return (
+    <div className={styles.ratingChart}>
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart
+          data={chartData}
+          margin={{
+            top: 5, right: 30, left: 0, bottom: 5, // Adjusted margins slightly
+          }}
+        >
+          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+          <XAxis
+            dataKey="timestamp"
+            type="number" // Use number type for timestamps
+            domain={['dataMin', 'dataMax']} // Auto-detect min/max timestamp
+            tickFormatter={formatDateTick}
+            scale="time" // Tell Recharts it's time scale
+            ticks={yearlyTicks} // Use the yearly ticks for January 1st each year
+          />
+          <YAxis
+            domain={[0, yMax]} // Simple domain from 0 to calculated yMax
+            allowDataOverflow={true} // Allow rendering overflow again
+            ticks={yAxisTicks} // Ticks at color boundaries within range
+          />
+
+          {/* Using custom tooltip component (no contest link) */}
+          <Tooltip content={<CustomTooltip />} />
+
+          {/* Render the rank background bands */}
+          {finalRankBands.map((band) => (
+            <ReferenceArea
+              key={`${band.y1}-${band.y2}`}
+              y1={band.y1}
+              y2={band.y2} // Use band's direct y2 value
+              ifOverflow="extendDomain" // Ensures band covers axis if data is outside band
+              fill={band.color}
+              fillOpacity={0.6} // Solid but slightly light to show grid lines
+              strokeOpacity={0} // No border for the bands
+            />
+          ))}
+
+          <Line
+            type="linear" // Straight line segments instead of curves
+            dataKey="rating"
+            stroke={RATING_LINE_COLOR} // Golden color line
+            strokeWidth={1.5} // Slightly thicker line
+            // Use the custom ClickableDot component for rendering dots
+            dot={(
+              <ClickableDot
+                stroke='#000000'
+                strokeWidth={1}
+                r={3}
+                fill={RATING_LINE_COLOR}
+              />
+            )}
+            // Use the custom ClickableActiveDot component for rendering active dots (hover)
+            activeDot={(
+              <ClickableActiveDot
+                stroke='#000000'
+                strokeWidth={1.5}
+                r={5}
+                fill={RATING_LINE_COLOR}
+              />
+            )}
+            isAnimationActive={false} // Disable animation
+            strokeLinecap="square" // Sharp line ends
+            strokeLinejoin="miter" // Sharp line joins
+            style={{
+              filter: 'drop-shadow(0 0 1px black)' // This adds a black border effect to the line
+            }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+} 
+// ===== END  : src/components/RatingGraph.jsx =====
+
+
+// ===== BEGIN: src/components/RatingGraph.module.css =====
+.ratingChart {
+  width: 100%;
+  height: 350px; /* Adjust height as needed */
+  margin: 0 auto; /* Center if needed within its container */
+  padding: 0; /* Reset padding */
+}
+
+/* You might need to adjust tooltip styling if you implement hover effects */
+.flot-tooltip {
+  position: absolute;
+  display: none;
+  border: 1px solid #fdd;
+  padding: 2px;
+  background-color: #fee;
+  opacity: 0.80;
+} 
+// ===== END  : src/components/RatingGraph.module.css =====
+
+
+// ===== BEGIN: src/components/PagedTableBox.jsx =====
+import React, { useState } from 'react';
+import TableBox from './TableBox';
+import BasicTableBox from './BasicTableBox';
+import styles from './PagedTableBox.module.css';
+
+const PagedTableBox = ({ title, columns, data, backgroundColor, itemsPerPage = 15, className }) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.ceil(data.length / itemsPerPage);
+  
+  // Calculate the current page's data
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  let currentData = data.slice(startIndex, endIndex);
+  
+  // Add empty rows to the last page if needed to maintain consistent height
+  if (currentPage === totalPages && data.length % itemsPerPage !== 0 && data.length > 0) {
+    const emptyRowsNeeded = itemsPerPage - (data.length % itemsPerPage);
+    
+    // Create a template based on the first row if available
+    const templateRow = data.length > 0 ? data[0] : columns.map(() => "");
+    
+    // Create empty rows that mimic the structure of real data rows
+    for (let i = 0; i < emptyRowsNeeded; i++) {
+      // Create empty cells that preserve the structure
+      const emptyRow = templateRow.map(() => (
+        <span className={styles.spacerCell}>&nbsp;</span>
+      ));
+      currentData.push(emptyRow);
+    }
+  }
+  
+  // Handle page navigation
+  const goToPage = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+  
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+  
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+  
+  // Generate page numbers to display
+  const getPageNumbers = () => {
+    const pageNumbers = [];
+    
+    // Always show first page
+    pageNumbers.push(1);
+    
+    // Show ellipsis if needed
+    if (currentPage > 3) {
+      pageNumbers.push('...');
+    }
+    
+    // Add pages around current page
+    for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+      pageNumbers.push(i);
+    }
+    
+    // Show ellipsis if needed
+    if (currentPage < totalPages - 2) {
+      pageNumbers.push('...');
+    }
+    
+    // Always show last page if there is more than one page
+    if (totalPages > 1) {
+      pageNumbers.push(totalPages);
+    }
+    
+    return pageNumbers;
+  };
+  
+  return (
+    <div className={className}>
+      {title ? (
+        <TableBox 
+          title={title}
+          columns={columns}
+          data={currentData}
+          backgroundColor={backgroundColor}
+        />
+      ) : (
+        <BasicTableBox 
+          columns={columns}
+          data={currentData}
+          backgroundColor={backgroundColor}
+        />
+      )}
+      
+      {totalPages > 1 && (
+        <div className={styles.paginationContainer}>
+          <button 
+            className={styles.pageButton} 
+            onClick={goToPreviousPage}
+            disabled={currentPage === 1}
+          >
+            ←
+          </button>
+          
+          {getPageNumbers().map((page, index) => (
+            page === '...' ? (
+              <span key={`ellipsis-${index}`} className={styles.ellipsis}>...</span>
+            ) : (
+              <button
+                key={page}
+                className={`${styles.pageButton} ${currentPage === page ? styles.activePage : ''}`}
+                onClick={() => goToPage(page)}
+              >
+                {page}
+              </button>
+            )
+          ))}
+          
+          <button 
+            className={styles.pageButton} 
+            onClick={goToNextPage}
+            disabled={currentPage === totalPages}
+          >
+            →
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default PagedTableBox; 
+// ===== END  : src/components/PagedTableBox.jsx =====
+
+
+// ===== BEGIN: src/components/SortablePagedTableBox.module.css =====
+.sortableHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  padding-right: 16px; /* Space for the sort icon */
+}
+
+.sortableHeader:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.sortIcon {
+  position: absolute;
+  right: 4px;
+  font-size: 0.7rem;
+  color: #000;
+  opacity: 1;
+  font-weight: bold;
+} 
+// ===== END  : src/components/SortablePagedTableBox.module.css =====
+
+
+// ===== BEGIN: src/components/Layout.jsx =====
+import React from 'react';
+import { Link } from 'react-router-dom';
+import styles from './Layout.module.css';
+import logo from '../assets/logo.png';
+
+export default function Layout({ children, isLoggedIn, currentUser }) {
+  return (
+    <div className={styles.wrapper}>
+      <header className={styles.header}>
+        <Link to="/">
+          <img src={logo} alt="RSHF Logo" className={styles.logo} />
+        </Link>
+        {isLoggedIn && currentUser && (
+          <div className={styles.userActions}>
+            <Link 
+              to={`/user/${currentUser.username}`}
+              className={styles.usernameLink}
+            >
+              {currentUser.username}
+            </Link>
+            <span className={styles.userActionSeparator}>|</span>
+            <Link 
+              to="#" 
+              className={styles.logoutLink} 
+              // Add onClick handler for logout logic later
+            >
+              Logout
+            </Link>
+          </div>
+        )}
+      </header>
+      {/* New Navigation Bar */}
+      <nav className={styles.navBar}>
+        <Link to="/" className={styles.navLink}>Home</Link>
+        <Link to="/groups" className={styles.navLink}>Groups</Link>
+        <Link to="/contests" className={styles.navLink}>Contests</Link>
+      </nav>
+      <main className={styles.main}>{children}</main>
+      <footer className={styles.footer}>
+        <div className={styles.footerContent}>
+          <Link to="/about" className={styles.footerLink}>About</Link>
+          <Link to="/contact" className={styles.footerLink}>Contact</Link>
+        </div>
+      </footer>
+    </div>
+  );
+}
+// ===== END  : src/components/Layout.jsx =====
+
+
+// ===== BEGIN: src/components/BasicTableBox.jsx =====
+import React from 'react';
+import styles from './BasicTableBox.module.css';
+
+export default function BasicTableBox({ 
+  columns, 
+  data,
+  backgroundColor = 'rgb(230, 240, 255)',
+  className = '',
+  sortable = false
+}) {
+  return (
+    <div className={`${styles.container} ${className}`}>
+      <div className="contentBox tableContainer">
+        <table className={styles.table}>
+          <thead>
+            <tr>
+              {columns.map((column, index) => (
+                <th key={index} className={sortable ? styles.sortableColumn : ''}>
+                  {column}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((row, rowIndex) => (
+              <tr key={rowIndex} className={rowIndex % 2 === 0 ? styles.rowEven : styles.rowOdd}>
+                {row.map((cell, colIndex) => (
+                  <td key={colIndex}>{cell}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+} 
+// ===== END  : src/components/BasicTableBox.jsx =====
+
+
+// ===== BEGIN: src/components/UserNavBar.jsx =====
+import React from 'react';
+import { Link } from 'react-router-dom';
+
+export default function UserNavBar({ username }) {
+  return (
+    <div className="floatingButtonBox">
+      <Link to={`/user/${username}`}>{username}</Link>
+      <Link to={`/user/${username}/groups`}>groups</Link>
+      <Link to={`/user/${username}/settings`}>settings</Link>
+    </div>
+  );
+} 
+// ===== END  : src/components/UserNavBar.jsx =====
+
+
+// ===== BEGIN: src/components/ParticipationGraph.jsx =====
+import React from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceArea, ResponsiveContainer, Legend } from 'recharts';
+import { Link } from 'react-router-dom';
+import styles from './ParticipationGraph.module.css';
+
+// Color scheme
+const PARTICIPATION_LINE_COLOR = '#FF6B6B'; // Red color for participation
+const STRENGTH_LINE_COLOR = '#4ECDC4';      // Teal color for group strength
+const BACKGROUND_COLOR = 'rgba(224, 255, 255, 0.6)'; // Cyan background color
+
+// Only generate ticks for the first day of each year
+const generateYearlyTicks = (dataMin, dataMax) => {
+  const ticks = [];
+  const startDate = new Date(dataMin);
+  const endDate = new Date(dataMax);
+  
+  // Start with January 1st of the starting year
+  let currentYear = startDate.getFullYear();
+  const firstTick = new Date(currentYear, 0, 1).getTime();
+  
+  // If the first tick is before the data range, start with next year
+  if (firstTick < dataMin) {
+    currentYear += 1;
+  }
+  
+  // Generate ticks for January 1st of each year
+  while (currentYear <= endDate.getFullYear()) {
+    const tick = new Date(currentYear, 0, 1).getTime();
+    ticks.push(tick);
+    currentYear += 1;
+  }
+  
+  return ticks;
+};
+
+const formatDateTick = (timestamp) => {
+  const date = new Date(timestamp);
+  return date.getFullYear().toString();
+};
+
+const formatTooltipLabel = (timestamp) => {
+  const date = new Date(timestamp);
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+};
+
+// Custom clickable dot component for participation (links to contest page)
+const ClickableDot = (props) => {
+  const { cx, cy, stroke, strokeWidth, r, fill, payload } = props;
+  const { contest_id, groupName } = payload;
+  const link = contest_id ? `/group/${groupName}/contest/${contest_id}` : '#';
+
+  return (
+    <Link to={link}>
+      <circle
+        cx={cx}
+        cy={cy}
+        r={r}
+        fill={fill}
+        stroke={stroke}
+        strokeWidth={strokeWidth}
+      />
+    </Link>
+  );
+};
+
+// Custom active dot component for participation (larger circle for hover, also linked)
+const ClickableActiveDot = (props) => {
+  const { cx, cy, stroke, strokeWidth, r, fill, payload } = props;
+  const { contest_id, groupName } = payload;
+  const link = contest_id ? `/group/${groupName}/contest/${contest_id}` : '#';
+
+  return (
+    <Link to={link}>
+      <circle
+        cx={cx}
+        cy={cy}
+        r={r}
+        fill={fill}
+        stroke={stroke}
+        strokeWidth={strokeWidth}
+      />
+    </Link>
+  );
+};
+
+// Regular non-clickable dot for strength line
+const RegularDot = (props) => {
+  const { cx, cy, stroke, strokeWidth, r, fill } = props;
+  return (
+    <circle
+      cx={cx}
+      cy={cy}
+      r={r}
+      fill={fill}
+      stroke={stroke}
+      strokeWidth={strokeWidth}
+    />
+  );
+};
+
+// Custom tooltip component
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    
+    return (
+      <div className="custom-tooltip" style={{ 
+        backgroundColor: 'rgba(255, 255, 255, 0.8)', 
+        border: '1px solid #ccc',
+        padding: '8px'
+      }}>
+        <p style={{ margin: 0 }}>{formatTooltipLabel(label)}</p>
+        {payload.map((entry, index) => (
+          <p key={`tooltip-${index}`} style={{ 
+            margin: 0, 
+            color: entry.color,
+            fontWeight: 'bold'
+          }}>
+            {`${entry.name}: ${entry.value}`}
+          </p>
+        ))}
+      </div>
+    );
+  }
+
+  return null;
+};
+
+export default function ParticipationGraph({ participationData, groupName }) {
+  if (!participationData || participationData.length === 0) {
+    return <div className={styles.participationChart}>No participation data available.</div>;
+  }
+
+  // Prepare data for Recharts: convert date strings to timestamps
+  const chartData = participationData.map(p => ({
+    ...p,
+    timestamp: Date.parse(p.date),
+    groupName: groupName, // Add group name for links
+  })).sort((a, b) => a.timestamp - b.timestamp); // Ensure data is sorted by time
+
+  // Find max values for Y-axis
+  const maxParticipation = Math.max(...chartData.map(p => p.participation), 0);
+  const maxStrength = Math.max(...chartData.map(p => p.strength), 0);
+  const yMax = Math.max(100, Math.ceil((Math.max(maxParticipation, maxStrength) + 10) / 10) * 10);
+
+  // Determine X-axis min/max timestamps
+  const minTimestamp = chartData[0].timestamp;
+  const maxTimestamp = chartData[chartData.length - 1].timestamp;
+
+  // Generate ticks for January 1st of each year
+  const yearlyTicks = generateYearlyTicks(minTimestamp, maxTimestamp);
+
+  return (
+    <div className={styles.participationChart}>
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart
+          data={chartData}
+          margin={{
+            top: 5, right: 30, left: 10, bottom: 5,
+          }}
+        >
+          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+          <XAxis
+            dataKey="timestamp"
+            type="number"
+            domain={['dataMin', 'dataMax']}
+            tickFormatter={formatDateTick}
+            scale="time"
+            ticks={yearlyTicks}
+          />
+          <YAxis
+            domain={[0, yMax]}
+            allowDataOverflow={true}
+          />
+
+          <Tooltip content={<CustomTooltip />} />
+
+          {/* Background reference area for the entire chart */}
+          <ReferenceArea
+            y1={0}
+            y2={yMax}
+            ifOverflow="extendDomain"
+            fill={BACKGROUND_COLOR}
+            fillOpacity={1}
+            strokeOpacity={0}
+          />
+
+          {/* Participation line (clickable) */}
+          <Line
+            type="linear"
+            dataKey="participation"
+            name="Participation"
+            stroke={PARTICIPATION_LINE_COLOR}
+            strokeWidth={1.5}
+            dot={(
+              <ClickableDot
+                stroke='#000000'
+                strokeWidth={1}
+                r={3}
+                fill={PARTICIPATION_LINE_COLOR}
+              />
+            )}
+            activeDot={(
+              <ClickableActiveDot
+                stroke='#000000'
+                strokeWidth={1.5}
+                r={5}
+                fill={PARTICIPATION_LINE_COLOR}
+              />
+            )}
+            isAnimationActive={false}
+            strokeLinecap="square"
+            strokeLinejoin="miter"
+            style={{
+              filter: 'drop-shadow(0 0 1px black)'
+            }}
+          />
+
+          {/* Strength line (non-clickable) */}
+          <Line
+            type="linear"
+            dataKey="strength"
+            name="Group Strength"
+            stroke={STRENGTH_LINE_COLOR}
+            strokeWidth={1.5}
+            dot={(
+              <RegularDot
+                stroke='#000000'
+                strokeWidth={1}
+                r={3}
+                fill={STRENGTH_LINE_COLOR}
+              />
+            )}
+            activeDot={{
+              stroke: '#000000',
+              strokeWidth: 1.5,
+              r: 5,
+              fill: STRENGTH_LINE_COLOR
+            }}
+            isAnimationActive={false}
+            strokeLinecap="square"
+            strokeLinejoin="miter"
+            style={{
+              filter: 'drop-shadow(0 0 1px black)'
+            }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+} 
+// ===== END  : src/components/ParticipationGraph.jsx =====
+
+
+// ===== BEGIN: src/components/TableBox.module.css =====
+.wrapper {
+  width: 100%;
+  margin: 0;
+}
+
+.titleBox {
+  border: 1px solid rgb(185, 185, 185);
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  margin-bottom: -1px; /* Connect with the content box */
+  display: inline-block;
+  font-size: 0.95rem;
+  font-weight: 400;
+  font-family: 'Roboto Condensed', sans-serif;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  padding: 0.5rem 1rem;
+  text-align: left;
+  background-color: rgb(240, 240, 240);
+  color: #333;
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border-right: 1px solid #ddd;
+}
+
+.table td {
+  padding: 0.5rem 1rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 400;
+  letter-spacing: 0.005em;
+  border-right: 1px solid #eee;
+}
+
+.table td:last-child,
+.table th:last-child {
+  text-align: right;
+  padding-right: 1rem;
+  border-right: none;
+}
+
+.table td:first-child,
+.table th:first-child {
+  padding-left: 1rem;
+}
+
+.rowEven {
+  background-color: #fff;
+}
+
+.rowOdd {
+  background-color: rgb(248, 249, 250);
+}
+
+/* Add hover effect to rows */
+.table tbody tr:hover {
+  background-color: rgb(242, 245, 250);
+} 
+// ===== END  : src/components/TableBox.module.css =====
+
+
+// ===== BEGIN: src/utils/ratingUtils.js =====
+// Rating utility functions for the application
+// Contains helper functions for determining rating colors and rank names
+
+// RANK COLORS
+export const RANK_COLORS = {
+  newbie      : '#808080',    //   < 1200
+  pupil       : '#008000',    // 1200 – 1399
+  specialist  : '#03A89E', // 1400 – 1599
+  expert      : '#0000ff',    // 1600 – 1899
+  candmaster  : '#a0a',    // 1900 – 2099
+  master      : '#FF8C00', // 2100 – 2299
+  intmaster   : '#FF8C00', // 2300 - 2399
+  grandmaster : '#ff0000',    // 2400 – 2599
+  intgrandmaster: '#ff0000',  // 2600 - 2999
+  legend      : '#ff0000'     // >= 3000 (Legendary GM)
+};
+
+// RANK BANDS
+export const RANK_BANDS = [
+  { y1: 0,    y2: 1200, color: RANK_COLORS.newbie },
+  { y1: 1200, y2: 1400, color: RANK_COLORS.pupil },
+  { y1: 1400, y2: 1600, color: RANK_COLORS.specialist },
+  { y1: 1600, y2: 1900, color: RANK_COLORS.expert },
+  { y1: 1900, y2: 2100, color: RANK_COLORS.candmaster },
+  { y1: 2100, y2: 2300, color: RANK_COLORS.master },
+  { y1: 2300, y2: 2400, color: RANK_COLORS.intmaster },
+  { y1: 2400, y2: 2600, color: RANK_COLORS.grandmaster },
+  { y1: 2600, y2: 3000, color: RANK_COLORS.intgrandmaster },
+  { y1: 3000,          color: RANK_COLORS.legend } // y2 determined dynamically
+];
+
+/**
+ * Get the color for a rating value
+ * @param {number} rating - The rating value
+ * @returns {string} The color hex code for the rating
+ */
+export const getRatingColor = (rating) => {
+  for (const band of RANK_BANDS) {
+    if (rating >= band.y1 && (band.y2 === undefined || rating < band.y2)) {
+      return band.color;
+    }
+  }
+  // Default fallback color (should never reach here)
+  return RANK_COLORS.newbie;
+};
+
+/**
+ * Get the rank name based on rating
+ * @param {number} rating - The rating value
+ * @returns {string} The rank name
+ */
+export const getRankName = (rating) => {
+  if (rating < 1200) return "Newbie";
+  if (rating < 1400) return "Pupil";
+  if (rating < 1600) return "Specialist";
+  if (rating < 1900) return "Expert";
+  if (rating < 2100) return "Candidate Master";
+  if (rating < 2300) return "Master";
+  if (rating < 2400) return "International Master";
+  if (rating < 2600) return "Grandmaster";
+  if (rating < 3000) return "International Grandmaster";
+  return "Legendary Grandmaster";
+};
+
+/**
+ * Combined function to get both color and name for a rating
+ * @param {number} rating - The rating value
+ * @returns {Object} Object containing both color and name
+ */
+export const getRatingInfo = (rating) => {
+  return {
+    color: getRatingColor(rating),
+    name: getRankName(rating)
+  };
+}; 
+// ===== END  : src/utils/ratingUtils.js =====
+

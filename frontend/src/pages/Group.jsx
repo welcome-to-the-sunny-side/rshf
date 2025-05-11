@@ -1,5 +1,6 @@
-import React from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { getGroups, getUsers } from '../api';
 import styles from './Group.module.css';
 import { getRatingColor, getRankName } from '../utils/ratingUtils';
 import ContentBoxWithTitle from '../components/ContentBoxWithTitle';
@@ -94,40 +95,82 @@ const generateDummyAnnouncements = (groupId) => {
 
 export default function Group() {
   const { groupId } = useParams();
+  const navigate = useNavigate();
   
-  // Dummy data for group information
-  const groupData = {
-    name: groupId,
-    type: "anyone can join", // Options: "restricted membership", "anyone can join"
-    created: "2022-06-05",
-    memberCount: 621,
-    description: "A group dedicated to algorithm studies and competitive programming."
-  };
+  // State variables for real data
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [groupData, setGroupData] = useState(null);
+  const [members, setMembers] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [userRole, setUserRole] = useState(null);
+  const [userRating, setUserRating] = useState(0);
+  const [userMaxRating, setUserMaxRating] = useState(0);
+  const [joinDate, setJoinDate] = useState('');
   
-  // Dummy top users data for leaderboard
-  const topUsers = [
-    { username: "monica", rating: 2250 },
-    { username: "alice", rating: 2185 },
-    { username: "frank", rating: 2100 },
-    { username: "rachel", rating: 2050 },
-    { username: "bob", rating: 1890 }
-  ].sort((a, b) => b.rating - a.rating); // Sort by rating descending
+  // Default data for elements we don't have API endpoints for yet
+  const reportAccuracy = { accepted: 9, total: 12 }; // This would come from an API
+  const participationData = generateDummyParticipationData(12); // This would come from contest history
   
-  // Generate dummy participation data
-  const participationData = generateDummyParticipationData(12);
-  
-  // User state simulation (would come from auth context in real app)
-  const userRole = "moderator"; // Options: "moderator", "member", null (not a member), undefined (logged out)
-  
-  // Dummy user rating and max rating (would come from auth context in real app)
-  const userRating = 1875;
-  const userMaxRating = 1950;
-  
-  // Dummy join date
-  const joinDate = "2022-08-15";
-  
-  // Dummy report accuracy data
-  const reportAccuracy = { accepted: 9, total: 12 };
+  // Load data from API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Get group data
+        const groupsResponse = await getGroups(groupId);
+        console.log('Fetched group data:', groupsResponse);
+        
+        if (!groupsResponse || groupsResponse.length === 0) {
+          setError('Group not found');
+          setLoading(false);
+          return;
+        }
+        
+        const group = groupsResponse[0]; // API returns array, we want first item
+        
+        // Set up group data
+        setGroupData({
+          name: group.group_name,
+          id: group.group_id,
+          type: "anyone can join", // Not provided by API, defaulting
+          created: new Date().toISOString().split('T')[0], // Not provided by API, defaulting to today
+          memberCount: group.memberships ? group.memberships.length : 0,
+          description: "A group dedicated to competitive programming." // Not provided by API, defaulting
+        });
+        
+        // Extract members from group memberships
+        if (group.memberships && group.memberships.length > 0) {
+          setMembers(group.memberships);
+          
+          // Get current user from localStorage
+          const storedUser = localStorage.getItem('currentUser');
+          if (storedUser) {
+            const parsedUser = JSON.parse(storedUser);
+            setCurrentUser(parsedUser);
+            
+            // Find the current user's membership in this group
+            const userMembership = group.memberships.find(m => m.user_id === parsedUser.username);
+            if (userMembership) {
+              setUserRole(userMembership.role);
+              setUserRating(userMembership.user_group_rating || 0);
+              setUserMaxRating(userMembership.user_group_rating || 0); // No max rating in API, using current
+              setJoinDate(new Date().toISOString().split('T')[0]); // No join date in API, defaulting to today
+            }
+          }
+        }
+        
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching group data:', err);
+        setError('Failed to load group data');
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, [groupId]);
   
   // Determine which buttons to show based on user role
   const showModViewButton = userRole === "moderator";
@@ -169,14 +212,54 @@ export default function Group() {
     })
   ]);
   
-  // Transform top users data for the leaderboard table
-  const leaderboardColumns = ["Rank", "User", "Rating"];
-  const leaderboardData = topUsers.map((user, index) => [
-    index + 1,
-    <Link to={`/user/${user.username}`} className="tableCellLink" style={{ color: getRatingColor(user.rating), fontWeight: 'bold' }}>{user.username}</Link>,
-    <span style={{ color: getRatingColor(user.rating), fontWeight: 'bold' }}>{user.rating}</span>
-  ]);
+  // Leaderboard columns
+  const leaderboardColumns = ["User", "Rating"];
   
+  // Create leaderboard data from real members, sorted by rating
+  const leaderboardData = members.length > 0
+    ? [...members]
+        .sort((a, b) => (b.user_group_rating || 0) - (a.user_group_rating || 0))
+        .slice(0, 10) // Take top 10 members
+        .map(member => [
+          <Link to={`/user/${member.user_id}`} className="tableCellLink">{member.user_id}</Link>,
+          <span style={{ color: getRatingColor(member.user_group_rating || 0), fontWeight: 'bold' }}>
+            {member.user_group_rating || 0} ({getRankName(member.user_group_rating || 0)})
+          </span>
+        ])
+    : [["No members found", ""]]; // Default if no members
+  
+  // Handle loading state
+  if (loading) {
+    return (
+      <div className="page-container">
+        <h2>Loading group data...</h2>
+      </div>
+    );
+  }
+  
+  // Handle error state
+  if (error) {
+    return (
+      <div className="page-container">
+        <h2>Error: {error}</h2>
+        <button onClick={() => navigate('/groups')} className={styles.actionButton}>
+          Return to Groups
+        </button>
+      </div>
+    );
+  }
+  
+  if (!groupData) {
+    return (
+      <div className="page-container">
+        <h2>Group not found</h2>
+        <button onClick={() => navigate('/groups')} className={styles.actionButton}>
+          Return to Groups
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="page-container">
       {/* Floating button box */}

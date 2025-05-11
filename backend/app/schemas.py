@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import List, Optional
 from pydantic import BaseModel
+from datetime import datetime
 
 
 class Role(str, Enum):
@@ -87,8 +88,8 @@ class ContestRegistration(BaseModel):
     group_id: str
     user_id: str
 
-    user_group_rating_before: Optional[int] = None
-    user_group_rating_after: Optional[int] = None
+    rating_before: Optional[int] = None
+    rating_after: Optional[int] = None
 
 
 class TokenOut(BaseModel):
@@ -99,8 +100,9 @@ class ContestParticipationOut(BaseModel):
     user_id: str
     group_id: str
     contest_id: str
-    user_group_rating_before: Optional[int] = None
-    user_group_rating_after: Optional[int] = None
+    rating_before: Optional[int] = None
+    rating_after: Optional[int] = None
+    rank: Optional[int] = None
 
     class Config:
         orm_mode = True
@@ -126,6 +128,62 @@ class GroupOut(BaseModel):
     memberships: List[GroupMembershipOut] = []
     # new
     contest_participations: List[ContestParticipationOut] = []
+
+    class Config:
+        orm_mode = True
+
+# ==== reports ====
+
+class ReportCreate(BaseModel):
+    group_id: str
+    contest_id: str
+    reporter_user_id: str
+    respondent_user_id: str
+    report_description: str
+
+
+class ReportResolve(BaseModel):
+    report_id: str
+    resolved_by: str                # must be mod/admin in that group
+    resolve_message: Optional[str] = None
+
+
+class ReportOut(BaseModel):
+    report_id: str
+    group_id: str
+    contest_id: str
+    reporter_user_id: str
+    respondent_user_id: str
+    report_description: str
+    create_date: datetime
+    resolved: bool
+    resolved_by: Optional[str] = None
+    resolve_message: Optional[str] = None
+
+    class Config:
+        orm_mode = True
+
+
+# ==== announcements ====
+
+class AnnouncementCreate(BaseModel):
+    group_id: str
+    title: str
+    content: str
+
+
+class AnnouncementUpdate(BaseModel):
+    announcement_id: str
+    title: Optional[str] = None
+    content: Optional[str] = None
+
+
+class AnnouncementOut(BaseModel):
+    announcement_id: str
+    group_id: str
+    create_date: datetime
+    title: str
+    content: str
 
     class Config:
         orm_mode = True
