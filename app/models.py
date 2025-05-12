@@ -21,7 +21,6 @@ class User(Base):
     __tablename__ = "users"
 
     user_id = Column(String, primary_key=True, index=True) 
-    # user_id -> username that user will login through
     role = Column(Enum(Role), nullable=False, default=Role.user) 
     create_date = Column(DateTime, server_default=func.now(), nullable=False)
 
@@ -87,6 +86,11 @@ class Contest(Base):
     cf_standings = Column(JSON, nullable=True)
     finished = Column(Boolean, nullable=False, default=False)
 
+    # metadata
+    start_time = Column(DateTime, nullable=False, index=True)
+    duration_seconds = Column(Integer, nullable=False)
+    contest_name = Column(String, nullable=False, index=True)
+
     participations = relationship("ContestParticipation", back_populates="contest", cascade="all, delete")
     def __repr__(self):
         return f"<Contest(id={self.contest_id}, cf_contest_id={self.cf_contest_id})>"
@@ -96,12 +100,15 @@ class Contest(Base):
 class ContestParticipation(Base):
     __tablename__ = "contest_participations"
 
-    user_id = Column(String, ForeignKey("users.user_id"), primary_key=True)
-    group_id = Column(String, ForeignKey("groups.group_id"), primary_key=True)
-    contest_id = Column(String, ForeignKey("contests.contest_id"), primary_key=True)
+    user_id = Column(String, ForeignKey("users.user_id"), primary_key=True, index=True)
+    group_id = Column(String, ForeignKey("groups.group_id"), primary_key=True, index=True)
+    contest_id = Column(String, ForeignKey("contests.contest_id"), primary_key=True, index=True)
+    rating_before = Column(Integer, nullable=False) # rating at the time of registration
 
+
+    # these fields will be updated AFTER the contest finishes
+    took_part = Column(Boolean, nullable=True)
     rank = Column(Integer, nullable=True)
-    rating_before = Column(Integer, nullable=True)
     rating_after = Column(Integer, nullable=True)
 
     user = relationship("User")    
@@ -129,6 +136,15 @@ class Report(Base):
     resolved = Column(Boolean, nullable=False, default=False)
     resolved_by = Column(String, ForeignKey("users.user_id"), nullable=True)
     resolve_message = Column(String, nullable=True)
+
+class Post(Base):
+    __tablename__ = "posts"
+
+    post_id = Column(String, primary_key=True, index=True)
+    create_date = Column(DateTime, server_default=func.now(), nullable=False)
+    title = Column(String, nullable=False)
+    post_url = Column(String, nullable=False)
+
 
 
 class Announcement(Base):
