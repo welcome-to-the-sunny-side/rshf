@@ -1,6 +1,6 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import BasicTableBox from '../components/BasicTableBox';
+import SortableTableBox from '../components/SortableTableBox';
 import titleStyles from '../components/ContentBoxWithTitle.module.css';
 import { getRatingColor, getRankName } from '../utils/ratingUtils';
 import UserNavBar from '../components/UserNavBar';
@@ -58,18 +58,15 @@ export default function UserGroups() {
   };
 
   // Transform the data for the TableBox component
-  const columns = ["Group", "Rating", "Date Joined"];
+  const columns = ["Group", "Rating", "Max Rating", "Date Joined"];
   const data = userGroups.map(group => [
     <Link to={`/group/${group.name}`} className="tableCellLink">{group.name}</Link>,
-    <div>
-      <span style={{ color: getRatingColor(group.rating), fontWeight: 'bold' }}>
-        {group.rating}
-      </span>
-      {' '}
-      (Max: <span style={{ color: getRatingColor(group.maxRating), fontWeight: 'bold' }}>
-        {group.maxRating}
-      </span>)
-    </div>,
+    <span style={{ color: getRatingColor(group.rating), fontWeight: 'bold' }}>
+      {group.rating}
+    </span>,
+    <span style={{ color: getRatingColor(group.maxRating), fontWeight: 'bold' }}>
+      {group.maxRating}
+    </span>,
     formatDate(group.joined)
   ]);
 
@@ -78,10 +75,12 @@ export default function UserGroups() {
       {/* Floating button box - same as in User.jsx */}
       <UserNavBar username={username} />
       
-      {/* Use BasicTableBox component instead of TableBox */}
-      <BasicTableBox 
+      {/* Use SortableTableBox component for sortable columns */}
+      <SortableTableBox 
         columns={columns}
         data={data}
+        initialSortColumnIndex={1} // Sort by rating initially
+        initialSortDirection="desc" // Highest ratings first
       />
     </div>
   );

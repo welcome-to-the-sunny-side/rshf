@@ -18,6 +18,10 @@ export default function ModView() {
   // Dummy data for pending counts - in a real app, this would come from API
   const pendingRequestsCount = 7;
   
+  // State for general settings
+  const [groupDescription, setGroupDescription] = useState('');
+  const [groupType, setGroupType] = useState('anyone can join');
+  
   // State for announcement form
   const [announcementTitle, setAnnouncementTitle] = useState('');
   const [announcementLink, setAnnouncementLink] = useState('');
@@ -31,6 +35,35 @@ export default function ModView() {
   
   // State to store the max height of the boxes
   const [boxHeight, setBoxHeight] = useState(null);
+  
+  // Fetch current group settings (in a real app, this would come from API)
+  useEffect(() => {
+    // Simulate fetching group data
+    // In a real app, you would fetch this from your backend
+    const fetchGroupData = async () => {
+      // Simulating API call with dummy data
+      setTimeout(() => {
+        setGroupDescription('A group dedicated to algorithm studies and competitive programming.');
+        setGroupType('anyone can join');
+      }, 500);
+    };
+    
+    fetchGroupData();
+  }, [groupId]);
+  
+  // Handle group description update
+  const handleDescriptionUpdate = () => {
+    console.log('Updating group description to:', groupDescription);
+    // In a real app, this would call an API to update the group description
+    alert('Group description updated successfully!');
+  };
+  
+  // Handle group type update
+  const handleGroupTypeUpdate = () => {
+    console.log('Updating group type to:', groupType);
+    // In a real app, this would call an API to update the group type
+    alert('Group type updated successfully!');
+  };
   
   // Handle announcement creation (just a placeholder function)
   const handleCreateAnnouncement = () => {
@@ -98,8 +131,63 @@ export default function ModView() {
       
       {/* General Settings box */}
       <ContentBoxWithTitle title="General Settings" backgroundColor="rgb(230, 240, 255)">
-        <div className="contentBox" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto' }}>
-          {/* Empty content for now */}
+        <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto', padding: '15px' }}>
+          {/* Group Description */}
+          <div style={{ marginBottom: '20px' }}>
+            <label htmlFor="group-description" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+              Group Description:
+            </label>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+              <textarea
+                id="group-description"
+                value={groupDescription}
+                onChange={(e) => setGroupDescription(e.target.value)}
+                style={{
+                  flex: '1',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  border: '1px solid #ccc',
+                  minHeight: '80px',
+                  resize: 'vertical'
+                }}
+              />
+              <button
+                onClick={handleDescriptionUpdate}
+                className="global-button green"
+              >
+                Update
+              </button>
+            </div>
+          </div>
+          
+          {/* Group Type */}
+          <div style={{ marginBottom: '20px' }}>
+            <label htmlFor="group-type" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+              Group Type:
+            </label>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+              <select
+                id="group-type"
+                value={groupType}
+                onChange={(e) => setGroupType(e.target.value)}
+                style={{
+                  flex: '1',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  border: '1px solid #ccc'
+                }}
+              >
+                <option value="anyone can join">Anyone Can Join</option>
+                <option value="restricted membership">Restricted Membership</option>
+              </select>
+              <button
+                onClick={handleGroupTypeUpdate}
+                className="global-button green"
+              >
+                Update
+              </button>
+            </div>
+          </div>
         </div>
       </ContentBoxWithTitle>
       

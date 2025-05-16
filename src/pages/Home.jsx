@@ -99,7 +99,7 @@ export default function Home() {
         
         {/* Using PagedTableBox for Posts */}
         <PagedTableBox 
-          title={<Link to="/posts" className={titleStyles.titleLink}>Posts</Link>}
+          title="Announcements"
           columns={postColumns}
           data={postData}
           backgroundColor="rgb(255, 230, 230)"
@@ -110,8 +110,3 @@ export default function Home() {
     </div>
   );
 }
-
-/*
-
-
-*/

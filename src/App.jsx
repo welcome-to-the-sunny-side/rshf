@@ -17,9 +17,10 @@ import GroupModViewRequests from './pages/GroupModViewRequests'; // Import Group
 import About from './pages/About';
 import Contests from './pages/Contests';
 import Contact from './pages/Contact'; // Import Contact page
-import Posts from './pages/Posts';
+
 import Post from './pages/Post';
 import ContestPage from './pages/ContestPage'; // Import ContestPage
+import GroupContestPage from './pages/GroupContestPage'; // Import GroupContestPage
 import './index.css';
 
 export default function App() {
@@ -45,9 +46,9 @@ export default function App() {
         <Route path="/group/:groupId/modview/requests" element={<GroupModViewRequests />} />
         <Route path="/contests" element={<Contests />} />
         <Route path="/contest/:contest_id" element={<ContestPage />} />
+        <Route path="/group/:groupId/contest/:contestId" element={<GroupContestPage />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
-        <Route path="/posts" element={<Posts />} />
         <Route path="/post/:postId" element={<Post />} />
       </Routes>
     </Layout>
