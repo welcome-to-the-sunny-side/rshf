@@ -18,7 +18,7 @@ export default function Report() {
   const [report, setReport] = useState({
     id: reportId,
     contestId: 246,
-    isActive: true, // This would come from the backend
+    isActive: false, // This would come from the backend
     reporter: {
       username: "alice",
       rating: 2185,
@@ -297,9 +297,9 @@ export default function Report() {
                 <span style={{ fontWeight: 'bold' }}>{report.respondent.currentStatus}</span> → {report.respondentStatusChange}
               </div>
               
-              <div>
-                <strong>Reviewer's Note:</strong>
-                <p style={{ whiteSpace: 'pre-wrap', margin: '5px 0 0 0' }}>{report.reviewerNote}</p>
+              <div className={styles.aboutBox} style={{ marginTop: '10px' }}>
+                <h4 style={{ margin: '0 0 8px 0' }}>Reviewer's Note:</h4>
+                <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{report.reviewerNote}</p>
               </div>
             </div>
           </div>
