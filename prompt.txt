@@ -1,0 +1,5 @@
+Now, let's edit the @Contests.jsx in the frontend to use data from the API instead of dummy data. 
+
+Here's what I want you to do:
+- remove dummy data generation completely from @Contests.jsx 
+- fetch the same data through api calls

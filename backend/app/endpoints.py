@@ -215,7 +215,7 @@ def register_rated(
     return {"detail": "participation recorded", "participation_id": participation.contest_id}
 
 # ---------- contest look-up ----------
-@router.get("/contest", response_model=List[schemas.ContestParticipationOut])
+@router.get("/contest_participations", response_model=List[schemas.ContestParticipationOut])
 def get_contest_participations(
     gid: Optional[str] = Query(None, description="group id"),
     uid: Optional[str] = Query(None, description="user id"),
@@ -225,6 +225,50 @@ def get_contest_participations(
     if gid is None and uid is None and cid is None:
         raise HTTPException(400, "provide at least one of gid, uid, or cid")
     return crud.filter_contest_participations(db, gid, uid, cid)
+
+@router.get("/contests", response_model=List[schemas.ContestOut])
+def list_contests(
+    finished: Optional[bool] = Query(None, description="Filter contests by finished status"),
+    db: Session = Depends(database.get_db),
+    current: models.User = Depends(get_current_user),
+):
+    """
+    Get all contests, optionally filtered by their finished status.
+    
+    Args:
+        finished: Optional boolean to filter by finished status
+        db: Database session
+        current: Current authenticated user
+        
+    Returns:
+        List of Contest objects
+    """
+    return crud.list_contests(db, finished)
+
+@router.get("/contest", response_model=schemas.ContestOut)
+def get_contest(
+    contest_id: str = Query(..., description="Contest ID"),
+    db: Session = Depends(database.get_db),
+    current: models.User = Depends(get_current_user),
+):
+    """
+    Get a single contest by its ID.
+    
+    Args:
+        contest_id: ID of the contest to retrieve
+        db: Database session
+        current: Current authenticated user
+        
+    Returns:
+        Contest object
+    
+    Raises:
+        HTTPException: If contest not found
+    """
+    contest = crud.get_contest(db, contest_id)
+    if not contest:
+        raise HTTPException(status_code=404, detail="Contest not found")
+    return contest
 
 # ========== report routes ==========
 

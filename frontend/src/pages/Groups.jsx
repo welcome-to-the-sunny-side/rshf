@@ -1,49 +1,62 @@
-import React, { useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import SortablePagedTableBox from '../components/SortablePagedTableBox';
+import ContentBoxWithTitle from '../components/ContentBoxWithTitle';
+
+// Backend URL
+const BACKEND_URL = 'http://localhost:8000/api';
 
 export default function Groups() {
-  // Re-define the main group
-  const mainGroup = useMemo(() => ({
-    id: 1,
-    name: "main",
-    type: "restricted membership",
-    created: "2022-01-01",
-    memberCount: 2543,
-    isPinned: true // Keep this for potential future use, though not directly used by table
-  }), []);
-
-  // Generate dummy group entries (excluding the main group again)
-  const groupsData = useMemo(() => [
-    { id: 2, name: "CompetitiveProgramming", type: "anyone can join", created: "2022-03-15", memberCount: 1247 },
-    { id: 3, name: "WebDevelopment", type: "anyone can join", created: "2022-04-22", memberCount: 856 },
-    { id: 4, name: "MachineLearning", type: "restricted membership", created: "2022-05-10", memberCount: 943 },
-    { id: 5, name: "AlgorithmStudy", type: "anyone can join", created: "2022-06-05", memberCount: 621 },
-    { id: 6, name: "SystemDesign", type: "restricted membership", created: "2022-07-18", memberCount: 734 },
-    { id: 7, name: "DataStructures", type: "anyone can join", created: "2022-08-30", memberCount: 512 },
-    { id: 8, name: "GameDevelopment", type: "anyone can join", created: "2022-09-12", memberCount: 389 },
-    { id: 9, name: "UIUXDesign", type: "restricted membership", created: "2022-10-05", memberCount: 278 },
-    { id: 10, name: "MobileAppDev", type: "anyone can join", created: "2022-11-18", memberCount: 456 },
-    { id: 11, name: "CloudComputing", type: "restricted membership", created: "2022-12-07", memberCount: 321 },
-    { id: 12, name: "DevOps", type: "anyone can join", created: "2023-01-19", memberCount: 298 },
-    { id: 13, name: "Cybersecurity", type: "restricted membership", created: "2023-02-03", memberCount: 345 },
-    { id: 14, name: "ArtificialIntelligence", type: "restricted membership", created: "2023-03-22", memberCount: 587 },
-    { id: 15, name: "Blockchain", type: "anyone can join", created: "2023-04-11", memberCount: 203 },
-    { id: 16, name: "DatabaseDesign", type: "anyone can join", created: "2023-05-29", memberCount: 312 },
-    { id: 17, name: "FrontendMasters", type: "restricted membership", created: "2023-06-14", memberCount: 429 },
-    { id: 18, name: "BackendEngineers", type: "restricted membership", created: "2023-07-26", memberCount: 385 },
-    { id: 19, name: "QualityAssurance", type: "anyone can join", created: "2023-08-09", memberCount: 267 },
-    { id: 20, name: "APIDesign", type: "anyone can join", created: "2023-09-30", memberCount: 318 },
-    { id: 21, name: "SoftwareArchitecture", type: "restricted membership", created: "2023-10-17", memberCount: 502 }
-  ], []);
+  const navigate = useNavigate();
+  const [groups, setGroups] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  
+  useEffect(() => {
+    // Check if the user is authenticated
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+    
+    // Fetch groups when component mounts
+    fetchGroups();
+  }, [navigate]);
+  
+  const fetchGroups = async () => {
+    try {
+      setLoading(true);
+      
+      const response = await fetch(`${BACKEND_URL}/group`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch groups: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Groups data:', data);
+      setGroups(data);
+    } catch (err) {
+      console.error('Error fetching groups:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Function to format the date
   const formatDate = (dateString) => {
+    if (!dateString) return 'Unknown';
     const options = { year: 'numeric', month: 'short', day: 'numeric' };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
-  // Re-add Pin icon SVG component
+  // Pin icon SVG component
   const PinIcon = () => (
     <svg 
       xmlns="http://www.w3.org/2000/svg" 
@@ -62,38 +75,83 @@ export default function Groups() {
   // Define columns for the table
   const columns = ["Group", "Type", "Members", "Date of Creation"];
   
-  // Create main group row using useMemo for stability
-  const mainGroupRow = useMemo(() => [
-    <div style={{ display: 'flex', alignItems: 'center' }}>
-      <PinIcon />
-      <Link to={`/group/${mainGroup.name}`} className="tableCellLink" style={{ fontWeight: 600 }}>{mainGroup.name}</Link>
-    </div>,
-    <span style={{ fontWeight: 500 }}>{mainGroup.type}</span>,
-    <span style={{ fontWeight: 500 }}>{mainGroup.memberCount.toLocaleString()}</span>,
-    <span style={{ fontWeight: 500 }}>{formatDate(mainGroup.created)}</span>
-  ], [mainGroup]); // Depend on mainGroup object
+  // Find the main group and other groups
+  const mainGroup = useMemo(() => groups.find(group => group.group_id === 'main'), [groups]);
+  const otherGroups = useMemo(() => groups.filter(group => group.group_id !== 'main'), [groups]);
   
-  // Transform the rest of the data using useMemo
+  // Create main group row if it exists
+  const mainGroupRow = useMemo(() => {
+    if (!mainGroup) return null;
+    
+    return [
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <PinIcon />
+        <Link to={`/group/${mainGroup.group_id}`} className="tableCellLink" style={{ fontWeight: 600 }}>{mainGroup.group_name}</Link>
+      </div>,
+      <span style={{ fontWeight: 500 }}>restricted membership</span>,
+      <span style={{ fontWeight: 500 }}>{mainGroup.memberships.length.toLocaleString()}</span>,
+      <span style={{ fontWeight: 500 }}>-</span> // Creation date might not be available from API
+    ];
+  }, [mainGroup]);
+  
+  // Transform other groups data
   const otherGroupsRows = useMemo(() => {
-    return groupsData.map(group => [
-      <Link to={`/group/${group.name}`} className="tableCellLink">{group.name}</Link>,
-      group.type,
-      group.memberCount.toLocaleString(),
-      formatDate(group.created)
+    if (loading) {
+      return [["Loading groups...", "", "", ""]];
+    }
+    
+    if (error) {
+      return [[`Error: ${error}`, "", "", ""]];
+    }
+    
+    if (otherGroups.length === 0) {
+      return [["No groups found", "", "", ""]];
+    }
+    
+    return otherGroups.map(group => [
+      <Link to={`/group/${group.group_id}`} className="tableCellLink">{group.group_name}</Link>,
+      "restricted membership", // Group type not directly provided in API
+      group.memberships.length.toLocaleString(), // Use membership count as member count
+      "-" // Creation date not available from API
     ]);
-  }, [groupsData]); // Depend on groupsData array
+  }, [otherGroups, loading, error]);
+
+  // Find if we have any pinnedRows to show
+  const pinnedRows = useMemo(() => {
+    return mainGroupRow ? [mainGroupRow] : [];
+  }, [mainGroupRow]);
 
   return (
     <div className="page-container">
-      <SortablePagedTableBox 
-        columns={columns}
-        data={otherGroupsRows} // Pass the sortable rows
-        pinnedRows={[mainGroupRow]} // Pass the pinned row(s) in an array
-        backgroundColor="rgb(230, 240, 255)"
-        itemsPerPage={15}
-        initialSortColumnIndex={2} // Member Count column
-        initialSortDirection="desc" // Descending order
-      />
+      {loading && !otherGroupsRows.length && (
+        <ContentBoxWithTitle title="Loading...">
+          <p>Fetching groups data...</p>
+        </ContentBoxWithTitle>
+      )}
+      
+      {error && !otherGroupsRows.length && (
+        <ContentBoxWithTitle title="Error">
+          <p>{error}</p>
+        </ContentBoxWithTitle>
+      )}
+      
+      {!loading && !error && groups.length === 0 && (
+        <ContentBoxWithTitle title="No Groups">
+          <p>No groups found.</p>
+        </ContentBoxWithTitle>
+      )}
+      
+      {otherGroupsRows.length > 0 && (
+        <SortablePagedTableBox 
+          columns={columns}
+          data={otherGroupsRows}
+          pinnedRows={pinnedRows}
+          backgroundColor="rgb(230, 240, 255)"
+          itemsPerPage={15}
+          initialSortColumnIndex={2} // Member Count column
+          initialSortDirection="desc" // Descending order
+        />
+      )}
     </div>
   );
 }

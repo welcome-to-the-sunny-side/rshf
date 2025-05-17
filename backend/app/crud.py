@@ -192,6 +192,40 @@ def filter_contest_participations(
         q = q.filter(models.ContestParticipation.contest_id == cid)
     return q.all()
 
+
+def list_contests(
+    db: Session,
+    finished: Optional[bool] = None,
+) -> List[models.Contest]:
+    """
+    List all contests, optionally filtered by the finished flag.
+    
+    Args:
+        db: Database session
+        finished: Optional boolean to filter contests by their finished status
+        
+    Returns:
+        List of Contest objects
+    """
+    q = db.query(models.Contest)
+    if finished is not None:
+        q = q.filter(models.Contest.finished == finished)
+    return q.all()
+
+
+def get_contest(db: Session, contest_id: str) -> Optional[models.Contest]:
+    """
+    Get a single contest by its ID.
+    
+    Args:
+        db: Database session
+        contest_id: ID of the contest to retrieve
+        
+    Returns:
+        Contest object or None if not found
+    """
+    return db.query(models.Contest).filter(models.Contest.contest_id == contest_id).first()
+
 # ───────────── membership helpers ─────────────
 def get_membership(db: Session, user_id: str, group_id: str) -> Optional[models.GroupMembership]:
     """

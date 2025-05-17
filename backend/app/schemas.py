@@ -77,8 +77,10 @@ class GroupMembershipOut(BaseModel):
 class GroupOut(BaseModel):
     group_id: str
     group_name: str
-    memberships: List[GroupMembershipOut] = []
-
+    group_description: Optional[str] = None
+    is_private: bool = False
+    create_date: datetime = None
+    
     class Config:
         orm_mode = True
 
@@ -108,6 +110,21 @@ class ContestParticipationOut(BaseModel):
         orm_mode = True
 
 
+class ContestOut(BaseModel):
+    contest_id: str
+    contest_name: str
+    platform: str
+    start_time_posix: int
+    duration_seconds: Optional[int] = None
+    link: str
+    internal_contest_identifier: Optional[str] = None
+    standings: Optional[dict] = None
+    finished: bool
+
+    class Config:
+        orm_mode = True
+
+
 class UserOut(BaseModel):
     user_id: str
     cf_handle: str
@@ -125,10 +142,11 @@ class UserOut(BaseModel):
 class GroupOut(BaseModel):
     group_id: str
     group_name: str
-    memberships: List[GroupMembershipOut] = []
-    # new
-    contest_participations: List[ContestParticipationOut] = []
-
+    group_description: Optional[str] = None
+    is_private: bool = False
+    create_date: datetime = None
+    # The memberships and participations references were removed as requested
+    
     class Config:
         orm_mode = True
 

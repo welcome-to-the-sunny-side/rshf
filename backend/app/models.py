@@ -81,10 +81,14 @@ class GroupMembership(Base):
 
 class Contest(Base):
     __tablename__ = "contests"
-
     contest_id = Column(String, primary_key=True, index=True)
-    cf_contest_id = Column(Integer, unique=True, nullable=False, index=True)
-    cf_standings = Column(JSON, nullable=True)
+    contest_name = Column(String, nullable=False)
+    platform = Column(String, nullable=False, default="Codeforces")
+    start_time_posix = Column(Integer, nullable=False, index=True)
+    duration_seconds = Column(Integer, nullable=True)
+    link = Column(String, nullable=False)
+    internal_contest_identifier = Column(String, nullable=True)
+    standings = Column(JSON, nullable=True)
     finished = Column(Boolean, nullable=False, default=False)
 
     participations = relationship("ContestParticipation", back_populates="contest", cascade="all, delete")
