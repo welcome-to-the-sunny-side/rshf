@@ -1,5 +1,6 @@
-import React from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { getUsers } from '../api';
 
 // Renamed component from Profile to User
 import styles from './User.module.css';
@@ -42,14 +43,7 @@ const generateDummyData = (startRating, numPoints, volatility, groupName) => {
   return data;
 };
 
-const dummyRatingData = {
-  'root_group': generateDummyData(2100, 8, 100, 'root_group'),
-  'Global': generateDummyData(1400, 10, 80, 'Global'),
-  'Math_Club': generateDummyData(1850, 12, 120, 'Math_Club'),
-  'Chess_Enthusiasts': generateDummyData(850, 15, 60, 'Chess_Enthusiasts'),
-  'Developers': generateDummyData(1150, 7, 90, 'Developers'),
-  'Writers_Group': generateDummyData(2050, 9, 110, 'Writers_Group')
-};
+// Rating data will be generated dynamically based on API data
 
 // Social platform icons components
 const CodeforcesIcon = ({ active }) => (
@@ -103,64 +97,152 @@ const CodeChefIcon = ({ active }) => (
 
 export default function User() {
   const { username } = useParams();
-  // Assume cf_username is the same as username for now. In a real app, these might differ.
-  const cf_username = username;
+  const navigate = useNavigate();
   
-  // Dummy social platform links (in a real app, these would come from backend)
-  // Empty string means no link provided by user
+  // State variables
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [userData, setUserData] = useState(null);
+  const [userGroups, setUserGroups] = useState([]);
+  const [selectedGroupIdx, setSelectedGroupIdx] = useState(0);
+  
+  // Placeholder for social media links (not part of API)
   const socialLinks = {
-    codeforces: `https://codeforces.com/profile/${username}`,
-    atcoder: `https://atcoder.jp/users/${username}`,
-    codechef: "" // Example of user not providing this link
+    codeforces: username === 'tourist' ? 'https://codeforces.com/profile/tourist' : null,
+    atcoder: username === 'tourist' ? 'https://atcoder.jp/users/tourist' : null,
+    codechef: null
   };
   
-  // Enhanced group data: 
-  // [group_name, group_rating, group_rank, group_rank_color, max_group_rating, max_group_rank, max_group_rank_color, member_since, role, rated_contests, report_accuracy_accepted, report_accuracy_total]
-  const groups = [
-    ['root_group', 2185, 'Master', 'rgb(255, 140, 0)', 2185, 'Master', 'rgb(255, 140, 0)', '2022-01-15', 'moderator', 24, 12, 15],
-    ['Global', 1450, 'Specialist', 'rgb(30, 150, 255)', 1500, 'Specialist', 'rgb(30, 150, 255)', '2022-01-15', 'member', 32, 5, 5],
-    ['Math_Club', 1890, 'Candidate Master', 'rgb(170, 0, 170)', 1950, 'Candidate Master', 'rgb(170, 0, 170)', '2022-02-10', 'member', 18, 7, 10],
-    ['Chess_Enthusiasts', 900, 'Pupil', 'rgb(0, 180, 0)', 1000, 'Pupil', 'rgb(0, 180, 0)', '2022-03-22', 'moderator', 12, 3, 9],
-    ['Developers', 1200, 'Apprentice', 'rgb(170, 170, 170)', 1250, 'Apprentice', 'rgb(170, 170, 170)', '2022-04-07', 'member', 8, 8, 12],
-    ['Writers_Group', 2100, 'Candidate Master', 'rgb(170, 0, 170)', 2170, 'Master', 'rgb(255, 140, 0)', '2022-05-14', 'member', 15, 9, 11]
-  ];
-  // Use React state for selected group index
-  const [selectedGroupIdx, setSelectedGroupIdx] = React.useState(0);
+  // Fetch user data from API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Get user data
+        const usersResponse = await getUsers(username);
+        console.log('Fetched user data:', usersResponse);
+        
+        if (!usersResponse || usersResponse.length === 0) {
+          setError('User not found');
+          setLoading(false);
+          return;
+        }
+        
+        const user = usersResponse[0]; // API returns array, we want first item
+        
+        // Set up user data
+        setUserData({
+          username: user.user_id,
+          cfHandle: user.cf_handle,
+          trustScore: user.trusted_score || 75, // Default if not provided
+          numberOfGroups: user.memberships ? user.memberships.length : 0,
+          removedNumberOfGroups: 0, // Not provided by API
+          registrationDate: new Date().toISOString().split('T')[0] // Default to today
+        });
+        
+        // Extract group memberships
+        if (user.memberships && user.memberships.length > 0) {
+          setUserGroups(user.memberships);
+        }
+        
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching user data:', err);
+        setError('Failed to load user data');
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, [username]);
+  
+  // Handle loading state
+  if (loading) {
+    return (
+      <div className="page-container">
+        <h2>Loading user data...</h2>
+      </div>
+    );
+  }
+  
+  // Handle error state
+  if (error) {
+    return (
+      <div className="page-container">
+        <h2>Error: {error}</h2>
+        <button onClick={() => navigate('/')} style={{ padding: '8px 16px', cursor: 'pointer' }}>
+          Return to Home
+        </button>
+      </div>
+    );
+  }
+  
+  // Process user groups from API data into the format needed by the UI
+  // Format: [group_name, rating, rank, rank_color, max_rating, max_rank, max_rank_color, member_since, role, rated_contests, report_accepted, report_total]
+  const groups = userGroups.length > 0 
+    ? userGroups.map(membership => {
+        const rating = membership.user_group_rating || 0;
+        const rank = getRankName(rating);
+        const rankColor = getRatingColor(rating);
+        
+        // Generate deterministic date based on user+group id (since API doesn't provide join date)
+        const memberHash = (membership.user_id + membership.group_id).split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+        const joinDate = new Date(2022, 0, 1 + (memberHash % 365)).toISOString().split('T')[0];
+        
+        return [
+          membership.group_id,
+          rating,
+          rank,
+          rankColor,
+          rating, // Use same value for max_rating since API doesn't provide historical max
+          rank, // Use same value for max_rank
+          rankColor, // Use same color for max_rank_color
+          joinDate,
+          membership.role || 'member',
+          Math.floor(Math.random() * 20) + 5, // Random number of contests (not provided by API)
+          Math.floor(Math.random() * 10) + 1, // Random report accepted (not provided by API)
+          Math.floor(Math.random() * 5) + 10 // Random report total (not provided by API)
+        ];
+      })
+    : [
+        // Default group if no memberships found
+        ['default_group', 0, 'Unranked', 'gray', 0, 'Unranked', 'gray', new Date().toISOString().split('T')[0], 'member', 0, 0, 1]
+      ];
+      
+  // Using selectedGroupIdx state defined at the top of the component
   const selectedGroup = groups[selectedGroupIdx];
-
-  // Sample trust score (in a real app, this would come from API)
-  const trustScore = 82;
-  
-  // Dummy registration date
-  const registrationDate = "Sep 15, 2022";
-  
-  // Number of groups the user is a member of
-  const numberOfGroups = groups.length;
-  const removedNumberOfGroups = 0;
   const handleGroupChange = (e) => {
     setSelectedGroupIdx(Number(e.target.value));
   };
-  
+
   // Function to determine trust score color based on value
   const getTrustScoreColor = (score) => {
-    if (score >= 95) return 'rgb(0, 150, 0)';      // Dark green for very high
-    if (score >= 85) return 'rgb(50, 180, 0)';     // Green
-    if (score >= 75) return 'rgb(120, 180, 0)';    // Light green
-    if (score >= 65) return 'rgb(180, 180, 0)';    // Yellow
-    if (score >= 50) return 'rgb(220, 150, 0)';    // Orange
-    if (score >= 35) return 'rgb(230, 100, 0)';    // Dark orange
-    if (score >= 20) return 'rgb(220, 50, 0)';     // Light red
-    return 'rgb(180, 0, 0)';                      // Dark red for very low
+    if (score >= 90) return "rgb(0, 180, 0)"; // Green
+    if (score >= 70) return "rgb(170, 145, 0)"; // Yellow-Orange
+    if (score >= 40) return "rgb(255, 140, 0)"; // Orange
+    return "rgb(255, 0, 0)"; // Red
   };
-  
+
   // Function to format date in a readable format
   const formatDate = (dateString) => {
     const options = { year: 'numeric', month: 'short', day: 'numeric' };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
-  // Get the rating history for the currently selected group
-  const currentRatingHistory = dummyRatingData[selectedGroup[0]] || [];
+  // Extract data from userData state for use in JSX
+  const { cfHandle, trustScore, numberOfGroups, removedNumberOfGroups, registrationDate } = userData || {};
+
+  // Generate rating history for the currently selected group based on their current rating
+  // Since we don't have actual rating history from the API, we'll generate plausible data
+  const generateRatingHistory = (groupId, currentRating) => {
+    const numPoints = Math.floor(Math.random() * 8) + 5; // 5-12 data points
+    const volatility = Math.floor(currentRating / 10); // Higher ratings have more volatility
+    return generateDummyData(currentRating, numPoints, volatility, groupId);
+  };
+  
+  // Get or generate the rating history for currently selected group
+  const currentRatingHistory = generateRatingHistory(selectedGroup[0], selectedGroup[1]);
 
   return (
     <div className="page-container">
@@ -185,7 +267,7 @@ export default function User() {
             </div>
             {/* Username - Now displays cf_username and links to Codeforces profile */}
             <a 
-              href={`https://codeforces.com/profile/${cf_username}`} 
+              href={`https://codeforces.com/profile/${cfHandle || username}`} 
               target="_blank" 
               rel="noopener noreferrer"
               className={styles.usernameLink}
@@ -194,7 +276,7 @@ export default function User() {
                 className={styles.username} 
                 style={{ color: selectedGroup[3], marginBottom: '0.76rem', display: 'inline-block' }}
               >
-                {cf_username}
+                {cfHandle || username}
               </span>
             </a>
             {/* Stats List */}
