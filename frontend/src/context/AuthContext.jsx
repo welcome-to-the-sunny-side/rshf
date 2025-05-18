@@ -65,7 +65,7 @@ export const AuthProvider = ({ children }) => {
       setToken(data.access_token);
       
       // Get user details after login
-      const userResponse = await fetch(`${BACKEND_URL}/api/user?uid=${username}`, {
+      const userResponse = await fetch(`${BACKEND_URL}/api/user?user_id=${username}`, {
         headers: {
           'Authorization': `Bearer ${data.access_token}`
         }
@@ -73,7 +73,7 @@ export const AuthProvider = ({ children }) => {
       
       if (userResponse.ok) {
         const userData = await userResponse.json();
-        setUser(userData[0]); // The endpoint returns an array with a single user
+        setUser(userData); // The endpoint returns a single user object, not an array
       }
       
       return true;

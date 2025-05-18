@@ -92,7 +92,6 @@ def register_user(payload: schemas.UserRegister, db: Session = Depends(get_db)):
         raise HTTPException(400, "user already exists")
     return crud.create_user(db, payload)
 
-
 @router.post("/user/login", response_model=schemas.TokenOut)
 def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = crud.authenticate_user(db, form.username, form.password)
