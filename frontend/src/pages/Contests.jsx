@@ -47,7 +47,9 @@ export default function Contests() {
       
       const data = await response.json();
       console.log('Upcoming contests:', data);
-      setUpcomingContests(data);
+      // Sort contests by start datetime in ascending order
+      const sortedData = [...data].sort((a, b) => a.start_time_posix - b.start_time_posix);
+      setUpcomingContests(sortedData);
     } catch (err) {
       console.error('Error fetching upcoming contests:', err);
       setError(prev => ({ ...prev, upcoming: err.message }));
@@ -73,7 +75,9 @@ export default function Contests() {
       
       const data = await response.json();
       console.log('Past contests:', data);
-      setPastContests(data);
+      // Sort contests by start datetime in ascending order
+      const sortedData = [...data].sort((a, b) => b.start_time_posix - a.start_time_posix);
+      setPastContests(sortedData);
     } catch (err) {
       console.error('Error fetching past contests:', err);
       setError(prev => ({ ...prev, past: err.message }));

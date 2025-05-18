@@ -210,9 +210,9 @@ export default function User() {
                 </Link>
                 ]: <span style={{ color: selectedGroup[3], fontWeight: 'bold' }}>{selectedGroup[1]}</span> (max. <span style={{ color: selectedGroup[6], fontWeight: 'bold' }}>{selectedGroup[5]}</span>, <span style={{ color: selectedGroup[6], fontWeight: 'bold' }}>{selectedGroup[4]}</span>)
               </div>
-              <div className={`${styles.statItem} standardTextFont`}>
+              {/* <div className={`${styles.statItem} standardTextFont`}>
                 Trust Score: <span className={styles.trustScore} style={{ color: getTrustScoreColor(trustScore) }}>{trustScore}%</span>
-              </div>
+              </div> */}
               <div className={`${styles.statItem} standardTextFont`}>
                 Member of: <span>{numberOfGroups} groups</span>
               </div>

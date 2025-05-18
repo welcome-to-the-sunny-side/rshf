@@ -73,6 +73,16 @@ class GroupMembershipOut(BaseModel):
     class Config:
         orm_mode = True
 
+class GroupOutFull(BaseModel):
+    group_id: str
+    group_name: str
+    group_description: Optional[str] = None
+    is_private: bool = False
+    create_date: datetime = None
+    memberships: List[GroupMembershipOut] = []
+    
+    class Config:
+        orm_mode = True
 
 class GroupOut(BaseModel):
     group_id: str
@@ -80,6 +90,7 @@ class GroupOut(BaseModel):
     group_description: Optional[str] = None
     is_private: bool = False
     create_date: datetime = None
+    member_count: int = 0
     
     class Config:
         orm_mode = True
@@ -131,24 +142,16 @@ class UserOut(BaseModel):
     internal_default_rated: bool
     trusted_score: int
     role: Role
-    # new
+    email_id: Optional[str] = None
     group_memberships: List[GroupMembershipOut] = []
     contest_participations: List[ContestParticipationOut] = []
+    atcoder_handle: Optional[str] = None
+    codechef_handle: Optional[str] = None
+    twitter_handle: Optional[str] = None
 
     class Config:
         orm_mode = True
 
-
-class GroupOut(BaseModel):
-    group_id: str
-    group_name: str
-    group_description: Optional[str] = None
-    is_private: bool = False
-    create_date: datetime = None
-    # The memberships and participations references were removed as requested
-    
-    class Config:
-        orm_mode = True
 
 # ==== reports ====
 

@@ -51,7 +51,7 @@ export default function Home() {
         setLoading(prev => ({ ...prev, groups: true }));
         
         console.log('Fetching groups from backend...');
-        const response = await fetch(`${BACKEND_URL}/api/group`, {
+        const response = await fetch(`${BACKEND_URL}/api/groups`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -78,7 +78,7 @@ export default function Home() {
         const processedGroups = data.map(group => ({
           id: group.group_id,
           name: group.group_name,
-          memberCount: group.memberships.length
+          memberCount: group.member_count
         }))
         // Sort by member count in descending order
         .sort((a, b) => b.memberCount - a.memberCount)
@@ -119,15 +119,17 @@ export default function Home() {
         const contestsData = JSON.parse(contestsText);
         console.log('Contests data:', contestsData);
         
-        // Take only the top 5 contests
-        const activeContests = contestsData.slice(0, 5);
+ 
+        const activeContests = contestsData;
         
         // Transform contests data to include necessary display info
         const transformedContests = activeContests.map(contest => ({
           ...contest,
           // Date is already available in start_time_posix (as Unix timestamp in seconds)
           date: new Date(contest.start_time_posix * 1000).toISOString()
-        }));
+        }))
+        // Sort by start time in ascending order (earliest first)
+        .sort((a, b) => a.start_time_posix - b.start_time_posix);
         
         setContests(transformedContests);
       } catch (err) {

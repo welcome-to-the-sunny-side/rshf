@@ -2,7 +2,7 @@
 from typing import List, Optional
 
 from sqlalchemy.orm import Session
-
+from sqlalchemy import func
 from app import models
 from app.utils import hash_password, verify_password
 from app import schemas
@@ -10,12 +10,18 @@ from app import schemas
 
 # helper enrichers ───────────────────────────────────────────
 def _enrich_user(db: Session, user: models.User) -> models.User:
+    # Load group memberships for the user
     user.group_memberships = list(user.memberships)
+    
+    # Load contest participations for the user
     user.contest_participations = (
         db.query(models.ContestParticipation)
         .filter(models.ContestParticipation.user_id == user.user_id)
         .all()
     )
+    
+    # No need to explicitly assign handles and other attributes
+    # as they are already part of the User model
     return user
 
 
@@ -113,9 +119,18 @@ def get_group(db: Session, group_id: str) -> Optional[models.Group]:
     return _enrich_group(db, grp) if grp else None
 
 
-def list_groups(db: Session) -> List[models.Group]:
-    groups = db.query(models.Group).all()
-    return [_enrich_group(db, g) for g in groups]
+def list_groups(db: Session):
+    groups = (
+        db.query(
+            models.Group,
+            func.count(models.GroupMembership.user_id).label("member_count")
+        )
+        .outerjoin(models.GroupMembership, models.Group.group_id == models.GroupMembership.group_id)
+        .group_by(models.Group.group_id)
+        .all()
+    )
+    # don't enrich here 
+    return groups
 
 
 def update_group(db: Session, payload: schemas.GroupUpdate) -> Optional[models.Group]:

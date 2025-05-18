@@ -28,11 +28,7 @@ export default function Groups() {
     try {
       setLoading(true);
       
-      const response = await fetch(`${BACKEND_URL}/group`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
+      const response = await fetch(`${BACKEND_URL}/groups`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch groups: ${response.status}`);
@@ -88,9 +84,9 @@ export default function Groups() {
         <PinIcon />
         <Link to={`/group/${mainGroup.group_id}`} className="tableCellLink" style={{ fontWeight: 600 }}>{mainGroup.group_name}</Link>
       </div>,
-      <span style={{ fontWeight: 500 }}>restricted membership</span>,
-      <span style={{ fontWeight: 500 }}>{mainGroup.memberships.length.toLocaleString()}</span>,
-      <span style={{ fontWeight: 500 }}>-</span> // Creation date might not be available from API
+      <span style={{ fontWeight: 500 }}>{mainGroup.is_private ? 'private' : 'public'}</span>,
+      <span style={{ fontWeight: 500 }}>{mainGroup.member_count.toLocaleString()}</span>,
+      <span style={{ fontWeight: 500 }}>{formatDate(mainGroup.create_date)}</span>
     ];
   }, [mainGroup]);
   
@@ -110,9 +106,9 @@ export default function Groups() {
     
     return otherGroups.map(group => [
       <Link to={`/group/${group.group_id}`} className="tableCellLink">{group.group_name}</Link>,
-      "restricted membership", // Group type not directly provided in API
-      group.memberships.length.toLocaleString(), // Use membership count as member count
-      "-" // Creation date not available from API
+      group.is_private ? 'private' : 'public',
+      group.member_count.toLocaleString(),
+      formatDate(group.create_date)
     ]);
   }, [otherGroups, loading, error]);
 

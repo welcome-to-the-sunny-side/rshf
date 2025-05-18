@@ -102,19 +102,21 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
     return {"access_token": token, "token_type": "bearer"}
 
 
-@router.get("/user", response_model=List[schemas.UserOut])
-def list_or_get_user(
-    uid: Optional[str] = Query(None),
+@router.get("/user", response_model=schemas.UserOut)
+def get_user(
+    user_id: str = Query(..., description="User ID to retrieve"),
     db: Session = Depends(get_db),
     current: models.User = Depends(get_current_user),
 ):
-    if uid:
-        user = crud.get_user(db, uid)
-        if not user:
-            raise HTTPException(404, "user not found")
-        return [user]
-    assert_global_privilege(current, "admin")
-    return crud.list_users(db)
+    user = crud.get_user(db, user_id)
+    if not user:
+        raise HTTPException(404, "User not found")
+    
+    # Return email only if the user is querying their own profile
+    if user_id != current.user_id:
+        user.email_id = None
+    
+    return user
 
 
 @router.put("/user", response_model=schemas.UserOut)
@@ -145,19 +147,27 @@ def register_group(
         raise HTTPException(400, "group already exists")
     return crud.create_group(db, payload)
 
-
-@router.get("/group", response_model=List[schemas.GroupOut])
-def list_or_get_group(
-    group_id: Optional[str] = Query(None),
+@router.get("/groups", response_model=List[schemas.GroupOut])
+def get_groups(
+    # is_private: Optional[bool] = Query(None),
     db: Session = Depends(get_db)
 ):
-    if group_id:
-        grp = crud.get_group(db, group_id)
-        if not grp:
-            raise HTTPException(404, "group not found")
-        return [grp]
+    groups_with_counts = crud.list_groups(db)
+    result = []
+    for group, count in groups_with_counts:
+        # Convert SQLAlchemy model to dict and explicitly add member_count
+        group_dict = {
+            "group_id": group.group_id,
+            "group_name": group.group_name,
+            "group_description": group.group_description,
+            "is_private": group.is_private,
+            "create_date": group.create_date,
+            "member_count": count
+        }
+        # Create Pydantic model from dict
+        result.append(schemas.GroupOut(**group_dict))
+    return result
 
-    return crud.list_groups(db)
 
 
 @router.put("/group", response_model=schemas.GroupOut)

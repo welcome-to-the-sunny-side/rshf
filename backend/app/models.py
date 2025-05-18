@@ -33,6 +33,7 @@ class User(Base):
     
     internal_default_rated = Column(Boolean, nullable=False, default=True)
     trusted_score = Column(Integer, nullable=False, default=0)
+    email_id = Column(String, nullable=False)
 
     # hqas to be hashed
     hashed_password = Column(String, nullable=False, default=hash_password("devpass"))

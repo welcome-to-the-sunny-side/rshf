@@ -67,19 +67,30 @@ Token format: `Bearer <access_token>`
 - **Description**: Authenticates a user and returns a JWT token
 - **Error Responses**: 401 if credentials are invalid
 
-### List or Get User
+### Get User
 - **URL**: `/api/user`
 - **Method**: `GET`
 - **Auth Required**: Yes
 - **Query Parameters**:
-  - `uid` (optional): specific user ID to get
-- **Response**: List of `UserOut` objects
-- **Description**: 
-  - With `uid`: Returns a specific user's details
-  - Without `uid`: Lists all users (admin only)
-- **Error Responses**: 
-  - 404 if user not found
-  - 403 if insufficient privilege for listing all users
+  - `user_id` (required): ID of the user to retrieve
+- **Response**: Single `UserOut` object
+  ```json
+  {
+    "user_id": "string",
+    "cf_handle": "string",
+    "internal_default_rated": true,
+    "trusted_score": 0,
+    "role": "user",
+    "email_id": "string",  // Only included when querying your own profile
+    "atcoder_handle": "string",
+    "codechef_handle": "string",
+    "twitter_handle": "string",
+    "group_memberships": [...],  // List of group memberships
+    "contest_participations": [...]  // List of contest participations
+  }
+  ```
+- **Description**: Returns the details of a specific user. Email ID is only included when querying your own profile.
+- **Error Responses**: 404 if user not found
 
 ### Update User
 - **URL**: `/api/user`
@@ -132,12 +143,10 @@ Token format: `Bearer <access_token>`
 - **Description**: Creates a new group with the creator as a moderator
 - **Error Responses**: 400 if group ID or name already exists
 
-### List or Get Group
-- **URL**: `/api/group`
+### List Groups
+- **URL**: `/api/groups`
 - **Method**: `GET`
 - **Auth Required**: No
-- **Query Parameters**:
-  - `group_id` (optional): specific group ID to get
 - **Response**: List of `GroupOut` objects
   ```json
   [
@@ -146,14 +155,13 @@ Token format: `Bearer <access_token>`
       "group_name": "string",
       "group_description": "string",
       "is_private": false,
-      "create_date": "2025-05-17T14:25:36Z"
+      "create_date": "2025-05-17T14:25:36Z",
+      "member_count": 10
     }
   ]
   ```
-- **Description**:
-  - With `group_id`: Returns a specific group's details
-  - Without `group_id`: Lists all groups
-- **Error Responses**: 404 if group not found
+- **Description**: Lists all groups with their member count
+- **Error Responses**: None
 
 ### Update Group
 - **URL**: `/api/group`
@@ -174,7 +182,7 @@ Token format: `Bearer <access_token>`
   - 409 if new group name already exists
 
 ### Add Member to Group
-- **URL**: `/api/group/add_member`
+- **URL**: `/api/add_to_group`
 - **Method**: `POST`
 - **Auth Required**: Yes
 - **Request Body**:
@@ -187,6 +195,14 @@ Token format: `Bearer <access_token>`
   }
   ```
 - **Response**: `GroupMembershipOut` object
+  ```json
+  {
+    "user_id": "string",
+    "group_id": "string",
+    "role": "user",
+    "user_group_rating": 0
+  }
+  ```
 - **Description**: Adds a user to a group (requires moderator/admin privileges)
 - **Error Responses**:
   - 404 if user or group not found
@@ -194,7 +210,7 @@ Token format: `Bearer <access_token>`
   - 400 if membership already exists
 
 ### Remove Member from Group
-- **URL**: `/api/group/remove_member`
+- **URL**: `/api/remove_from_group`
 - **Method**: `POST`
 - **Auth Required**: Yes
 - **Request Body**:
@@ -205,6 +221,11 @@ Token format: `Bearer <access_token>`
   }
   ```
 - **Response**: Success message
+  ```json
+  {
+    "detail": "membership removed"
+  }
+  ```
 - **Description**: Removes a user from a group (requires moderator/admin privileges that outrank the target)
 - **Error Responses**:
   - 404 if membership not found
@@ -215,7 +236,7 @@ Token format: `Bearer <access_token>`
 ## Contest Endpoints
 
 ### Register Rated Contest
-- **URL**: `/api/contest/register_rated`
+- **URL**: `/api/register_rated`
 - **Method**: `POST`
 - **Auth Required**: Yes
 - **Request Body**:
@@ -228,7 +249,13 @@ Token format: `Bearer <access_token>`
     "rating_after": 0  // Optional
   }
   ```
-- **Response**: `ContestParticipationOut` object
+- **Response**: Success message
+  ```json
+  {
+    "detail": "participation recorded",
+    "participation_id": "string"
+  }
+  ```
 - **Description**: Registers a user for a rated contest in a group
 - **Error Responses**:
   - 404 if user, group, or contest not found
@@ -236,7 +263,7 @@ Token format: `Bearer <access_token>`
   - 400 if already registered
 
 ### Get Contest Participations
-- **URL**: `/api/contest/participations`
+- **URL**: `/api/contest_participations`
 - **Method**: `GET`
 - **Auth Required**: Yes
 - **Query Parameters**:
@@ -244,15 +271,43 @@ Token format: `Bearer <access_token>`
   - `uid` (optional): filter by user ID
   - `cid` (optional): filter by contest ID
 - **Response**: List of `ContestParticipationOut` objects
-- **Description**: Get contest participations with optional filters
+  ```json
+  [
+    {
+      "user_id": "string",
+      "group_id": "string",
+      "contest_id": "string",
+      "rating_before": 0,
+      "rating_after": 0,
+      "rank": 0
+    }
+  ]
+  ```
+- **Description**: Get contest participations with optional filters (must provide at least one filter)
+- **Error Responses**: 400 if no filter is provided
 
 ### List Contests
-- **URL**: `/api/contest/list`
+- **URL**: `/api/contests`
 - **Method**: `GET`
 - **Auth Required**: Yes
 - **Query Parameters**:
   - `finished` (optional): filter by finished status
 - **Response**: List of `ContestOut` objects
+  ```json
+  [
+    {
+      "contest_id": "string",
+      "contest_name": "string",
+      "platform": "string",
+      "start_time_posix": 1621345678,
+      "duration_seconds": 7200,
+      "link": "string",
+      "internal_contest_identifier": "string",
+      "standings": {},
+      "finished": true
+    }
+  ]
+  ```
 - **Description**: Get all contests, optionally filtered by their finished status
 
 ### Get Contest
