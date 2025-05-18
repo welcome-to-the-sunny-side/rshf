@@ -319,7 +319,7 @@ def list_announcements(db: Session, group_id: Optional[str] = None) -> List[mode
     q = db.query(models.Announcement)
     if group_id:
         q = q.filter(models.Announcement.group_id == group_id)
-    return q.order_by(models.Announcement.create_date.desc()).all()
+    return q.order_by(models.Announcement.timestamp.desc()).all()
 
 
 def update_announcement(db: Session, payload: schemas.AnnouncementUpdate) -> Optional[models.Announcement]:

@@ -160,13 +160,39 @@ def get_groups(
             "group_name": group.group_name,
             "group_description": group.group_description,
             "is_private": group.is_private,
-            "create_date": group.create_date,
+            "timestamp": group.timestamp,
             "member_count": count
         }
         # Create Pydantic model from dict
         result.append(schemas.GroupOut(**group_dict))
     return result
 
+
+
+@router.get("/group", response_model=schemas.GroupSingle)
+def get_single_group(
+    group_id: str = Query(..., description="Group ID to retrieve"),
+    db: Session = Depends(get_db),
+    current: models.User = Depends(get_current_user),
+):
+    """
+    Get a single group by its ID.
+    
+    Args:
+        group_id: ID of the group to retrieve
+        db: Database session
+        current: Current authenticated user
+        
+    Returns:
+        Group object with all its attributes
+    
+    Raises:
+        HTTPException: If group not found
+    """
+    group = crud.get_group(db, group_id)
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+    return group
 
 
 @router.put("/group", response_model=schemas.GroupOut)

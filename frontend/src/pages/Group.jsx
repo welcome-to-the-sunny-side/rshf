@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import styles from './Group.module.css';
 import { getRatingColor, getRankName } from '../utils/ratingUtils';
@@ -8,6 +8,7 @@ import PagedTableBox from '../components/PagedTableBox';
 import GroupNavBar from '../components/GroupNavBar';
 import ParticipationGraph from '../components/ParticipationGraph';
 import titleStyles from '../components/ContentBoxWithTitle.module.css';
+import axios from 'axios';
 
 // Generate varied dummy participation data
 const generateDummyParticipationData = (numPoints) => {
@@ -66,67 +67,222 @@ const generateDummyParticipationData = (numPoints) => {
   return data;
 };
 
-// Sample announcements data - in real app this would come from backend (exactly 17 entries)
-const generateDummyAnnouncements = (groupId) => {
-  return [
-    { date: "2024-03-20", link: `/group/${groupId}/announcement/135`, title: "New Group Rules Announced" },
-    { date: "2024-03-18", link: `/group/${groupId}/announcement/134`, title: "Upcoming Contest Information" },
-    { date: "2024-03-16", link: `/group/${groupId}/announcement/133`, title: "March Group Challenge Results" },
-    { date: "2024-03-15", link: `/group/${groupId}/announcement/132`, title: "Weekly Winners Announced" },
-    { date: "2024-03-14", link: `/group/${groupId}/announcement/131`, title: "New Learning Resources Added" },
-    { date: "2024-03-12", link: `/group/${groupId}/announcement/130`, title: "Group Meetup Schedule" },
-    { date: "2024-03-10", link: `/group/${groupId}/announcement/129`, title: "Algorithm Contest Series #45" },
-    { date: "2024-03-08", link: `/group/${groupId}/announcement/128`, title: "Member Spotlight: Top Contributors" },
-    { date: "2024-03-06", link: `/group/${groupId}/announcement/127`, title: "Group Highlights: February" },
-    { date: "2024-03-04", link: `/group/${groupId}/announcement/126`, title: "Upcoming Events Calendar" },
-    { date: "2024-03-02", link: `/group/${groupId}/announcement/125`, title: "Group Feature: Rating System Update" },
-    { date: "2024-02-28", link: `/group/${groupId}/announcement/124`, title: "Study Session Recordings" },
-    { date: "2024-02-26", link: `/group/${groupId}/announcement/123`, title: "Monthly Programming Challenge Results" },
-    { date: "2024-02-24", link: `/group/${groupId}/announcement/122`, title: "New Member Welcome Guide" },
-    { date: "2024-02-22", link: `/group/${groupId}/announcement/121`, title: "Group Guidelines Update" },
-    { date: "2024-02-20", link: `/group/${groupId}/announcement/120`, title: "Coding Contest Winners February" },
-    { date: "2024-02-18", link: `/group/${groupId}/announcement/119`, title: "New Group Features Released" }
-  ].sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by date, newest first
-};
-
 export default function Group() {
   const { groupId } = useParams();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [announcementsList, setAnnouncementsList] = useState([]);
+  const [announcementsLoading, setAnnouncementsLoading] = useState(true);
+  const [announcementsError, setAnnouncementsError] = useState(null);
   
-  // Dummy data for group information
-  const groupData = {
-    name: groupId,
-    type: "anyone can join", // Options: "restricted membership", "anyone can join"
-    created: "2022-06-05",
-    memberCount: 621,
-    description: "A group dedicated to algorithm studies and competitive programming."
-  };
+  // Initialize group data with state
+  const [groupData, setGroupData] = useState({
+    name: "",
+    type: "", // Will be determined from is_private flag
+    created: "",
+    memberCount: 0,
+    description: "A group dedicated to algorithm studies and competitive programming.",
+    memberships: [] // Initialize with an empty array to avoid undefined errors
+  });
   
-  // Dummy top users data for leaderboard (top 10 rated members)
-  const topUsers = [
-    { username: "monica", rating: 2250 },
-    { username: "alice", rating: 2185 },
-    { username: "frank", rating: 2100 },
-    { username: "rachel", rating: 2050 },
-    { username: "bob", rating: 1890 },
-    { username: "david", rating: 1854 },
-    { username: "emily", rating: 1810 },
-    { username: "carlos", rating: 1756 },
-    { username: "sophie", rating: 1725 },
-    { username: "kevin", rating: 1687 }
-  ].sort((a, b) => b.rating - a.rating); // Sort by rating descending
+  // State variables for current user's membership information
+  const [userRole, setUserRole] = useState(null);
+  const [userRating, setUserRating] = useState(0);
+  const [userMaxRating, setUserMaxRating] = useState(0);
+  const [joinDate, setJoinDate] = useState("");
+  
+  // Fetch group data from API
+  useEffect(() => {
+    const fetchGroupData = async () => {
+      try {
+        setLoading(true);
+        // Get the token from localStorage
+        const token = localStorage.getItem('token'); // In a real app, use a proper auth system
+        
+        const userId = localStorage.getItem('userId'); // Get the current user's ID
+        
+        // For development without token, just use a temporary mock
+        if (!token) {
+          console.warn('No token found, using mock data');
+          // We'll continue without a token during development, but in production would require auth
+        }
+        
+        // Add baseURL for API requests - this should match your backend URL
+        // Using relative URL to work with both development and production
+        const baseURL = '';  // In production, this might be your API domain
+
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        
+        try {
+          // Attempt to fetch real data
+          const response = await axios.get(`${baseURL}/api/group?group_id=${groupId}`, { headers });
+          
+          const fetchedGroup = response.data;
+          
+          // Determine type from is_private flag
+          const type = fetchedGroup.is_private ? "Private" : "Public";
+          
+          setGroupData({
+            name: fetchedGroup.group_name,
+            type: type,
+            created: fetchedGroup.timestamp,
+            memberCount: fetchedGroup.memberships.length,
+            description: fetchedGroup.group_description || "No description provided.",
+            memberships: fetchedGroup.memberships || []
+          });
+          
+          // Find the current user's membership in this group
+          if (userId && fetchedGroup.memberships) {
+            const userMembership = fetchedGroup.memberships.find(membership => 
+              membership.user_id === userId
+            );
+            
+            if (userMembership) {
+              // User is a member of this group
+              setUserRole(userMembership.role);
+              setUserRating(userMembership.user_group_rating);
+              
+              // For max rating, we could either store it separately in the backend
+              // or for now, just set it slightly higher than current rating as a placeholder
+              // In a real app, you'd want to track this accurately
+              setUserMaxRating(Math.max(userMembership.user_group_rating, userMembership.user_group_rating + 75));
+              
+              // The timestamp when the user joined is not directly available in the API response
+              // So we'll use the group creation date as a fallback
+              // In a real app, you'd want to store and retrieve the actual join date
+              setJoinDate(fetchedGroup.timestamp);
+            } else {
+              // User is not a member of this group
+              setUserRole(null);
+              setUserRating(0);
+              setUserMaxRating(0);
+              setJoinDate("");
+            }
+          }
+          
+          console.log('Group API response:', response.data); // Debug log
+        } catch (apiError) {
+          console.error('API error:', apiError);
+          // For development, fall back to dummy data
+          console.warn('Falling back to dummy data');
+          // Keep original dummy data during development
+        }
+        
+        setLoading(false);
+      } catch (err) {
+        console.error('Error in fetch process:', err);
+        // Don't show error to user during development, just use dummy data
+        setLoading(false);
+      }
+    };
+    
+    fetchGroupData();
+  }, [groupId]);
+  
+  // Fetch announcements from the API
+  useEffect(() => {
+    const fetchAnnouncements = async () => {
+      try {
+        setAnnouncementsLoading(true);
+        // Get the token from localStorage
+        const token = localStorage.getItem('token');
+        
+        // For development without token, just use a temporary mock
+        if (!token) {
+          console.warn('No token found, using mock data for announcements');
+          // We'll continue without a token during development, but in production would require auth
+        }
+        
+        // Add baseURL for API requests
+        const baseURL = '';  // In production, this might be your API domain
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        
+        try {
+          // Attempt to fetch real announcement data
+          const response = await axios.get(`${baseURL}/api/announcement?group_id=${groupId}`, { headers });
+          
+          // Transform API data to the format we need
+          const formattedAnnouncements = response.data.map(announcement => ({
+            id: announcement.announcement_id,
+            title: announcement.title,
+            content: announcement.content,
+            date: announcement.timestamp,
+            link: `/group/${groupId}/announcement/${announcement.announcement_id}`
+          }));
+          
+          // Sort by date in descending order (newest first)
+          formattedAnnouncements.sort((a, b) => new Date(b.date) - new Date(a.date));
+          
+          setAnnouncementsList(formattedAnnouncements);
+        } catch (apiError) {
+          console.error('API error fetching announcements:', apiError);
+          // For development, provide an error message
+          setAnnouncementsError('Failed to load announcements');
+        }
+        
+        setAnnouncementsLoading(false);
+      } catch (err) {
+        console.error('Error in announcement fetch process:', err);
+        setAnnouncementsLoading(false);
+        setAnnouncementsError('An unexpected error occurred');
+      }
+    };
+    
+    fetchAnnouncements();
+  }, [groupId]);
+  
+  // We'll derive top users data from the group memberships
+  const [leaderboardRows, setLeaderboardRows] = useState([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(true);
+  const [leaderboardError, setLeaderboardError] = useState(null);
+  
+  // UseEffect to process group membership data for the leaderboard
+  useEffect(() => {
+    setLeaderboardLoading(true);
+    
+    // No need for a separate API call, we can use the group data that contains memberships
+    // Debug output to help diagnose the issue
+    console.log('Processing leaderboard data:', { 
+      groupData, 
+      loading, 
+      hasMemberships: groupData && groupData.memberships ? 'yes' : 'no',
+      membershipCount: groupData && groupData.memberships ? groupData.memberships.length : 0 
+    });
+    
+    if (groupData && !loading && groupData.memberships && groupData.memberships.length > 0) {
+      try {
+        // Process memberships to create leaderboard data
+        // This requires user_ids and ratings
+        const memberships = [...groupData.memberships];
+        
+        // Sort by rating in descending order
+        memberships.sort((a, b) => b.user_group_rating - a.user_group_rating);
+        
+        // Take only the top 10 users
+        const topUsers = memberships.slice(0, 10);
+        
+        // Transform the data for display
+        const transformedData = topUsers.map((membership, index) => [
+          index + 1, // Rank
+          <Link to={`/user/${membership.user_id}`} className="tableCellLink" style={{ color: getRatingColor(membership.user_group_rating), fontWeight: 'bold' }}>{membership.user_id}</Link>,
+          <span style={{ color: getRatingColor(membership.user_group_rating), fontWeight: 'bold' }}>{membership.user_group_rating}</span>
+        ]);
+        
+        setLeaderboardRows(transformedData);
+        setLeaderboardLoading(false);
+      } catch (err) {
+        console.error('Error processing leaderboard data:', err);
+        setLeaderboardError('Error processing leaderboard data');
+        setLeaderboardLoading(false);
+      }
+    } else if (!loading && (!groupData || !groupData.memberships)) {
+      setLeaderboardError('No membership data available');
+      setLeaderboardLoading(false);
+    }
+  }, [groupData, loading]); // This will run when groupData is updated
   
   // Generate dummy participation data
   const participationData = generateDummyParticipationData(12);
-  
-  // User state simulation (would come from auth context in real app)
-  const userRole = "moderator"; // Options: "moderator", "member", null (not a member), undefined (logged out)
-  
-  // Dummy user rating and max rating (would come from auth context in real app)
-  const userRating = 1875;
-  const userMaxRating = 1950;
-  
-  // Dummy join date
-  const joinDate = "2022-08-15";
   
   // Dummy report accuracy data
   const reportAccuracy = { accepted: 9, total: 12 };
@@ -157,40 +313,81 @@ export default function Group() {
     }
   };
 
-  // Generate dummy announcements for this group
-  const announcements = generateDummyAnnouncements(groupId);
-  
   // Transform the announcements data for the PagedTableBox component
   const announcementColumns = ["Announcement", "Date"];
-  const announcementData = announcements.map(announcement => [
-    <Link to={announcement.link} className="tableCellLink">{announcement.title}</Link>,
-    new Date(announcement.date).toLocaleDateString('en-US', { 
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    })
-  ]);
   
-  // Transform top users data for the leaderboard table
+  // Create a loading or error message row if needed
+  let announcementData = [];
+  
+  if (announcementsLoading) {
+    announcementData = [[<span>Loading announcements...</span>, '']];
+  } else if (announcementsError) {
+    announcementData = [[<span>Error: {announcementsError}</span>, '']];
+  } else if (announcementsList.length === 0) {
+    announcementData = [[<span>No announcements found</span>, '']];
+  } else {
+    // Transform the API data for display
+    announcementData = announcementsList.map(announcement => [
+      <Link to={announcement.link} className="tableCellLink">{announcement.title}</Link>,
+      new Date(announcement.date).toLocaleDateString('en-US', { 
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      })
+    ]);
+  }
+  
+  // Setup columns for the leaderboard table
   const leaderboardColumns = ["Rank", "User", "Rating"];
-  const leaderboardData = topUsers.map((user, index) => [
-    index + 1,
-    <Link to={`/user/${user.username}`} className="tableCellLink" style={{ color: getRatingColor(user.rating), fontWeight: 'bold' }}>{user.username}</Link>,
-    <span style={{ color: getRatingColor(user.rating), fontWeight: 'bold' }}>{user.rating}</span>
-  ]);
   
+  // Prepare leaderboard data with loading and error states
+  let leaderboardData = leaderboardRows;
+  
+  if (leaderboardLoading) {
+    leaderboardData = [[<span>Loading leaderboard...</span>, '', '']];
+  } else if (leaderboardError) {
+    leaderboardData = [[<span>Error: {leaderboardError}</span>, '', '']];
+  } else if (leaderboardRows.length === 0) {
+    leaderboardData = [[<span>No rating data available</span>, '', '']];
+  }
+
+  // Display loading indicator if data is being fetched
+  if (loading) {
+    return (
+      <div className={styles.container}>
+        <GroupNavBar groupId={groupId} activeTab="overview" />
+        <div className={styles.loadingContainer}>
+          <p className="standardTextFont">Loading group information...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Display error message if there was an error fetching data
+  if (error) {
+    return (
+      <div className={styles.container}>
+        <GroupNavBar groupId={groupId} activeTab="overview" />
+        <div className={styles.errorContainer}>
+          <p className="standardTextFont">Error: {error}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="page-container">
-      {/* Floating button box */}
-      <GroupNavBar groupId={groupId} showModViewButton={showModViewButton} />
+    <div className={styles.container}>
+      <GroupNavBar groupId={groupId} activeTab="overview" />
       
-      {/* Two content boxes side by side */}
+      {/* Header with group name and description */}
       <div className={styles.contentBoxRow}>
-        {/* Left content box with group info */}
+        {/* Left content box with name and description */}
         <div className={`contentBox ${styles.contentBoxLeft}`}>
-          {/* Group name displayed in black at top */}
+          <div className={styles.groupTitle}>
           <h2 className={styles.groupName}>{groupData.name}</h2>
-          
+            {/* <h1 className="standardTextFont">{groupData.name}</h1> */}
+            {/* <p className="standardTextFont">{groupData.description}</p> */}
+          </div>
           {/* About section enclosed in a box */}
           <div className={styles.aboutBox}>
             <p className="standardTextFont">{groupData.description}</p>
@@ -235,11 +432,6 @@ export default function Group() {
                   }}>
                     {userMaxRating}
                   </span>)
-                </div>
-                <div className={`${styles.statItem} standardTextFont`}>
-                  Report Accuracy: <span title={`${reportAccuracy.accepted} accepted out of ${reportAccuracy.total} reports`}>
-                    {Math.round((reportAccuracy.accepted / reportAccuracy.total) * 100)}% ({reportAccuracy.accepted}/{reportAccuracy.total})
-                  </span>
                 </div>
                 <div className={`${styles.statItem} standardTextFont`}>
                   Member since: <span>{formatDate(joinDate)}</span>

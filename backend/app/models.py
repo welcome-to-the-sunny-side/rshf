@@ -17,13 +17,16 @@ class Status(str, enum.Enum):
     user_left = "user_left"
     kicked_out = "kicked_out"
 
-class User(Base):
+class ModelBase(Base):
+    __abstract__ = True
+    timestamp = Column(DateTime, server_default=func.timezone('UTC', func.now()), nullable=False)
+
+class User(ModelBase):
     __tablename__ = "users"
 
     user_id = Column(String, primary_key=True, index=True) 
     # user_id -> username that user will login through
     role = Column(Enum(Role), nullable=False, default=Role.user) 
-    create_date = Column(DateTime, server_default=func.now(), nullable=False)
 
     # handles
     cf_handle = Column(String, unique=True, index=True, nullable=False)
@@ -43,7 +46,7 @@ class User(Base):
         return f"<User(id={self.user_id}, cf_handle='{self.cf_handle}', trusted_score={self.trusted_score})>"
 
 
-class Group(Base):
+class Group(ModelBase):
     """
         group specific rating formulas to be implemented later
     """
@@ -52,7 +55,6 @@ class Group(Base):
     group_name = Column(String, unique=True, index=True, nullable=False)
     group_description = Column(String, nullable=True)
     is_private = Column(Boolean, nullable=False, default=False)
-    create_date = Column(DateTime, server_default=func.now(), nullable=False)
 
     memberships = relationship("GroupMembership", back_populates="group", cascade="all, delete")
     def __repr__(self):
@@ -60,12 +62,13 @@ class Group(Base):
 
 
 
-class GroupMembership(Base):
+class GroupMembership(ModelBase):
     __tablename__ = "group_memberships"
 
     user_id = Column(String, ForeignKey("users.user_id"))
     group_id = Column(String, ForeignKey("groups.group_id"))
     role = Column(Enum(Role), nullable=False, default=Role.user)
+
     user_group_rating = Column(Integer, nullable=False, default=1500)
     user_group_max_rating = Column(Integer, nullable=False, default=1500)
     
@@ -80,7 +83,7 @@ class GroupMembership(Base):
         return f"<GroupMembership(user_id={self.user_id}, group_id={self.group_id}, role={self.role}, rating={self.user_group_rating})>"
 
 
-class Contest(Base):
+class Contest(ModelBase):
     __tablename__ = "contests"
     contest_id = Column(String, primary_key=True, index=True)
     contest_name = Column(String, nullable=False)
@@ -98,7 +101,7 @@ class Contest(Base):
 
 
 
-class ContestParticipation(Base):
+class ContestParticipation(ModelBase):
     __tablename__ = "contest_participations"
 
     user_id = Column(String, ForeignKey("users.user_id"), primary_key=True)
@@ -118,7 +121,7 @@ class ContestParticipation(Base):
 
 
 
-class Report(Base):
+class Report(ModelBase):
     __tablename__ = "reports"
 
     report_id = Column(String, primary_key=True, index=True)
@@ -129,18 +132,15 @@ class Report(Base):
     respondent_user_id = Column(String, ForeignKey("users.user_id"), nullable=False)
 
     report_description = Column(String, nullable=False)
-    create_date = Column(DateTime, server_default=func.now(), nullable=False)
-
     resolved = Column(Boolean, nullable=False, default=False)
     resolved_by = Column(String, ForeignKey("users.user_id"), nullable=True)
     resolve_message = Column(String, nullable=True)
 
 
-class Announcement(Base):
+class Announcement(ModelBase):
     __tablename__ = "announcements"
 
     announcement_id = Column(String, primary_key=True, index=True)
     group_id = Column(String, ForeignKey("groups.group_id"), nullable=False)
-    create_date = Column(DateTime, server_default=func.now(), nullable=False)
     title = Column(String, nullable=False)
     content = Column(String, nullable=False)

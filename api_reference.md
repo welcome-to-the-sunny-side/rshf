@@ -137,7 +137,7 @@ Token format: `Bearer <access_token>`
     "group_name": "string",
     "group_description": "string",
     "is_private": false,
-    "create_date": "2025-05-17T14:25:36Z"
+    "timestamp": "2025-05-17T14:25:36Z"
   }
   ```
 - **Description**: Creates a new group with the creator as a moderator
@@ -155,13 +155,40 @@ Token format: `Bearer <access_token>`
       "group_name": "string",
       "group_description": "string",
       "is_private": false,
-      "create_date": "2025-05-17T14:25:36Z",
+      "timestamp": "2025-05-17T14:25:36Z",
       "member_count": 10
     }
   ]
   ```
 - **Description**: Lists all groups with their member count
 - **Error Responses**: None
+
+### Get Group
+- **URL**: `/api/group`
+- **Method**: `GET`
+- **Auth Required**: Yes
+- **Query Parameters**:
+  - `group_id` (required): ID of the group to retrieve
+- **Response**: `GroupSingle` object
+  ```json
+  {
+    "group_id": "string",
+    "group_name": "string",
+    "group_description": "string",
+    "is_private": false,
+    "timestamp": "2025-05-17T14:25:36Z",
+    "memberships": [
+      {
+        "user_id": "string",
+        "group_id": "string",
+        "role": "user",
+        "user_group_rating": 1500
+      }
+    ]
+  }
+  ```
+- **Description**: Returns detailed information about a specific group including all its memberships
+- **Error Responses**: 404 if group not found
 
 ### Update Group
 - **URL**: `/api/group`

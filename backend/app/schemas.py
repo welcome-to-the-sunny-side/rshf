@@ -78,7 +78,7 @@ class GroupOutFull(BaseModel):
     group_name: str
     group_description: Optional[str] = None
     is_private: bool = False
-    create_date: datetime = None
+    timestamp: datetime = None
     memberships: List[GroupMembershipOut] = []
     
     class Config:
@@ -89,7 +89,7 @@ class GroupOut(BaseModel):
     group_name: str
     group_description: Optional[str] = None
     is_private: bool = False
-    create_date: datetime = None
+    timestamp: datetime = None
     member_count: int = 0
     
     class Config:
@@ -176,7 +176,7 @@ class ReportOut(BaseModel):
     reporter_user_id: str
     respondent_user_id: str
     report_description: str
-    create_date: datetime
+    timestamp: datetime
     resolved: bool
     resolved_by: Optional[str] = None
     resolve_message: Optional[str] = None
@@ -202,7 +202,7 @@ class AnnouncementUpdate(BaseModel):
 class AnnouncementOut(BaseModel):
     announcement_id: str
     group_id: str
-    create_date: datetime
+    timestamp: datetime
     title: str
     content: str
 
@@ -210,7 +210,20 @@ class AnnouncementOut(BaseModel):
         orm_mode = True
 
 
+# GroupSingle schema for single group endpoint
+class GroupSingle(BaseModel):
+    group_id: str
+    group_name: str
+    group_description: Optional[str] = None
+    is_private: bool = False
+    timestamp: datetime = None
+    memberships: List[GroupMembershipOut] = []
+    
+    class Config:
+        orm_mode = True
+
 # rebuild forward refs
 GroupOut.model_rebuild()
 UserOut.model_rebuild()
+GroupSingle.model_rebuild()
 

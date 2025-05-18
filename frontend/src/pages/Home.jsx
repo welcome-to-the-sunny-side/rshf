@@ -168,7 +168,7 @@ export default function Home() {
         
         // Transform announcements data to match our UI format
         const transformedAnnouncements = data.map(announcement => ({
-          date: new Date(announcement.create_date).toISOString().split('T')[0],
+          date: new Date(announcement.timestamp).toISOString().split('T')[0],
           link: `/post/${announcement.announcement_id}`,
           title: announcement.title
         }))
