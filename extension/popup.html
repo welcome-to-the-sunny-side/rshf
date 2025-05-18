@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RSHF Codeforces Rating</title>
+  <link rel="stylesheet" href="css/popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Login View -->
+    <div id="login-view" class="view">
+      <h2>Login to RSHF</h2>
+      <div id="login-error" class="error-message"></div>
+      <form id="login-form">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input
+            type="text"
+            id="username"
+            required
+            placeholder="Enter your username"
+          />
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            required
+            placeholder="Enter your password"
+          />
+        </div>
+        <button type="submit" id="login-button" class="button primary-button">
+          Login
+        </button>
+      </form>
+      <p class="register-link">
+        Don't have an account? <a href="#" id="register-link" target="_blank">Register here</a>
+      </p>
+    </div>
+
+    <!-- Main View (after login) -->
+    <div id="main-view" class="view">
+      <div class="user-info">
+        <h3 id="welcome-message">Welcome</h3>
+        <p id="user-details"></p>
+      </div>
+      
+      <div class="form-group">
+        <label for="group-select">Select Group</label>
+        <select id="group-select">
+          <option value="" disabled selected>Select a group</option>
+          <!-- Groups will be populated from JS -->
+        </select>
+      </div>
+      
+      <div class="settings">
+        <h4>Settings</h4>
+        <div class="form-group">
+          <label for="non-member-display">Non-member display</label>
+          <select id="non-member-display">
+            <option value="transparent">Transparent</option>
+            <option value="star">Star indicator</option>
+            <option value="plain">Plain (no change)</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="button-container">
+        <button id="logout-button" class="button secondary-button">Logout</button>
+      </div>
+    </div>
+  </div>
+  <script src="js/popup/popup.js"></script>
+</body>
+</html>

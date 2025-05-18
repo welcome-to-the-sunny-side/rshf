@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "RSHF Codeforces Rating",
+  "version": "1.0.0",
+  "description": "Replaces Codeforces ratings with RSHF alternative rating system",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "http://localhost:8000/*",
+    "https://*.codeforces.com/*"
+  ],
+  "background": {
+    "service_worker": "js/background/background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "images/icon16.png",
+      "48": "images/icon48.png",
+      "128": "images/icon128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*.codeforces.com/*"],
+      "js": ["js/content/content.js"],
+      "css": ["css/content.css"]
+    }
+  ],
+  "icons": {
+    "16": "images/icon16.png",
+    "48": "images/icon48.png",
+    "128": "images/icon128.png"
+  }
+}
