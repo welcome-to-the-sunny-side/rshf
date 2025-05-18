@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Codeforces Alternative Rating</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      width: 320px;
+      padding: 15px;
+      margin: 0;
+    }
+    h1 {
+      font-size: 18px;
+      color: #2c3e50;
+      margin-top: 0;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+      color: #555;
+    }
+    input[type="text"],
+    select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+    .toggle {
+      display: flex;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .toggle label {
+      margin-bottom: 0;
+      margin-left: 10px;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 40px;
+      height: 20px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 34px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #4CAF50;
+    }
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-top: 5px;
+    }
+    button:hover {
+      background-color: #3e8e41;
+    }
+    button.secondary {
+      background-color: #f44336;
+    }
+    button.secondary:hover {
+      background-color: #d32f2f;
+    }
+    .separator {
+      border-top: 1px solid #eee;
+      margin: 15px 0;
+    }
+    .style-preview {
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    #example-user {
+      font-weight: bold;
+    }
+    .footer {
+      margin-top: 15px;
+      font-size: 12px;
+      color: #7f8c8d;
+      text-align: center;
+    }
+    .footer a {
+      color: #3498db;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>Codeforces Alternative Rating</h1>
+  
+  <div class="form-group">
+    <label for="group-name">Group Name:</label>
+    <input type="text" id="group-name" placeholder="Enter group name">
+  </div>
+  
+  <div class="toggle">
+    <label class="switch">
+      <input type="checkbox" id="toggle-ratings" checked>
+      <span class="slider"></span>
+    </label>
+    <label for="toggle-ratings">Show Alternative Ratings</label>
+  </div>
+  
+  <div class="form-group">
+    <label for="no-rating-style">Style for users without group rating:</label>
+    <select id="no-rating-style">
+      <option value="opacity">Reduced Opacity</option>
+      <option value="strikethrough">Strikethrough</option>
+      <option value="brown">Brown Color</option>
+      <option value="asterisk">Asterisk</option>
+    </select>
+    <div class="style-preview">
+      <span>Preview: </span>
+      <span id="example-user">tourist</span>
+    </div>
+  </div>
+  
+  <div class="separator"></div>
+  
+  <button id="save-settings">Save Settings</button>
+  <button id="open-options" class="secondary">Advanced Settings</button>
+  <button id="clear-cache" class="secondary">Clear Cache</button>
+  
+  <div class="footer">
+    <p>Logged in as <span id="current-user">TestUser</span></p>
+    <p>Version 0.1.0 | <a href="#" id="options-link">Options</a></p>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>

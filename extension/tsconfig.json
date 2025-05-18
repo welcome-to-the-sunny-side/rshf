@@ -1,0 +1,24 @@
+{
+    "compilerOptions": {
+      "target": "es2020",
+      "module": "esnext",
+      "moduleResolution": "node",
+      "esModuleInterop": true,
+      "strict": true,
+      "sourceMap": true,
+      "jsx": "react-jsx",
+      "jsxImportSource": "preact",
+      "lib": ["dom", "dom.iterable", "esnext"],
+      "allowJs": true,
+      "skipLibCheck": true,
+      "forceConsistentCasingInFileNames": true,
+      "noEmit": false,
+      "resolveJsonModule": true,
+      "isolatedModules": true,
+      "noImplicitAny": true,
+      "outDir": "./dist",
+      "baseUrl": "."
+    },
+    "include": ["src/**/*.ts", "src/**/*.tsx"],
+    "exclude": ["node_modules"]
+  }

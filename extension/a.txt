@@ -1,0 +1,9 @@
+In this project, we'll build a browser extension. I have created an alternative rating system for codeforces, and this browser extension will primarily replace ratings/ranks/handle colors on the codeforces website (which are based on official ratings), with the analogous ratings from my rating system. There will also be other features.
+
+Some considerations:
+
+1. There is a website for my rating system, where people create accounts and link their codeforces accounts. In this website, people can join groups, and have specific "in-group ratings". People using the extension will be able to enter any group name (they don't need to be part of said group), and the extension will then use group-ratings from that particular group when replacing stuff. Note that some users on codeforces won't belong to the chosen group, and therefore not have a group-rating w.r.t. that group. For these users, we'll offer some rendering options (for example, display their name with increased transparency, or with a star next to their name, etc.)
+2. We will later be implementing a login mechanism for the extension (users will use the same account login details that they do on the website), but for now, you should assume that their is a fixed user logged into the extension with username "TestUser".
+3. The backend isn't implemented yet, so will be simulating the responses of the backend with randomly generated data for now.
+
+I now want you to carefully think through this at a high-level, come up with strategies, suggestions and questions, and then discuss with me (don't begin implementing anything yet)

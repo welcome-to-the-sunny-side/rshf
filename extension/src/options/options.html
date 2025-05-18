@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Codeforces Alternative Rating - Options</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      color: #333;
+    }
+    h1 {
+      color: #2c3e50;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
+    }
+    .form-section {
+      margin-bottom: 30px;
+      background: #f9f9f9;
+      border-radius: 5px;
+      padding: 20px;
+    }
+    .form-section h2 {
+      margin-top: 0;
+      font-size: 1.3rem;
+      color: #2c3e50;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+    input[type="text"],
+    input[type="number"],
+    select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+    }
+    .checkbox-group input {
+      margin-right: 10px;
+    }
+    .checkbox-group label {
+      margin-bottom: 0;
+    }
+    .toggle {
+      display: flex;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .toggle label {
+      margin-bottom: 0;
+      margin-left: 10px;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 40px;
+      height: 20px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 34px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #4CAF50;
+    }
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+    button {
+      padding: 10px 15px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-right: 10px;
+    }
+    button:hover {
+      background-color: #3e8e41;
+    }
+    button.secondary {
+      background-color: #f44336;
+    }
+    button.secondary:hover {
+      background-color: #d32f2f;
+    }
+    #status {
+      display: none;
+      padding: 10px;
+      margin-top: 15px;
+      border-radius: 4px;
+      text-align: center;
+    }
+    .success {
+      background-color: #dff0d8;
+      color: #3c763d;
+    }
+    .error {
+      background-color: #f2dede;
+      color: #a94442;
+    }
+    .style-preview {
+      margin-top: 15px;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: #fff;
+    }
+    .preview-user {
+      font-weight: bold;
+      display: inline-block;
+      margin-right: 15px;
+    }
+    .preview-title {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .footer {
+      margin-top: 30px;
+      padding-top: 15px;
+      border-top: 1px solid #eee;
+      font-size: 12px;
+      color: #7f8c8d;
+      text-align: center;
+    }
+    .buttons-container {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Codeforces Alternative Rating - Options</h1>
+  
+  <div id="status"></div>
+  
+  <div class="form-section">
+    <h2>General Settings</h2>
+    
+    <div class="form-group">
+      <label for="group-name">Group Name:</label>
+      <input type="text" id="group-name" placeholder="Enter group name">
+    </div>
+    
+    <div class="toggle">
+      <label class="switch">
+        <input type="checkbox" id="toggle-ratings" checked>
+        <span class="slider"></span>
+      </label>
+      <label for="toggle-ratings">Show Alternative Ratings</label>
+    </div>
+  </div>
+  
+  <div class="form-section">
+    <h2>Display Settings</h2>
+    
+    <div class="form-group">
+      <label for="no-rating-style">Style for users without group rating:</label>
+      <select id="no-rating-style">
+        <option value="opacity">Reduced Opacity</option>
+        <option value="strikethrough">Strikethrough</option>
+        <option value="brown">Brown Color</option>
+        <option value="asterisk">Asterisk</option>
+      </select>
+      
+      <div class="style-preview">
+        <div class="preview-title">Preview:</div>
+        <div>
+          <span class="preview-user" id="newbie-example">Newbie</span>
+          <span class="preview-user" id="pupil-example">Pupil</span>
+          <span class="preview-user" id="specialist-example">Specialist</span>
+          <span class="preview-user" id="expert-example">Expert</span>
+          <span class="preview-user" id="cm-example">CandidateMaster</span>
+          <span class="preview-user" id="master-example">Master</span>
+          <span class="preview-user" id="im-example">InternationalMaster</span>
+          <span class="preview-user" id="gm-example">Grandmaster</span>
+          <span class="preview-user" id="igm-example">InternationalGrandmaster</span>
+          <span class="preview-user" id="lgm-example">LegendaryGrandmaster</span>
+          <span class="preview-user" id="no-rating-example">NoRating</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="form-section">
+    <h2>Performance Settings</h2>
+    
+    <div class="form-group">
+      <label for="max-replacements">Maximum replacements per page:</label>
+      <input type="number" id="max-replacements" min="10" max="5000" value="2000">
+    </div>
+    
+    <div class="form-group">
+      <label for="cache-threshold">Cache threshold (minutes):</label>
+      <input type="number" id="cache-threshold" min="1" max="1440" value="30">
+    </div>
+  </div>
+  
+  <div class="buttons-container">
+    <button id="save-settings">Save Settings</button>
+    <button id="clear-cache" class="secondary">Clear Cache</button>
+    <button id="restore-defaults" class="secondary">Restore Defaults</button>
+  </div>
+  
+  <div class="footer">
+    <p>Logged in as <span id="current-user">TestUser</span></p>
+    <p>Version 0.1.0</p>
+  </div>
+  
+  <script src="options.js"></script>
+</body>
+</html>
