@@ -383,3 +383,33 @@ def update_announcement(
         raise HTTPException(404, "announcement not found")
     ensure_group_mod(db, current.user_id, anmt.group_id)
     return crud.update_announcement(db, payload)
+
+
+# ========== extension query endpoints ==========
+
+@router.post("/extension_query_1", response_model=schemas.ExtensionQuery1Response)
+def extension_query_1(
+    payload: schemas.ExtensionQuery1Request,
+    db: Session = Depends(get_db),
+    current: models.User = Depends(get_current_user),
+):
+    """
+    Get user_group_ratings for a list of cf_handles in a specific group.
+    
+    Args:
+        payload: Request containing group_id and list of cf_handles
+        db: Database session
+        current: Current authenticated user
+        
+    Returns:
+        List of ratings corresponding to each cf_handle
+    """
+    # Check if the group exists
+    group = crud.get_group(db, payload.group_id)
+    if not group:
+        raise HTTPException(404, "Group not found")
+        
+    # Get ratings for the cf_handles
+    ratings = crud.get_ratings_by_cf_handles(db, payload.group_id, payload.cf_handles)
+    
+    return {"ratings": ratings}

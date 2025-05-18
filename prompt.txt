@@ -3,3 +3,16 @@ Now, let's edit the @Contests.jsx in the frontend to use data from the API inste
 Here's what I want you to do:
 - remove dummy data generation completely from @Contests.jsx 
 - fetch the same data through api calls
+
+Can you please use the API to render this information instead of using dummy data:
+
+Your Role: moderator
+Your Rating: 1875 (Expert) (Max: 1950)
+Report Accuracy: 75% (9/12)
+Member since: Aug 15, 2022
+
+You can ignore "Report AccuracY", as it isn't provided in the attributes yet.
+
+Use the documentation at @api_reference.md to read and understand inputs/payloads of relevant files.
+
+You will need to use an api call to fetch the group object, find the membership object of the current user within that group's returned list of membership objects, and use that membership object to display role, rating etc

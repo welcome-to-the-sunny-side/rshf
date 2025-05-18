@@ -339,3 +339,46 @@ def update_announcement(db: Session, payload: schemas.AnnouncementUpdate) -> Opt
     return anmt
 
 
+# ───────────── extension queries ─────────────
+
+def get_ratings_by_cf_handles(db: Session, group_id: str, cf_handles: List[str]) -> List[Optional[int]]:
+    """
+    Get user_group_ratings for a list of cf_handles for a specific group.
+    
+    Args:
+        db: Database session
+        group_id: ID of the group
+        cf_handles: List of Codeforces handles
+        
+    Returns:
+        List of ratings, with None for users without a membership in the group
+    """
+    # First get the users by cf_handles
+    user_mappings = {}
+    for handle in cf_handles:
+        user = db.query(models.User).filter(models.User.cf_handle == handle).first()
+        if user:
+            user_mappings[handle] = user.user_id
+    
+    # Now get the group memberships for those users
+    ratings = []
+    for handle in cf_handles:
+        if handle in user_mappings:
+            user_id = user_mappings[handle]
+            membership = (
+                db.query(models.GroupMembership)
+                .filter(
+                    models.GroupMembership.user_id == user_id,
+                    models.GroupMembership.group_id == group_id
+                )
+                .first()
+            )
+            if membership:
+                ratings.append(membership.user_group_rating)
+            else:
+                ratings.append(None)
+        else:
+            ratings.append(None)
+    
+    return ratings
+

@@ -222,6 +222,14 @@ class GroupSingle(BaseModel):
     class Config:
         orm_mode = True
 
+# Extension query schemas
+class ExtensionQuery1Request(BaseModel):
+    group_id: str
+    cf_handles: List[str]
+
+class ExtensionQuery1Response(BaseModel):
+    ratings: List[Optional[int]]
+
 # rebuild forward refs
 GroupOut.model_rebuild()
 UserOut.model_rebuild()
