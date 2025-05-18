@@ -9,7 +9,8 @@ const loginError = document.getElementById('login-error');
 const logoutButton = document.getElementById('logout-button');
 const welcomeMessage = document.getElementById('welcome-message');
 const userDetails = document.getElementById('user-details');
-const groupSelect = document.getElementById('group-select');
+const groupInput = document.getElementById('group-input');
+const setGroupButton = document.getElementById('set-group-button');
 const nonMemberDisplay = document.getElementById('non-member-display');
 const registerLink = document.getElementById('register-link');
 
@@ -26,8 +27,8 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Set up event listeners
   loginForm.addEventListener('submit', handleLogin);
-  logoutButton.addEventListener('submit', handleLogout);
-  groupSelect.addEventListener('change', handleGroupChange);
+  logoutButton.addEventListener('click', handleLogout);
+  setGroupButton.addEventListener('click', handleGroupChange);
   nonMemberDisplay.addEventListener('change', handleDisplayChange);
 });
 
@@ -43,7 +44,7 @@ function checkAuthState() {
       
       // Set selected group if exists
       if (response.selectedGroup) {
-        groupSelect.value = response.selectedGroup.group_id;
+        groupInput.value = response.selectedGroup.group_name;
       }
       
       // Load display preferences
@@ -109,21 +110,57 @@ function handleLogout() {
 
 // Group change handler
 function handleGroupChange() {
-  const selectedOption = groupSelect.options[groupSelect.selectedIndex];
-  if (selectedOption && selectedOption.value) {
-    const selectedGroup = {
-      group_id: selectedOption.value,
-      group_name: selectedOption.textContent
-    };
-    
-    chrome.runtime.sendMessage(
-      { action: 'setSelectedGroup', group: selectedGroup },
-      (response) => {
-        if (!response.success) {
-          console.error('Failed to set selected group:', response.error);
-        }
+  const groupName = groupInput.value.trim();
+  if (groupName) {
+    // Get the authentication token
+    chrome.storage.local.get(['token'], (result) => {
+      if (!result.token) {
+        alert('You need to be logged in to select a group');
+        return;
       }
-    );
+      
+      // Fetch group ID by name with authentication
+      fetch(`${BACKEND_URL}/api/group?group_id=${encodeURIComponent(groupName)}`, {
+        headers: {
+          'Authorization': `Bearer ${result.token}`
+        }
+      })
+      .then(response => {
+        if (!response.ok) {
+          if (response.status === 404) {
+            throw new Error(`Group '${groupName}' not found`);
+          } else if (response.status === 401) {
+            throw new Error('Authentication error. Please log in again.');
+          }
+          throw new Error('Failed to fetch group details');
+        }
+        return response.json();
+      })
+      .then(group => {
+        const selectedGroup = {
+          group_id: group.group_id,
+          group_name: group.group_name
+        };
+        
+        chrome.runtime.sendMessage(
+          { action: 'setSelectedGroup', group: selectedGroup },
+          (response) => {
+            if (response.success) {
+              alert(`Group '${group.group_name}' selected successfully!`);
+            } else {
+              console.error('Failed to set selected group:', response.error);
+              alert('Failed to set group. Please try again.');
+            }
+          }
+        );
+      })
+      .catch(error => {
+        console.error('Error selecting group:', error);
+        alert(error.message || 'Failed to set group. Please try again.');
+      });
+    });
+  } else {
+    alert('Please enter a group name');
   }
 }
 
@@ -133,40 +170,13 @@ function handleDisplayChange() {
   chrome.storage.local.set({ nonMemberDisplay: displayMode });
 }
 
-// Load groups from API
+// Load previously selected group if any
 function loadGroups() {
-  // Clear existing options except the default
-  while (groupSelect.options.length > 1) {
-    groupSelect.options.remove(1);
-  }
-  
-  // Fetch groups from API
-  fetch(`${BACKEND_URL}/api/groups`)
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Failed to fetch groups');
-      }
-      return response.json();
-    })
-    .then(groups => {
-      // Add groups to select dropdown
-      groups.forEach(group => {
-        const option = document.createElement('option');
-        option.value = group.group_id;
-        option.textContent = group.group_name;
-        groupSelect.appendChild(option);
-      });
-      
-      // Check if there's a previously selected group
-      chrome.storage.local.get(['selectedGroup'], (result) => {
-        if (result.selectedGroup) {
-          groupSelect.value = result.selectedGroup.group_id;
-        }
-      });
-    })
-    .catch(error => {
-      console.error('Error loading groups:', error);
-    });
+  chrome.storage.local.get(['selectedGroup'], (result) => {
+    if (result.selectedGroup) {
+      groupInput.value = result.selectedGroup.group_name;
+    }
+  });
 }
 
 // Load display preferences

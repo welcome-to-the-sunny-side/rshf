@@ -1,3 +1,102 @@
+// Rating utilities - inlined from rating-utils.js
+// RANK COLORS
+const RANK_COLORS = {
+  newbie      : '#808080',    //   < 1200
+  pupil       : '#008000',    // 1200 – 1399
+  specialist  : '#03A89E',    // 1400 – 1599
+  expert      : '#0000ff',    // 1600 – 1899
+  candmaster  : '#a0a',       // 1900 – 2099
+  master      : '#FF8C00',    // 2100 – 2299
+  intmaster   : '#FF8C00',    // 2300 - 2399
+  grandmaster : '#ff0000',    // 2400 – 2599
+  intgrandmaster: '#ff0000',  // 2600 - 2999
+  legend      : '#ff0000'     // >= 3000 (Legendary GM)
+};
+
+// RANK BANDS
+const RANK_BANDS = [
+  { y1: 0,    y2: 1200, color: RANK_COLORS.newbie },
+  { y1: 1200, y2: 1400, color: RANK_COLORS.pupil },
+  { y1: 1400, y2: 1600, color: RANK_COLORS.specialist },
+  { y1: 1600, y2: 1900, color: RANK_COLORS.expert },
+  { y1: 1900, y2: 2100, color: RANK_COLORS.candmaster },
+  { y1: 2100, y2: 2300, color: RANK_COLORS.master },
+  { y1: 2300, y2: 2400, color: RANK_COLORS.intmaster },
+  { y1: 2400, y2: 2600, color: RANK_COLORS.grandmaster },
+  { y1: 2600, y2: 3000, color: RANK_COLORS.intgrandmaster },
+  { y1: 3000,          color: RANK_COLORS.legend } // y2 determined dynamically
+];
+
+// RANK CLASSES - Maps to Codeforces CSS classes
+const RANK_CLASSES = {
+  newbie      : 'user-gray',
+  pupil       : 'user-green',
+  specialist  : 'user-cyan',
+  expert      : 'user-blue',
+  candmaster  : 'user-violet',
+  master      : 'user-orange',
+  intmaster   : 'user-orange',
+  grandmaster : 'user-red',
+  intgrandmaster: 'user-red',
+  legend      : 'user-legendary'
+};
+
+/**
+ * Get the color for a rating value
+ */
+function getRatingColor(rating) {
+  for (const band of RANK_BANDS) {
+    if (rating >= band.y1 && (band.y2 === undefined || rating < band.y2)) {
+      return band.color;
+    }
+  }
+  // Default fallback color (should never reach here)
+  return RANK_COLORS.newbie;
+}
+
+/**
+ * Get the rank name based on rating
+ */
+function getRankName(rating) {
+  if (rating < 1200) return "Newbie";
+  if (rating < 1400) return "Pupil";
+  if (rating < 1600) return "Specialist";
+  if (rating < 1900) return "Expert";
+  if (rating < 2100) return "Candidate Master";
+  if (rating < 2300) return "Master";
+  if (rating < 2400) return "International Master";
+  if (rating < 2600) return "Grandmaster";
+  if (rating < 3000) return "International Grandmaster";
+  return "Legendary Grandmaster";
+}
+
+/**
+ * Get the CSS class for a rating
+ */
+function getRatingClass(rating) {
+  if (rating < 1200) return RANK_CLASSES.newbie;
+  if (rating < 1400) return RANK_CLASSES.pupil;
+  if (rating < 1600) return RANK_CLASSES.specialist;
+  if (rating < 1900) return RANK_CLASSES.expert;
+  if (rating < 2100) return RANK_CLASSES.candmaster;
+  if (rating < 2300) return RANK_CLASSES.master;
+  if (rating < 2400) return RANK_CLASSES.intmaster;
+  if (rating < 2600) return RANK_CLASSES.grandmaster;
+  if (rating < 3000) return RANK_CLASSES.intgrandmaster;
+  return RANK_CLASSES.legend;
+}
+
+/**
+ * Combined function to get color, name, and CSS class for a rating
+ */
+function getRatingInfo(rating) {
+  return {
+    color: getRatingColor(rating),
+    name: getRankName(rating),
+    cssClass: getRatingClass(rating)
+  };
+}
+
 // Cache for storing username ratings
 let ratingCache = {};
 const CACHE_REFRESH_THRESHOLD = 5 * 60 * 1000; // 5 minutes in milliseconds
@@ -139,12 +238,18 @@ function updateElementWithNewRating(element, rating) {
   // Remove existing Codeforces rating classes
   removeRatingClasses(element);
   
-  // Add new rating class based on RSHF rating
-  const ratingClass = getRatingClassForRating(rating);
-  element.classList.add(ratingClass);
+  // Get rating information
+  const ratingInfo = getRatingInfo(rating);
   
-  // Optional: Append rating number to the username
-  // element.textContent = `${element.textContent} (${rating})`;
+  // Add new rating class based on RSHF rating
+  element.classList.add(ratingInfo.cssClass);
+  
+  // Set color directly as well (for additional assurance)
+  element.style.color = ratingInfo.color;
+  
+  // Add tooltip with rating and rank information
+  element.setAttribute('data-rshf-tooltip', `RSHF Rating: ${rating} (${ratingInfo.name})`);
+  element.classList.add('rshf-tooltip');
 }
 
 // Handle elements for users not in the selected group
@@ -176,19 +281,7 @@ function removeRatingClasses(element) {
   });
 }
 
-// Map rating to appropriate CSS class
-function getRatingClassForRating(rating) {
-  // This function maps a rating value to a CSS class
-  // Adjust these thresholds based on your rating system
-  if (rating < 1200) return 'user-gray';
-  if (rating < 1400) return 'user-green';
-  if (rating < 1600) return 'user-cyan';
-  if (rating < 1900) return 'user-blue';
-  if (rating < 2100) return 'user-violet';
-  if (rating < 2400) return 'user-orange';
-  if (rating < 3000) return 'user-red';
-  return 'user-legendary';
-}
+// This function has been replaced by the imported rating-utils.js module
 
 // Utility functions for storage and messaging
 async function getAuthState() {
