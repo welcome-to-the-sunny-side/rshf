@@ -1,0 +1,98 @@
+/* 
+ * RSHF Codeforces Rating - Content CSS
+ * This CSS file is injected into Codeforces pages to style elements modified by the extension
+ */
+
+/* Styling for non-group members with transparency */
+.rshf-non-member-transparent {
+  opacity: 0.5;
+  transition: opacity 0.3s ease;
+}
+
+.rshf-non-member-transparent:hover {
+  opacity: 1;
+}
+
+/* Star indicator for non-group members */
+.rshf-star-indicator::after {
+  content: " *";
+  font-size: 0.8em;
+  vertical-align: super;
+}
+
+/* Rating color classes - can be customized based on your rating system */
+.rshf-rating-unrated {
+  color: #000000 !important;
+}
+
+.rshf-rating-newbie {
+  color: #808080 !important;
+}
+
+.rshf-rating-pupil {
+  color: #008000 !important;
+}
+
+.rshf-rating-specialist {
+  color: #03a89e !important;
+}
+
+.rshf-rating-expert {
+  color: #0000ff !important;
+}
+
+.rshf-rating-candidate-master {
+  color: #aa00aa !important;
+}
+
+.rshf-rating-master {
+  color: #ff8c00 !important;
+}
+
+.rshf-rating-international-master {
+  color: #ff8c00 !important;
+  font-weight: bold !important;
+}
+
+.rshf-rating-grandmaster {
+  color: #ff0000 !important;
+}
+
+.rshf-rating-international-grandmaster {
+  color: #ff0000 !important;
+  font-weight: bold !important;
+}
+
+.rshf-rating-legendary-grandmaster {
+  color: #ff0000 !important;
+  font-weight: bold !important;
+}
+
+/* Tooltip showing original and RSHF ratings */
+.rshf-tooltip {
+  position: relative;
+  cursor: help;
+}
+
+.rshf-tooltip::after {
+  content: attr(data-rshf-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: 1000;
+}
+
+.rshf-tooltip:hover::after {
+  visibility: visible;
+  opacity: 1;
+}
