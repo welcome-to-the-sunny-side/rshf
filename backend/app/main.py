@@ -20,14 +20,10 @@ db = SessionLocal()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",                                         # Vite dev server
-        "http://127.0.0.1:5173",                                         # Vite dev server alternative
-        "chrome-extension://bipobjdhjpdmpdmphgebogipnnfaccpf"            # Your specific Chrome extension ID
-    ],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],  # Vite dev server default ports
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    allow_headers=["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"]
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "Accept"],
 )
 
 async def run_cf_cron_job():
