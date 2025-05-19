@@ -208,6 +208,30 @@ Token format: `Bearer <access_token>`
   - 403 if insufficient privilege
   - 409 if new group name already exists
 
+### Group Members Custom Data
+- **URL**: `/api/group_members_custom_data`
+- **Method**: `GET`
+- **Auth Required**: Yes
+- **Query Parameters**:
+  - `group_id` (required): ID of the group to retrieve custom data for
+- **Response**: List of `CustomMembershipData` objects
+  ```json
+  [
+    {
+      "cf_handle": "string",
+      "role": "user",
+      "user_group_rating": 1500,
+      "user_group_max_rating": 1600,
+      "date_joined": "2025-05-17T14:25:36Z",
+      "number_of_rated_contests": 5
+    }
+  ]
+  ```
+- **Description**: Returns detailed membership data for all members in a group, including the number of rated contests each member has participated in within the group
+- **Error Responses**:
+  - 404 if group not found
+  - 403 if not a member of the group
+
 ### Add Member to Group
 - **URL**: `/api/add_to_group`
 - **Method**: `POST`

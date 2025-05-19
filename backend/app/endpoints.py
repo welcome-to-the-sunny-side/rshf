@@ -385,6 +385,40 @@ def update_announcement(
     return crud.update_announcement(db, payload)
 
 
+# ========== custom group data endpoints ==========
+
+@router.get("/group_members_custom_data", response_model=List[schemas.CustomMembershipData])
+def get_group_members_custom_data(
+    group_id: str = Query(..., description="Group ID to retrieve custom data for"),
+    db: Session = Depends(get_db),
+    current: models.User = Depends(get_current_user),
+):
+    """
+    Get custom membership data for all members in a group including number of rated contests.
+    
+    Args:
+        group_id: ID of the group
+        db: Database session
+        current: Current authenticated user
+        
+    Returns:
+        List of CustomMembershipData objects with enriched contest participation info
+    
+    Raises:
+        HTTPException: If group not found or user has insufficient privileges
+    """
+    # Check if the group exists
+    group = crud.get_group(db, group_id)
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+    
+    # Check if the user has access to the group (member or admin)
+    if current.role != models.Role.admin and not crud.get_membership(db, current.user_id, group_id):
+        raise HTTPException(status_code=403, detail="Not a member of the group")
+    
+    # Get the custom membership data
+    return crud.get_group_custom_membership_data(db, group_id)
+
 # ========== extension query endpoints ==========
 
 @router.post("/extension_query_1", response_model=schemas.ExtensionQuery1Response)

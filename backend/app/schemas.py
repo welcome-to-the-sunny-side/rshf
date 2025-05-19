@@ -230,6 +230,19 @@ class ExtensionQuery1Request(BaseModel):
 class ExtensionQuery1Response(BaseModel):
     ratings: List[Optional[int]]
 
+# Custom data models
+
+class CustomMembershipData(BaseModel):
+    cf_handle: str
+    role: Role
+    user_group_rating: int
+    user_group_max_rating: int
+    date_joined: datetime
+    number_of_rated_contests: int
+    
+    class Config:
+        orm_mode = True
+
 # rebuild forward refs
 GroupOut.model_rebuild()
 UserOut.model_rebuild()
