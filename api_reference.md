@@ -114,6 +114,27 @@ Token format: `Bearer <access_token>`
   - 404 if user not found
   - 403 if insufficient privilege
 
+### Check Membership
+- **URL**: `/api/membership`
+- **Method**: `GET`
+- **Auth Required**: Yes
+- **Query Parameters**:
+  - `group_id` (required): ID of the group to check membership for
+  - `user_id` (required): ID of the user to check membership for
+- **Response**: `GroupMembershipOut` object
+  ```json
+  {
+    "user_id": "string",
+    "group_id": "string",
+    "role": "user",
+    "user_group_rating": 1500
+  }
+  ```
+- **Description**: Checks if a user is a member of a specific group. Only accessible to admins, group moderators/admins, or the user themselves.
+- **Error Responses**:
+  - 404 if membership not found
+  - 403 if insufficient permissions to view membership
+
 ---
 
 ## Group Endpoints
