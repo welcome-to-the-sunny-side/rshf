@@ -154,15 +154,45 @@ async function fetchUserRatings(usernames, groupId) {
   }
 
   try {
-    // Implement API call to get ratings for usernames in the selected group
-    // This is a placeholder - you'll need to implement the actual API call
-    // based on the backend API for fetching ratings
+    // Check if we have a valid authentication token
+    const tokenResult = await new Promise(resolve => {
+      chrome.storage.local.get(['token'], result => resolve(result));
+    });
     
-    // Mock implementation for now:
-    return usernames.map(username => {
+    if (!tokenResult.token) {
+      throw new Error('Authentication token not found. Please log in.');
+    }
+    
+    // The API expects CF handles, but we're sending usernames, which should be CF handles anyway
+    const response = await fetch(`${BACKEND_URL}/api/extension_query_1`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${tokenResult.token}`
+      },
+      body: JSON.stringify({
+        group_id: groupId,
+        cf_handles: usernames
+      })
+    });
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error('Group not found');
+      } else if (response.status === 401 || response.status === 403) {
+        throw new Error('Authentication failed. Please log in again.');
+      }
+      throw new Error(`API request failed with status ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // Map the returned ratings to the format expected by the content script
+    return usernames.map((username, index) => {
       return {
         username,
-        rating: Math.floor(Math.random() * 2000),
+        // The API might return null for users not in the group
+        rating: data.ratings[index],
         timestamp: Date.now()
       };
     });

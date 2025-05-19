@@ -9,6 +9,7 @@ This document provides details on all API endpoints available in the backend.
 - [Contest Endpoints](#contest-endpoints)
 - [Report Endpoints](#report-endpoints)
 - [Announcement Endpoints](#announcement-endpoints)
+- [Extension Endpoints](#extension-endpoints)
 
 ## Authentication
 
@@ -490,3 +491,27 @@ Token format: `Bearer <access_token>`
 - **Error Responses**:
   - 404 if announcement not found
   - 403 if insufficient privilege
+
+---
+
+## Extension Endpoints
+
+### Get Ratings by CF Handles
+- **URL**: `/api/extension_query_1`
+- **Method**: `POST`
+- **Auth Required**: Yes
+- **Request Body**:
+  ```json
+  {
+    "group_id": "string",
+    "cf_handles": ["string"]
+  }
+  ```
+- **Response**: List of ratings (nullable)
+  ```json
+  {
+    "ratings": [0, null, 1500]
+  }
+  ```
+- **Description**: Gets user_group_ratings for a list of CF handles in a specific group. For users without membership, returns null.
+- **Error Responses**: 404 if group not found

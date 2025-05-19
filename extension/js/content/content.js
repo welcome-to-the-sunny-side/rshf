@@ -224,11 +224,17 @@ function replaceRatings(elements, settings) {
   elements.forEach(element => {
     const username = element.textContent.trim();
     if (ratingCache[username]) {
-      // Replace the element's class and text based on the new rating
-      updateElementWithNewRating(element, ratingCache[username].rating);
+      // Check if the user has a rating (not null)
+      if (ratingCache[username].rating !== null) {
+        // Replace the element's class and text based on the new rating
+        updateElementWithNewRating(element, ratingCache[username].rating);
+      } else {
+        // Handle users not in the group based on settings
+        handleNonGroupMember(element, settings.nonMemberDisplay);
+      }
     } else {
-      // Handle users not in the group based on settings
-      handleNonGroupMember(element, settings.nonMemberDisplay);
+      // User not in cache - we don't have information yet
+      // Do nothing or apply a "loading" state if desired
     }
   });
 }
@@ -259,7 +265,7 @@ function handleNonGroupMember(element, displayMode) {
       element.style.opacity = '0.5';
       break;
     case 'star':
-      element.textContent = `${element.textContent} ⭐`;
+      element.textContent = `${element.textContent} *`;
       break;
     case 'plain':
     default:
