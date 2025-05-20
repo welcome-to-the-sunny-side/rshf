@@ -135,6 +135,7 @@ class Report(ModelBase):
     resolved = Column(Boolean, nullable=False, default=False)
     resolved_by = Column(String, ForeignKey("users.user_id"), nullable=True)
     resolve_message = Column(String, nullable=True)
+    resolve_timestamp = Column(DateTime, nullable=True)
 
 
 class Announcement(ModelBase):

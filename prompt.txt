@@ -16,3 +16,544 @@ You can ignore "Report AccuracY", as it isn't provided in the attributes yet.
 Use the documentation at @api_reference.md to read and understand inputs/payloads of relevant files.
 
 You will need to use an api call to fetch the group object, find the membership object of the current user within that group's returned list of membership objects, and use that membership object to display role, rating etc
+
+
+
+
+
+
+
+
+
+
+
+
+
+I need to create a new endpoint at @endpoints.py: /group_contest_custom_data 
+
+it'll be a get request.
+
+input query params:
+- a group_id
+
+outputs:
+- a list of customMembershipData objects, each of which has the following properties:
+    - cf_handle
+    - role
+    - user_group_rating
+    - user_group_max_rating
+    - date joined (which maps to timestamp within the group membership object)
+    (all these can be directly fetched from the group membership object)
+
+    - number of rated contests: the total number of rated contests that this user has given within this group. this is a bit non trivial to implement. you'll need to make an api call to /contest_participations and filter by group_id. don't make this call for every user. instead, make it once for the entire group and store it in a cache. 
+
+
+look through @api_reference.md to understand the endpoint payloads and inputs, and find the appropriate endpoints to query.
+
+
+relevant files:
+@endpoints.py 
+@models.py 
+@schemas.py 
+@crud.py 
+
+
+you can create a new function inside crud and a new schema inside schema.py if required
+
+
+
+# devseed
+Can you please make the following changes:
+
+make a "devseed.py" file at "/backend". 
+
+what should this file do?
+- running this file should reset the database and populate it with generated data.
+- refer to the pasted text below and do EXACTLY what i'm doing there.
+- you can also look at @models.py  to understand the db schemas.
+
+After generating and populating the db, print some concise information about what was generated for each table. Make this printed information nicely formatted. And yeah, you should print it to terminal within devseed.py.
+
+here's the current script i'm using to generate random entries into the db. you should follow what i'm doing here.
+
+import pandas as pd
+from sqlalchemy import create_engine
+from dotenv import load_dotenv
+import os
+from app.database import SessionLocal, Base, engine
+from app.models import *
+from app import models
+from app.utils import hash_password, reset_db
+import requests
+from sqlalchemy import func
+
+import random
+import uuid
+from typing import List, Dict, Set, Tuple
+
+import numpy as np
+from faker import Faker
+from app.models import (
+    User,
+    Group,
+    GroupMembership,
+    Report,
+    Contest,
+    ContestParticipation,
+    Role,
+)
+
+def getContest(cid):
+    url = 'https://codeforces.com/api/contest.standings'
+    params = {
+        'contestId': cid
+    }
+    res = requests.get(url, params).json()
+    if res['status'] != 'OK':
+        return None
+    res = res['result']
+    return {
+        'contest': res['contest'],
+        'standings': [
+            {
+                'handle': i['party']['members'][0]['handle'],
+                'rank': i['rank'],
+                'points': i['points'],
+                'penalty': i['penalty']
+            } for i in res['rows']
+        ]
+    }
+
+cfhandles=set()
+contests = [2050,2051,2109]
+for contest in contests:
+    standings = getContest(contest)['standings']
+    for i in range(min(len(standings), 2000)):
+        cfhandles.add(standings[i]['handle'])
+
+
+cfhandles = list(cfhandles)
+len(cfhandles)
+
+def random_subset(n, k):
+    return random.sample([i for i in range(n)], k)
+
+def pick_random_subset(population: list, k: int) -> list:
+    """k distinct elements from population (k may be 0)."""
+    if k == 0:
+        return []
+    return random.sample(population, k)
+
+def get_mock_contest_standings(cid, include_users=None):
+    if include_users is None:
+        include_users = []
+    res = {
+        'contest': {
+            'id': cid,
+            'name': f'Codeforces Round {cid}',
+            'type': 'CF',
+            'phase': 'FINISHED',
+            'frozen': False,
+            'durationSeconds': 7200,
+            'startTimeSeconds': 1746110100,
+            'relativeTimeSeconds': 267545
+        },
+        'standings': [
+        ]
+    }
+    num_participants = 8000
+    standings = [
+        {'handle': 'random-user'+str(i+1), 'rank': (i+1), 'points': 9754 - i, 'penalty': 0}
+        for i in range(num_participants)
+    ]
+    res['standings'] = standings
+    udx = pick_random_subset([i for i in range(num_participants)], len(include_users))
+
+    for i in range(len(udx)):
+        res['standings'][udx[i]]['handle'] = include_users[i]
+    
+    return res
+
+
+"""
+    simulate what happens at the actual database level when:
+    
+        - actual users register
+        - a group is created by a user
+        - a group moderator invites someone to join a group
+        - a user requests to join a group
+        - a group moderator accepts a pending join request
+        - a user accepts a group join invite
+        - a user is kicked out of a group
+        - a user leaves a group
+
+        - cron job pulls an upcoming contest from codeforces (or any other platform) - contests will be available for registration AFTER it gets pulled and added to db
+        - a user registers for a contest within a group
+        - a user revokes his contest registration within a group (can only be performed if time.now() < contest.start_date)
+        - cron job pulls contest standings from cf and initiates rating recalc per group
+
+
+        - a user creates a report object
+        - a moderator/admin resolves a report object
+        - ratings rollback for successful reports?
+        
+        - an announcement is created by siteadmins
+"""
+
+SEED = 42
+random.seed(SEED)
+np.random.seed(SEED)
+Faker.seed(SEED)
+faker = Faker()
+
+NUM_USERS = 5_000
+NUM_GROUPS = 30
+NUM_CONTESTS = 5
+NUM_PARTICIPATIONS = 15_000
+NUM_REPORTS = 100
+NUM_ANNOUNCEMENTS = 30
+
+DEFAULT_PASS = "devpass"
+
+reset_db()
+Base.metadata.create_all(bind=engine)
+
+db = SessionLocal()
+
+# POPULATE USERS
+# create admins and common group
+admin_users = [
+    User(
+        user_id="shrey",
+        role=Role.admin,
+        cf_handle="negative-xp",
+        email_id="dwxghcqcd@gmail.com",
+        atcoder_handle=None,
+        codechef_handle=None,
+        twitter_handle=None,
+        trusted_score=88,
+        hashed_password=hash_password(DEFAULT_PASS),
+    ),
+    User(
+        user_id="ani",
+        role=Role.admin,
+        cf_handle="roomTemperatureIQ",
+        email_id="chjd7639383@gmail.com",
+        atcoder_handle=None,
+        codechef_handle=None,
+        twitter_handle=None,
+        trusted_score=88,
+        hashed_password=hash_password(DEFAULT_PASS),
+    ),
+]
+
+users = admin_users
+
+for handle in cfhandles:
+    uid = 'uid' + handle
+    users.append(
+        User(
+            user_id=uid,
+            role=Role.user,
+            cf_handle=handle,
+            atcoder_handle=None if random.random() < 0.5 else uid + "_ac",
+            codechef_handle=None if random.random() < 0.7 else uid + "_cc",
+            twitter_handle=None if random.random() < 0.6 else uid + "_tw",
+            trusted_score=random.randint(0, 100),
+            email_id=str(uid) + '@gmail.com',
+            hashed_password=hash_password(DEFAULT_PASS),
+        )
+    )
+
+# create 5000 users
+while len(users) < NUM_USERS:
+    uid = 'testUser' + str(len(users)-1)
+    users.append(
+        User(
+            user_id=uid,
+            role=Role.user,
+            cf_handle=uid + '_cf',
+            atcoder_handle=None if random.random() < 0.5 else uid + "_ac",
+            codechef_handle=None if random.random() < 0.7 else uid + "_cc",
+            twitter_handle=None if random.random() < 0.6 else uid + "_tw",
+            trusted_score=random.randint(0, 100),
+            email_id=str(uid) + '@gmail.com',
+            hashed_password=hash_password(DEFAULT_PASS),
+        )
+    )
+
+db.add_all(users)
+db.commit()
+
+user_df = pd.read_sql("SELECT * FROM users", engine)
+print(user_df.shape)
+user_df.head()
+
+# POPULATE GROUPS
+
+common_group = Group(
+    group_id="main",
+    group_name="main",
+    group_description="group consisting of ALL users",
+    is_private=False,
+)
+
+groups = [common_group]
+for g_idx in range(1, NUM_GROUPS):
+    g_id = f"g{g_idx:02d}"
+    g_name = faker.unique.catch_phrase().lower().replace(" ", "‑")
+    is_priv = random.random() < 0.3
+    group = Group(
+        group_id=g_id,
+        group_name=g_name,
+        group_description=faker.sentence(nb_words=10),
+        is_private=is_priv,
+    )
+    groups.append(group)
+
+db.add_all(groups)
+db.commit()
+
+group_df = pd.read_sql("SELECT * FROM groups", engine)
+print(group_df.shape)
+group_df.head()
+
+groups[0].timestamp
+
+# POPULATE MEMBERSHIPS
+memberships = []
+
+
+# common group should have ALL users
+memberships.append(GroupMembership(
+    user_id=users[0].user_id,
+    group_id=groups[0].group_id,
+    role=Role.admin,
+    user_group_rating=1888,
+    user_group_max_rating=1888,
+))
+
+for i in range(1, len(users)):
+    mxr = int(random.random() * 3000)
+    cur = mxr - int(random.random() * (mxr/2))
+    memberships.append(
+        GroupMembership(
+            user_id=users[i].user_id,
+            group_id=groups[0].group_id,
+            role=Role.user,
+            user_group_rating=cur,
+            user_group_max_rating=mxr,
+        )
+    )
+
+# add memberships to other groups
+size_palette = [5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597]
+while len(size_palette) < len(groups) - 1:
+    size_palette.append(random.randint(10, 800))
+random.shuffle(size_palette)
+
+user_idx = [i for i in range(len(users))]
+
+for i in range(1, len(groups)):
+    grp_size = size_palette[i-1]
+    members = pick_random_subset(user_idx, grp_size)
+    # admin for this group
+    memberships.append(
+        GroupMembership(
+            user_id = users[members[0]].user_id,
+            group_id = groups[i].group_id,
+            role=Role.admin,
+            user_group_rating=1500,
+            user_group_max_rating=1500, 
+        )
+    )
+    for j in members[1:]:
+        memberships.append(
+            GroupMembership(
+                user_id=users[j].user_id,
+                group_id=groups[i].group_id,
+                role=Role.user,
+                user_group_rating=1500,
+                user_group_max_rating=1500,
+            )
+        )
+
+db.add_all(memberships)
+db.commit()
+
+membership_df = pd.read_sql("SELECT * FROM group_memberships", engine)
+print(membership_df.shape)
+membership_df.head()
+
+membership_df = pd.read_sql("SELECT * FROM group_memberships", engine)
+print(membership_df.shape)
+membership_df.head()
+
+df = pd.read_sql("SELECT * FROM groups", engine)
+df.head()
+
+# populate CONTESTS]
+
+NUM_CONTESTS = 30
+contests = []
+
+actual = [2050,2051,2109]
+
+for contest in actual:
+    contests.append(
+        Contest(
+            contest_id = f"c{contest}",
+            contest_name = f'Codeforces Contest {contest}',
+            platform = "Codeforces",
+            start_time_posix = int(random.random() * 1e9),
+            duration_seconds = 7200,
+            link = f'https://codeforces.com/contest/{contest}',
+            finished=True,
+            internal_contest_identifier = contest,
+        )
+    )
+
+
+for i in range(NUM_CONTESTS):
+    contests.append(
+        Contest(
+            contest_id = f"c{3000+i}",
+            contest_name = f'Codeforces Contest {int(random.random() * 99999)}',
+            platform = "Codeforces",
+            start_time_posix = int(random.random() * 1e8),
+            duration_seconds = 1938473,
+            link = 'OCD',
+            finished=False,
+            internal_contest_identifier = f'{random.random() * 99999}',
+        )
+    )
+
+db.add_all(contests)
+db.commit()
+
+contest_df = pd.read_sql("SELECT * FROM contests", engine)
+print(contest_df.shape)
+contest_df.head()
+
+# add finished contest participations to simulate delta
+participations = []
+
+for group in groups:
+    members = group.memberships
+    n_members = len(members)
+    parts = random_subset(n_members, int(n_members//2))
+    for ii in parts:
+
+        contest = contests[0]
+        be4 = members[ii].user_group_rating
+        cur = be4 + ((-1)**(int(random.random() * 2))) * int(random.random()*80)
+        
+        participations.append(
+            ContestParticipation(
+                user_id = members[ii].user_id,
+                group_id = group.group_id,
+                contest_id = contest.contest_id,
+                rank=int(random.random() * 2000),
+                rating_before = be4,
+                rating_after = cur,
+            )
+        )
+
+        contest = contests[1]
+        be4 = cur
+        cur = be4 + ((-1)**(int(random.random() * 2))) * int(random.random()*80)
+        
+        participations.append(
+            ContestParticipation(
+                user_id = members[ii].user_id,
+                group_id = group.group_id,
+                contest_id = contest.contest_id,
+                rank=int(random.random() * 2000),
+                rating_before = be4,
+                rating_after = cur,
+            )
+        )
+
+
+        contest = contests[2]
+        be4 = cur
+        cur = be4 + ((-1)**(int(random.random() * 2))) * int(random.random()*80)
+        
+        participations.append(
+            ContestParticipation(
+                user_id = members[ii].user_id,
+                group_id = group.group_id,
+                contest_id = contest.contest_id,
+                rank=int(random.random() * 2000),
+                rating_before = be4,
+                rating_after = cur,
+            )
+        )
+
+db.add_all(participations)
+db.commit()
+
+participation_df = pd.read_sql("SELECT * FROM contest_participations", engine)
+print(participation_df.shape)
+participation_df.head()
+
+participation_df = pd.read_sql("SELECT * FROM contest_participations", engine)
+print(participation_df.shape)
+participation_df.head()
+
+# populate reports
+n_parts = len(participations)
+reports = []
+
+while len(reports) < NUM_REPORTS:
+    idx = int(random.random() * n_parts)
+    rp = participations[idx]
+    
+    grp = db.query(Group).filter(Group.group_id == rp.group_id).all()[0]
+    members = grp.memberships
+    reporter = members[int(len(members) * random.random())]
+    reports.append(
+        Report(
+            report_id = f"report{len(reports)}",
+            group_id = rp.group_id,
+            contest_id = rp.contest_id,
+            reporter_user_id = reporter.user_id,
+            respondent_user_id = rp.user_id,
+            report_description = faker.sentence(nb_words=12)
+        )
+    )
+
+db.add_all(reports)
+db.commit()
+
+report_df = pd.read_sql("SELECT * FROM reports", engine)
+print(report_df.shape)
+report_df.head()
+
+# populate announcememts
+
+NUM_ANNOUNCEMENTS = 40
+announcements = []
+for i in range(NUM_ANNOUNCEMENTS):
+    announcements.append(
+        Announcement(
+            announcement_id = f"anmt{i}",
+            group_id = "main",
+            title = faker.sentence(nb_words=7),
+            content = faker.sentence(nb_words=100)
+        )
+    )
+
+db.add_all(announcements)
+db.commit()
+
+announcement_df = pd.read_sql("SELECT * FROM announcements", engine)
+print(announcement_df.shape)
+announcement_df.head()
+
+
+
+
+
+
+# ipynb compressor

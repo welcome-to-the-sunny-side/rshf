@@ -385,6 +385,40 @@ def update_announcement(
     return crud.update_announcement(db, payload)
 
 
+# ========== custom group data endpoints ==========
+
+@router.get("/group_members_custom_data", response_model=List[schemas.CustomMembershipData])
+def get_group_members_custom_data(
+    group_id: str = Query(..., description="Group ID to retrieve custom data for"),
+    db: Session = Depends(get_db),
+    current: models.User = Depends(get_current_user),
+):
+    """
+    Get custom membership data for all members in a group including number of rated contests.
+    
+    Args:
+        group_id: ID of the group
+        db: Database session
+        current: Current authenticated user
+        
+    Returns:
+        List of CustomMembershipData objects with enriched contest participation info
+    
+    Raises:
+        HTTPException: If group not found or user has insufficient privileges
+    """
+    # Check if the group exists
+    group = crud.get_group(db, group_id)
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+    
+    # Check if the user has access to the group (member or admin)
+    if current.role != models.Role.admin and not crud.get_membership(db, current.user_id, group_id):
+        raise HTTPException(status_code=403, detail="Not a member of the group")
+    
+    # Get the custom membership data
+    return crud.get_group_custom_membership_data(db, group_id)
+
 # ========== extension query endpoints ==========
 
 @router.post("/extension_query_1", response_model=schemas.ExtensionQuery1Response)
@@ -413,3 +447,43 @@ def extension_query_1(
     ratings = crud.get_ratings_by_cf_handles(db, payload.group_id, payload.cf_handles)
     
     return {"ratings": ratings}
+
+
+# ========== membership query endpoint ==========
+
+@router.get("/membership", response_model=schemas.GroupMembershipOut)
+def check_membership(
+    group_id: str = Query(..., description="Group ID to check membership for"),
+    user_id: str = Query(..., description="User ID to check membership for"),
+    db: Session = Depends(get_db),
+    current: models.User = Depends(get_current_user),
+):
+    """
+    Check if a user is a member of a specific group.
+    
+    Args:
+        group_id: ID of the group to check membership for
+        user_id: ID of the user to check membership for
+        db: Database session
+        current: Current authenticated user
+        
+    Returns:
+        Membership details if user is a member, otherwise 404
+    
+    Raises:
+        HTTPException: If membership not found
+    """
+    # First check if current user has permission to view membership info
+    # Only allow if current user is admin, group mod/admin, or checking their own membership
+    if current.role != models.Role.admin and current.user_id != user_id:
+        # Check if current user is a moderator or admin in the group
+        current_membership = crud.get_membership(db, current.user_id, group_id)
+        if not current_membership or role_rank[current_membership.role] < role_rank["moderator"]:
+            raise HTTPException(status_code=403, detail="Insufficient permissions to view membership")
+    
+    # Check if user is a member of the group
+    membership = crud.get_membership(db, user_id, group_id)
+    if not membership:
+        raise HTTPException(status_code=404, detail="Membership not found")
+    
+    return membership

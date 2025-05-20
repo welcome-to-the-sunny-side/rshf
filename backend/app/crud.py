@@ -339,7 +339,66 @@ def update_announcement(db: Session, payload: schemas.AnnouncementUpdate) -> Opt
     return anmt
 
 
-# ───────────── extension queries ─────────────
+# ───────────── custom group data queries ───────────────
+
+def get_group_custom_membership_data(db: Session, group_id: str) -> List[schemas.CustomMembershipData]:
+    """
+    Get custom membership data for all members in a group including number of rated contests.
+    
+    Args:
+        db: Database session
+        group_id: ID of the group
+        
+    Returns:
+        List of CustomMembershipData objects with enriched contest participation info
+    """
+    # Get all memberships for the group
+    memberships = (
+        db.query(models.GroupMembership)
+        .filter(models.GroupMembership.group_id == group_id)
+        .all()
+    )
+    
+    if not memberships:
+        return []
+    
+    # Get all contest participations for this group in one query to avoid N+1 problem
+    participations = (
+        db.query(models.ContestParticipation)
+        .filter(models.ContestParticipation.group_id == group_id)
+        .all()
+    )
+    
+    # Create a dictionary to count participations by user_id
+    participation_counts = {}
+    for p in participations:
+        if p.user_id in participation_counts:
+            participation_counts[p.user_id] += 1
+        else:
+            participation_counts[p.user_id] = 1
+    
+    # Create the custom data objects
+    result = []
+    for membership in memberships:
+        # Get the user to access the cf_handle
+        user = db.query(models.User).filter(models.User.user_id == membership.user_id).first()
+        if not user:
+            continue  # Skip if user not found
+            
+        # Create the custom data object
+        custom_data = schemas.CustomMembershipData(
+            cf_handle=user.cf_handle,
+            role=membership.role,
+            user_group_rating=membership.user_group_rating,
+            user_group_max_rating=membership.user_group_max_rating,
+            date_joined=membership.timestamp,
+            number_of_rated_contests=participation_counts.get(membership.user_id, 0)
+        )
+        result.append(custom_data)
+    
+    return result
+
+# ───────────── extension queries ───────────────
 
 def get_ratings_by_cf_handles(db: Session, group_id: str, cf_handles: List[str]) -> List[Optional[int]]:
     """

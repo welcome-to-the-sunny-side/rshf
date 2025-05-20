@@ -25,12 +25,10 @@
     root endpoint: ```http://127.0.0.1:8000/api ```
 
 
-4. start jupyter lab:
+4. populate the database with dummy data:
    ```
-   python3 -m jupyter lab
+   python3 devseed.py
    ```
-
-   then open the notebook to interact with the database.
 
 ## endpoints
  
