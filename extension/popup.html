@@ -10,7 +10,9 @@
   <div class="popup-container">
     <!-- Login View -->
     <div id="login-view" class="view">
-      <h2>Login to RSHF</h2>
+      <div class="logo-container">
+        <img src="images/logo.png" alt="RSHF Logo" class="logo" />
+      </div>
       <div id="login-error" class="error-message"></div>
       <form id="login-form">
         <div class="form-group">
@@ -43,7 +45,6 @@
     <!-- Main View (after login) -->
     <div id="main-view" class="view">
       <div class="user-info">
-        <h3 id="welcome-message">Welcome</h3>
         <p id="user-details"></p>
       </div>
       
@@ -66,6 +67,7 @@
           <select id="non-member-display">
             <option value="transparent">Transparent</option>
             <option value="star">Star indicator</option>
+            <option value="strike-through">Strike-through</option>
             <option value="plain">Plain (no change)</option>
           </select>
         </div>

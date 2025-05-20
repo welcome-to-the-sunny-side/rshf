@@ -120,11 +120,15 @@ async function initializeExtension() {
   // Only proceed if user is authenticated and a group is selected
   if (!authState.isAuthenticated) {
     console.log('User not authenticated. Login required.');
+    // Add an extension icon to show that the extension is installed but not active
+    addExtensionStatusIndicator('not-logged-in');
     return;
   }
   
   if (!authState.selectedGroup) {
     console.log('No group selected. Select a group in extension popup.');
+    // Add an extension icon to show that the extension is installed but no group is selected
+    addExtensionStatusIndicator('no-group-selected');
     return;
   }
 
@@ -133,6 +137,40 @@ async function initializeExtension() {
   
   // Process the page
   processPage(authState, settings);
+}
+
+// Add a small indicator to show the extension status
+function addExtensionStatusIndicator(status) {
+  // Create a small floating indicator
+  const indicator = document.createElement('div');
+  indicator.className = 'rshf-status-indicator';
+  indicator.style.position = 'fixed';
+  indicator.style.bottom = '10px';
+  indicator.style.right = '10px';
+  indicator.style.padding = '5px 10px';
+  indicator.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+  indicator.style.color = 'white';
+  indicator.style.borderRadius = '4px';
+  indicator.style.fontSize = '12px';
+  indicator.style.zIndex = '9999';
+  indicator.style.cursor = 'pointer';
+  
+  // Set message based on status
+  if (status === 'not-logged-in') {
+    indicator.textContent = 'RSHF: Not logged in';
+    indicator.title = 'Click to log in to RSHF extension';
+  } else if (status === 'no-group-selected') {
+    indicator.textContent = 'RSHF: No group selected';
+    indicator.title = 'Click to select a group in RSHF extension';
+  }
+  
+  // Open extension popup when clicked
+  indicator.addEventListener('click', () => {
+    chrome.runtime.sendMessage({ action: 'openPopup' });
+  });
+  
+  // Add to page
+  document.body.appendChild(indicator);
 }
 
 // Process Codeforces page to replace ratings
@@ -159,6 +197,205 @@ async function processPage(authState, settings) {
   
   // Replace ratings on the page
   replaceRatings(ratedUserElements, settings);
+  
+  // Handle profile sidebar if it exists
+  processProfileSidebar(settings);
+  
+  // Handle profile box on profile page if it exists
+  if (window.location.pathname.startsWith('/profile/')) {
+    processProfileBox(settings);
+  }
+}
+
+// Process profile sidebar to replace rating
+function processProfileSidebar(settings) {
+  // Find the profile sidebar
+  const sidebar = document.querySelector('.personal-sidebar');
+  if (!sidebar) {
+    return; // No sidebar found
+  }
+  
+  // Find the rating element in the sidebar
+  const ratingElement = sidebar.querySelector('ul.propertyLinks li span.user-orange, ul.propertyLinks li span.user-red, ul.propertyLinks li span.user-blue, ul.propertyLinks li span.user-green, ul.propertyLinks li span.user-gray, ul.propertyLinks li span.user-violet, ul.propertyLinks li span.user-cyan, ul.propertyLinks li span.user-legendary');
+  if (!ratingElement) {
+    return; // No rating element found
+  }
+  
+  // Find the username from the sidebar
+  const userElement = sidebar.querySelector('.rated-user');
+  if (!userElement) {
+    return; // No username element found
+  }
+  
+  const username = userElement.textContent.trim();
+  
+  // Check if we have a cached rating for this user
+  if (ratingCache[username]) {
+    if (ratingCache[username].rating !== null) {
+      // Update the rating display in the sidebar
+      updateSidebarRating(ratingElement, ratingCache[username].rating);
+    } else {
+      // User not in the selected group
+      handleSidebarNonGroupMember(ratingElement, userElement, settings.nonMemberDisplay);
+    }
+  }
+}
+
+// Process the profile box on the profile page
+function processProfileBox(settings) {
+  // Find the profile box
+  const profileBox = document.querySelector('.userbox');
+  if (!profileBox) {
+    return; // No profile box found
+  }
+  
+  // Find the username element
+  const usernameElement = profileBox.querySelector('.rated-user');
+  if (!usernameElement) {
+    return; // No username element found
+  }
+  
+  const username = usernameElement.textContent.trim();
+  
+  // Check if we have a cached rating for this user
+  if (!ratingCache[username]) {
+    return; // No cached rating for this user
+  }
+  
+  if (ratingCache[username].rating === null) {
+    // Handle non-group member styling for profile elements
+    applyNonGroupMemberStylingToProfile(profileBox, settings.nonMemberDisplay);
+    return;
+  }
+  
+  // Get the rating value
+  const rating = ratingCache[username].rating;
+  const ratingInfo = getRatingInfo(rating);
+  
+  // Update the rank in the profile box
+  const rankElement = profileBox.querySelector('.user-rank span');
+  if (rankElement) {
+    // Update the rank text and class
+    removeRatingClasses(rankElement);
+    rankElement.classList.add(ratingInfo.cssClass);
+    rankElement.textContent = ratingInfo.name + ' ';
+    rankElement.style.color = ratingInfo.color;
+    
+    // Add tooltip with RSHF rating information
+    rankElement.setAttribute('data-rshf-tooltip', `RSHF Rating: ${rating} (${ratingInfo.name})`);
+    rankElement.classList.add('rshf-tooltip');
+  }
+  
+  // Update the contest rating in the profile box (avoid max rating as requested)
+  const ratingElements = profileBox.querySelectorAll('li');
+  for (const li of ratingElements) {
+    if (li.textContent.includes('Contest rating:')) {
+      // Find the rating span
+      const ratingSpan = li.querySelector('span.user-orange, span.user-red, span.user-blue, span.user-green, span.user-gray, span.user-violet, span.user-cyan, span.user-legendary');
+      if (ratingSpan) {
+        // Update with RSHF rating
+        removeRatingClasses(ratingSpan);
+        ratingSpan.classList.add(ratingInfo.cssClass);
+        ratingSpan.textContent = rating.toString();
+        ratingSpan.style.color = ratingInfo.color;
+        
+        // Add tooltip
+        ratingSpan.setAttribute('data-rshf-tooltip', `RSHF Rating: ${rating} (${ratingInfo.name})`);
+        ratingSpan.classList.add('rshf-tooltip');
+        
+        // Remove the max rating part as requested
+        const smallerSpan = li.querySelector('.smaller');
+        if (smallerSpan) {
+          smallerSpan.style.display = 'none';
+        }
+      }
+      
+      // Change the label to indicate this is RSHF rating
+      const ratingText = li.innerHTML.split('Contest rating:')[0];
+      const ratingValue = li.innerHTML.split('Contest rating:')[1].split('<span class="smaller"')[0];
+      li.innerHTML = ratingText + 'RSHF Rating:' + ratingValue;
+      
+      // If there was a max rating section that we hid, add back any content after it
+      const smallerSpan = li.querySelector('.smaller');
+      if (smallerSpan) {
+        smallerSpan.style.display = 'none';
+      }
+    }
+  }
+}
+
+// Apply non-group member styling to profile box elements
+function applyNonGroupMemberStylingToProfile(profileBox, displayMode) {
+  // Find all elements that need styling
+  const rankElement = profileBox.querySelector('.user-rank span');
+  const usernameElement = profileBox.querySelector('.rated-user');
+  const ratingElements = profileBox.querySelectorAll('li');
+  
+  // Apply styling to rank
+  if (rankElement) {
+    handleNonGroupMember(rankElement, displayMode);
+  }
+  
+  // Username is already handled by the standard process
+  
+  // Handle contest rating
+  for (const li of ratingElements) {
+    if (li.textContent.includes('Contest rating:')) {
+      const ratingSpan = li.querySelector('span.user-orange, span.user-red, span.user-blue, span.user-green, span.user-gray, span.user-violet, span.user-cyan, span.user-legendary');
+      if (ratingSpan) {
+        handleNonGroupMember(ratingSpan, displayMode);
+        
+        // Hide max rating as requested
+        const smallerSpan = li.querySelector('.smaller');
+        if (smallerSpan) {
+          smallerSpan.style.display = 'none';
+        }
+      }
+    }
+  }
+}
+
+// Update the rating element in the sidebar
+function updateSidebarRating(ratingElement, rating) {
+  // Get rating info for this rating
+  const ratingInfo = getRatingInfo(rating);
+  
+  // Remove all existing rating classes
+  removeRatingClasses(ratingElement);
+  
+  // Add the appropriate class for the new rating
+  ratingElement.classList.add(ratingInfo.cssClass);
+  
+  // Update the text content with the new rating
+  ratingElement.textContent = rating.toString();
+  
+  // Set the color directly for additional assurance
+  ratingElement.style.color = ratingInfo.color;
+  
+  // Add tooltip with rating information
+  ratingElement.setAttribute('data-rshf-tooltip', `RSHF Rating: ${rating} (${ratingInfo.name})`);
+  ratingElement.classList.add('rshf-tooltip');
+  
+  // Find and update the "Rating:" label
+  const ratingLabel = ratingElement.parentElement;
+  if (ratingLabel && ratingLabel.innerHTML.includes('Rating:')) {
+    // Add an indicator that this is an RSHF rating
+    const labelText = ratingLabel.innerHTML.split('Rating:')[0] + 'RSHF Rating:';
+    ratingLabel.innerHTML = labelText + '&nbsp;<span style="font-weight:bold;" class="' + 
+      ratingInfo.cssClass + '" title="RSHF Rating: ' + rating + ' (' + ratingInfo.name + ')">' + 
+      rating + '</span>';
+  }
+}
+
+// Handle users not in the group in the sidebar
+function handleSidebarNonGroupMember(ratingElement, userElement, displayMode) {
+  // Use the same handleNonGroupMember function that we use for regular rated-user elements
+  handleNonGroupMember(ratingElement, displayMode);
+  
+  // Also apply the same styling to the username element if it exists
+  if (userElement) {
+    handleNonGroupMember(userElement, displayMode);
+  }
 }
 
 // Extract usernames from DOM elements
@@ -265,7 +502,15 @@ function handleNonGroupMember(element, displayMode) {
       element.style.opacity = '0.5';
       break;
     case 'star':
-      element.textContent = `${element.textContent} *`;
+      const originalText = element.textContent;
+      element.textContent = originalText;
+      const starSpan = document.createElement('span');
+      starSpan.textContent = '*';
+      starSpan.style.color = 'black';
+      element.appendChild(starSpan);
+      break;
+    case 'strike-through':
+      element.classList.add('rshf-strike-through');
       break;
     case 'plain':
     default:

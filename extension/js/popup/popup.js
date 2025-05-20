@@ -7,7 +7,7 @@ const passwordInput = document.getElementById('password');
 const loginButton = document.getElementById('login-button');
 const loginError = document.getElementById('login-error');
 const logoutButton = document.getElementById('logout-button');
-const welcomeMessage = document.getElementById('welcome-message');
+
 const userDetails = document.getElementById('user-details');
 const groupInput = document.getElementById('group-input');
 const setGroupButton = document.getElementById('set-group-button');
@@ -203,7 +203,6 @@ function showMainView(user) {
   mainView.style.display = 'block';
   
   // Update user information
-  welcomeMessage.textContent = `Welcome, ${user.username}`;
   userDetails.textContent = user.cf_handle ? 
     `Codeforces handle: ${user.cf_handle}` : 
     'No Codeforces handle linked';

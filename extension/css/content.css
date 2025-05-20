@@ -20,6 +20,14 @@
   vertical-align: super;
 }
 
+/* Strike-through for non-group members */
+a.rated-user.rshf-strike-through,
+.rshf-strike-through {
+  text-decoration: line-through !important;
+  text-decoration-color: rgba(0, 0, 0, 0.4) !important;
+  text-decoration-thickness: 1px !important;
+}
+
 /* Rating color classes - can be customized based on your rating system */
 .rshf-rating-unrated {
   color: #000000 !important;

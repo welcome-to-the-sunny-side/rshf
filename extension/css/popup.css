@@ -91,9 +91,24 @@ input, select {
   margin-top: 16px;
 }
 
+/* Logo Styles */
+.logo-container {
+  text-align: center;
+  margin-bottom: 2px;
+}
+
+.logo {
+  max-width: 140px;
+  height: auto;
+}
+
 /* Login View */
 #login-view {
   display: block;
+}
+
+#login-form .form-group:first-child {
+  margin-top: 0;
 }
 
 .error-message {

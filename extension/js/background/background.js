@@ -67,6 +67,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         .then(result => sendResponse({ success: true, data: result }))
         .catch(error => sendResponse({ success: false, error: error.message }));
       return true;
+      
+    case 'openPopup':
+      // This action is triggered when the user clicks on the status indicator
+      // It will show the extension popup
+      chrome.action.openPopup();
+      return false;
   }
 });
 
