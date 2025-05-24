@@ -109,6 +109,7 @@ class ContestParticipation(ModelBase):
     contest_id = Column(String, ForeignKey("contests.contest_id"), primary_key=True)
 
     rank = Column(Integer, nullable=True)
+    delta = Column(Integer, nullable=True)
     rating_before = Column(Integer, nullable=True)
     rating_after = Column(Integer, nullable=True)
 
