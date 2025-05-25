@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta
 import os
 from typing import List, Optional
+import sys
+import os
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -491,36 +493,76 @@ def check_membership(
 
 # ---------------------- admin routes ----------------------
 
-@router.get("/admin/sync-status")
-def get_sync_status(
+@router.post("/admin/update-finished-contests", status_code=status.HTTP_200_OK)
+def update_finished_contests_endpoint(
+    cutoff_days: Optional[int] = Query(None, description="Number of days to look back for finished contests"),
     db: Session = Depends(get_db),
     current: models.User = Depends(get_current_user),
 ):
     """
-    Get statistics about contest synchronization.
-    Only admins can access this endpoint.
+    Admin endpoint to update finished contests from Codeforces.
+    
+    Args:
+        cutoff_days: Optional number of days to look back for finished contests
+        db: Database session
+        current: Current authenticated user
+        
+    Returns:
+        Success message
+        
+    Raises:
+        HTTPException: If user does not have admin privileges
     """
-    if current.role != models.Role.admin:
-        raise HTTPException(status_code=403, detail="Only admins can view sync status")
+    # Check if user has admin privileges
+    assert_global_privilege(current, "admin")
     
-    # Get contest statistics
-    total_contests = db.query(models.Contest).count()
-    cf_contests = db.query(models.Contest).filter(models.Contest.contest_id.like("cf_%")).count()
-    finished_contests = db.query(models.Contest).filter(models.Contest.finished == True).count()
-    contests_with_standings = db.query(models.Contest).filter(models.Contest.standings.isnot(None)).count()
+    # Update finished contests
+    crud.update_finished_contests(db, cutoff_days)
     
-    # Get last sync time (you might want to store this in a separate table)
-    latest_contest = (
-        db.query(models.Contest)
-        .filter(models.Contest.contest_id.like("cf_%"))
-        .order_by(models.Contest.timestamp.desc())
-        .first()
-    )
+    return {"message": "Finished contests updated successfully"}
+
+
+@router.post("/admin/update-upcoming-contests", status_code=status.HTTP_200_OK)
+def update_upcoming_contests_endpoint(
+    db: Session = Depends(get_db),
+    current: models.User = Depends(get_current_user),
+):
+    """
+    Admin endpoint to update upcoming contests from Codeforces.
     
-    return {
-        "total_contests": total_contests,
-        "codeforces_contests": cf_contests,
-        "finished_contests": finished_contests,
-        "contests_with_standings": contests_with_standings,
-        "last_sync_time": latest_contest.timestamp if latest_contest else None
-    }
+    Args:
+        db: Database session
+        current: Current authenticated user
+        
+    Returns:
+        Success message
+        
+    Raises:
+        HTTPException: If user does not have admin privileges
+    """
+    # Check if user has admin privileges
+    assert_global_privilege(current, "admin")
+    
+    # Update upcoming contests
+    crud.update_upcoming_contests(db)
+    
+    return {"message": "Upcoming contests updated successfully"}
+
+
+@router.post("/dev/seed", status_code=status.HTTP_200_OK)
+def run_seed():
+    """
+    Development endpoint to reset and seed the database with test data.
+    This endpoint has NO authentication restrictions and should only be used in development.
+    
+    Returns:
+        Success message
+    """
+    # Import seed function from parent directory
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from devseed import seed
+    
+    # Run the seed function
+    seed()
+    
+    return {"message": "Database has been reset and seeded with test data"}

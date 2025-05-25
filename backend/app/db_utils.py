@@ -2,11 +2,16 @@ import pandas as pd
 from sqlalchemy import inspect, text, MetaData
 from sqlalchemy.ext.declarative import declarative_base
 from contextlib import contextmanager
-from app.database import Base, engine, SessionLocal
+from app.database import Base, SessionLocal, engine
 from app import models
 import json
 import os
 import datetime
+
+from sqlalchemy import create_engine, text
+
+# reuse your existing engine or build one here
+# engine = create_engine(os.getenv("DATABASE_URL"), isolation_level="AUTOCOMMIT")
 
 def reset_db():
     print("dropping all tables...")

@@ -196,9 +196,9 @@ def register_contest_participation(
 
 def filter_contest_participations(
     db: Session,
-    gid: Optional[str],
-    uid: Optional[str],
-    cid: Optional[str],
+    gid: Optional[str] = None,
+    uid: Optional[str] = None,
+    cid: Optional[str] = None,
 ) -> List[models.ContestParticipation]:
     q = db.query(models.ContestParticipation)
     if gid is not None:
@@ -259,7 +259,52 @@ def update_upcoming_contests(db: Session):
     db.add_all(to_add)
     db.commit()
 
-def update_finished_contests(db: Session, cutoff_days: Optional[int] = None):
+def update_contest_info_from_cf_api(db: Session, cf_contest_id: str, group_id: Optional[str] = None):
+    """
+        update all contest related tables using standings fetched from cf api
+    """
+
+    contest = get_contest_by_internal_identifier(db, cf_contest_id)
+    if contest is None:
+        print("contest not in db")
+        return
+
+    print("updating contest object...")
+    update_contest(
+        db,
+        contest_id=contest.contest_id,
+        finished=True,
+        standings=cf_api.contest_standings(contest.internal_contest_identifier)
+    )
+    print("updated contest object!!")
+
+    # update contest participation objects
+    group_rank = dict()
+    standingsObj = cf_api.contest_standings(contest.internal_contest_identifier)
+    
+    print("updating participation objects...")
+    updated_parts = []
+    for row in standingsObj["rows"]:
+        user = get_user_by_handle(db, row["handle"])
+        if user is None:
+            continue
+        
+        # just get all participations satisying uid=handle, cid=contest_id
+        parts = filter_contest_participations(db, uid=user.user_id, cid=contest.contest_id, gid=group_id)
+        for part in parts:
+            membership = get_membership(db, user.user_id, part.group_id)
+            part.rating_before = membership.user_group_rating
+            part.rank = group_rank.get(part.group_id, 0)
+            part.took_part = True
+            group_rank[part.group_id] = group_rank.get(part.group_id, 0) + 1
+            updated_parts.append(part)
+    
+    db.commit()
+    print("updated participation objects!!")
+    return updated_parts
+    
+
+def update_finished_contests(db: Session, group_id: Optional[str] = None, cutoff_days: Optional[int] = None):
     """
         fetch and update recently finished contests from cf
     """
@@ -268,13 +313,12 @@ def update_finished_contests(db: Session, cutoff_days: Optional[int] = None):
     for contest in finished:
         # check if contest is already in db -> contest HAS to be already in db to update its standings
         db_contest = get_contest_by_internal_identifier(db, contest['id'])
-        if db_contest is not None:
-            update_contest(
-                db,
-                contest_id=db_contest.contest_id,
-                finished=True,
-                standings=cf_api.contest_standings(contest['id'])
-            )
+        if db_contest is None:
+            continue
+        update_contest_info_from_cf_api(db, contest['id'], group_id)
+        
+
+        
 
 
 def get_contest(db: Session, contest_id: str) -> Optional[models.Contest]:

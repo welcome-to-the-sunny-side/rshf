@@ -7,6 +7,7 @@ from app import models
 from app.endpoints import router as api_router
 import asyncio
 from app.crud import update_upcoming_contests, update_finished_contests
+from app.database import SessionLocal
 
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,6 +15,8 @@ from fastapi.middleware.cors import CORSMiddleware
 Base.metadata.create_all(bind=engine)
 app = FastAPI(title="clean-rating api")
 app.include_router(api_router)
+db = SessionLocal()
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -29,13 +32,13 @@ app.add_middleware(
 
 async def run_cf_cron_job():
     while True:
-        update_upcoming_contests()
-        update_finished_contests()
+        update_upcoming_contests(db)
+        update_finished_contests(db)
         await asyncio.sleep(60 * 60 * 24)  # run every 24 hours
 
 
-@app.on_event("startup")
-async def launch_cf_cron_job():
-    asyncio.create_task(run_cf_cron_job())
+# @app.on_event("startup")
+# async def launch_cf_cron_job():
+#     asyncio.create_task(run_cf_cron_job())
 
 print("✅ tables created & routes loaded. ready to go.")

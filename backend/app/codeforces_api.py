@@ -175,7 +175,7 @@ class CodeforcesAPI:
         """
         return self._make_request("contest.ratingChanges", {"contestId": contest_id})
     
-    def contest_standings(self, contest_id: int, from_: int = 1, count: int = 100,
+    def contest_standings(self, contest_id: int, from_: int = 1, count: int = None,
                          handles: Optional[List[str]] = None, room: Optional[int] = None,
                          show_unofficial: bool = False, as_manager: bool = False) -> Dict[str, Any]:
         """
@@ -208,7 +208,19 @@ class CodeforcesAPI:
         if as_manager:
             params["asManager"] = "true"
             
-        return self._make_request("contest.standings", params)
+        standingsObj = self._make_request("contest.standings", params)
+        rows = []
+        for el in standingsObj["rows"]:
+            rows.append(
+                {
+                    'handle': el['party']['members'][0]['handle'],
+                    'rank': el['rank'],
+                    'points': el['points'],
+                    'penalty': el['penalty']
+                }
+            )
+        standingsObj["rows"] = rows
+        return standingsObj
     
     def contest_status(self, contest_id: int, handle: Optional[str] = None,
                       from_: int = 1, count: int = 100, as_manager: bool = False) -> List[Dict[str, Any]]:
