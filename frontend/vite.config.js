@@ -13,4 +13,10 @@ export default defineConfig({
       },
     },
   },
+  preview: {
+    port: 10000,
+    strictPort: true,
+    host: true, // Listen on all addresses
+    allowedHosts: ['rshf-frontend.onrender.com', 'rshf.net'],
+  },
 });
