@@ -18,7 +18,9 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",                                         # Vite dev server
         "http://127.0.0.1:5173",                                         # Vite dev server alternative
-        "chrome-extension://bipobjdhjpdmpdmphgebogipnnfaccpf"            # Your specific Chrome extension ID
+        "chrome-extension://bipobjdhjpdmpdmphgebogipnnfaccpf",           # Your specific Chrome extension ID
+        "https://rshf.net",                                              # Production domain
+        "https://rshf-frontend.onrender.com"                             # Render.com frontend domain
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
