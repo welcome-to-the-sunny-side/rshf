@@ -13,17 +13,22 @@ from app.database import SessionLocal
 from fastapi.middleware.cors import CORSMiddleware
 
 Base.metadata.create_all(bind=engine)
-app = FastAPI(title="clean-rating api")
+app = FastAPI(title="rshf api")
 app.include_router(api_router)
 db = SessionLocal()
 
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],  # Vite dev server default ports
+    allow_origins=[
+        "http://localhost:5173",          # Vite dev server
+        "http://127.0.0.1:5173",          # Vite dev server alternative
+        "https://rshf.net",               # Production domain
+        "https://rshf-frontend.onrender.com"  # Render.com frontend domain
+    ],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization", "Accept"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
 )
 
 async def run_cf_cron_job():
