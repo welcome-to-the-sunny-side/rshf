@@ -1,12 +1,13 @@
 # app/crud.py
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app import models
 from app.utils import hash_password, verify_password
 from app import schemas
-
+from datetime import datetime, timedelta
+from app.codeforces_api import cf_api
 
 # helper enrichers ───────────────────────────────────────────
 def _enrich_user(db: Session, user: models.User) -> models.User:
@@ -176,6 +177,7 @@ def remove_membership(db: Session, user_id: str, group_id: str) -> bool:
     return True
 
 
+
 # ───────────── contest participation ─────────────
 def register_contest_participation(
     db: Session, payload: schemas.ContestRegistration
@@ -207,6 +209,7 @@ def filter_contest_participations(
         q = q.filter(models.ContestParticipation.contest_id == cid)
     return q.all()
 
+# ------------------------- contest -------------------------
 
 def list_contests(
     db: Session,
@@ -227,6 +230,52 @@ def list_contests(
         q = q.filter(models.Contest.finished == finished)
     return q.all()
 
+def map_cf_contest_to_internal(cf_contest: Dict[str, Any]) -> Dict[str, Any]:
+    contest_id = f"cf_{cf_contest['id']}"
+    return {
+        "contest_id": contest_id,
+        "contest_name": cf_contest.get("name", "Unknown Contest"),
+        "platform": "Codeforces",
+        "start_time_posix": cf_contest.get("startTimeSeconds", 0),
+        "duration_seconds": cf_contest.get("durationSeconds", 0),
+        "link": f"https://codeforces.com/contest/{cf_contest['id']}",
+        "internal_contest_identifier": (cf_contest['id']),
+        "finished": cf_contest.get("phase", "BEFORE") == "FINISHED"
+    }
+
+def update_upcoming_contests(db: Session):
+    """
+    update all upcoming contests in the database.
+    """
+    upcoming = cf_api.fetch_upcoming_contests()
+    to_add = []
+    for contest in upcoming:
+        # check if contest is already in db
+        if get_contest_by_internal_identifier(db, contest['id']) is None:
+            to_add.append(models.Contest(
+                **map_cf_contest_to_internal(contest)
+            ))
+    
+    db.add_all(to_add)
+    db.commit()
+
+def update_finished_contests(db: Session, cutoff_days: Optional[int] = None):
+    """
+        fetch and update recently finished contests from cf
+    """
+    finished = cf_api.fetch_finished_contests(cutoff_days)
+    to_add = []
+    for contest in finished:
+        # check if contest is already in db -> contest HAS to be already in db to update its standings
+        db_contest = get_contest_by_internal_identifier(db, contest['id'])
+        if db_contest is not None:
+            update_contest(
+                db,
+                contest_id=db_contest.contest_id,
+                finished=True,
+                standings=cf_api.contest_standings(contest['id'])
+            )
+
 
 def get_contest(db: Session, contest_id: str) -> Optional[models.Contest]:
     """
@@ -240,6 +289,82 @@ def get_contest(db: Session, contest_id: str) -> Optional[models.Contest]:
         Contest object or None if not found
     """
     return db.query(models.Contest).filter(models.Contest.contest_id == contest_id).first()
+
+def get_contest_by_internal_identifier(db: Session, id: Any) -> Optional[models.Contest]:
+    """
+        query a contest by its codeforces id
+    """
+    return db.query(models.Contest).filter(models.Contest.internal_contest_identifier == str(id)).first()
+
+
+def create_contest(db: Session, contest_data: Dict[str, Any]) -> Optional[models.Contest]:
+    """
+    Create a new contest in the database.
+    
+    Args:
+        db: Database session
+        contest_data: Dictionary containing contest information
+        
+    Returns:
+        Created Contest object or None if error
+    """
+    try:
+        contest = models.Contest(**contest_data)
+        db.add(contest)
+        db.commit()
+        db.refresh(contest)
+        return contest
+    except Exception as e:
+        db.rollback()
+        print(f"Error creating contest: {e}")
+        return None
+
+
+def update_contest(
+    db: Session,
+    contest_id: str,
+    finished: Optional[bool] = None,
+    contest_name: Optional[str] = None,
+    start_time_posix: Optional[int] = None,
+    duration_seconds: Optional[int] = None,
+    standings: Optional[Dict[str, Any]] = None
+) -> Optional[models.Contest]:
+    """
+    Update an existing contest.
+    
+    Args:
+        db: Database session
+        contest_id: ID of the contest to update
+        finished: New finished status
+        contest_name: New contest name
+        start_time_posix: New start time
+        duration_seconds: New duration
+        standings: Contest standings data
+        
+    Returns:
+        Updated Contest object or None if not found
+    """
+    contest = db.query(models.Contest).filter(models.Contest.contest_id == contest_id).first()
+    if not contest:
+        return None
+    
+    if finished is not None:
+        contest.finished = finished
+    if contest_name is not None:
+        contest.contest_name = contest_name
+    if start_time_posix is not None:
+        contest.start_time_posix = start_time_posix
+    if duration_seconds is not None:
+        contest.duration_seconds = duration_seconds
+    if standings is not None:
+        contest.standings = standings
+    
+    db.commit()
+    db.refresh(contest)
+    return contest
+
+
+
 
 # ───────────── membership helpers ─────────────
 def get_membership(db: Session, user_id: str, group_id: str) -> Optional[models.GroupMembership]:

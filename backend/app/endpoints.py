@@ -487,3 +487,40 @@ def check_membership(
         raise HTTPException(status_code=404, detail="Membership not found")
     
     return membership
+
+
+# ---------------------- admin routes ----------------------
+
+@router.get("/admin/sync-status")
+def get_sync_status(
+    db: Session = Depends(get_db),
+    current: models.User = Depends(get_current_user),
+):
+    """
+    Get statistics about contest synchronization.
+    Only admins can access this endpoint.
+    """
+    if current.role != models.Role.admin:
+        raise HTTPException(status_code=403, detail="Only admins can view sync status")
+    
+    # Get contest statistics
+    total_contests = db.query(models.Contest).count()
+    cf_contests = db.query(models.Contest).filter(models.Contest.contest_id.like("cf_%")).count()
+    finished_contests = db.query(models.Contest).filter(models.Contest.finished == True).count()
+    contests_with_standings = db.query(models.Contest).filter(models.Contest.standings.isnot(None)).count()
+    
+    # Get last sync time (you might want to store this in a separate table)
+    latest_contest = (
+        db.query(models.Contest)
+        .filter(models.Contest.contest_id.like("cf_%"))
+        .order_by(models.Contest.timestamp.desc())
+        .first()
+    )
+    
+    return {
+        "total_contests": total_contests,
+        "codeforces_contests": cf_contests,
+        "finished_contests": finished_contests,
+        "contests_with_standings": contests_with_standings,
+        "last_sync_time": latest_contest.timestamp if latest_contest else None
+    }

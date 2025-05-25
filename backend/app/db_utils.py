@@ -8,6 +8,14 @@ import json
 import os
 import datetime
 
+def reset_db():
+    print("dropping all tables...")
+    Base.metadata.drop_all(bind=engine)
+    print("all tables dropped.")
+
+    print("creating tables from models...")
+    Base.metadata.create_all(bind=engine)
+    print("schema rebuilt.")
 
 def drop_table(table_name: str) -> None:
     """

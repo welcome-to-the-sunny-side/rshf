@@ -97,7 +97,7 @@ class Contest(ModelBase):
 
     participations = relationship("ContestParticipation", back_populates="contest", cascade="all, delete")
     def __repr__(self):
-        return f"<Contest(id={self.contest_id}, cf_contest_id={self.cf_contest_id})>"
+        return f"<Contest(id={self.contest_id}, name={self.contest_name})>"
 
 
 
@@ -109,6 +109,7 @@ class ContestParticipation(ModelBase):
     contest_id = Column(String, ForeignKey("contests.contest_id"), primary_key=True)
 
     rank = Column(Integer, nullable=True)
+    delta = Column(Integer, nullable=True)
     rating_before = Column(Integer, nullable=True)
     rating_after = Column(Integer, nullable=True)
 
