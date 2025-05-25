@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import ContentBoxWithTitle from '../components/ContentBoxWithTitle';
+import styles from './Login.module.css'; // Import the new CSS module
+import waifuImage from '../assets/rshf_waifu.jpg'; // Import the waifu image
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -8,7 +11,7 @@ export default function Login() {
   const { login, loading, error } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // Get the page they were trying to access before being redirected to login
   const from = location.state?.from?.pathname || '/';
 
@@ -20,17 +23,36 @@ export default function Login() {
     }
   };
 
+  // Add a class to the body to handle special login page styling
+  React.useEffect(() => {
+    document.body.classList.add('loginPage');
+    return () => {
+      document.body.classList.remove('loginPage');
+    };
+  }, []);
+
   return (
-    <div className="login-container">
-      <div className="login-form-wrapper">
-        <h2>Login to RSHF</h2>
-        {error && <div className="error-message">{error}</div>}
-        <form onSubmit={handleSubmit} className="login-form">
-          <div className="form-group">
-            <label htmlFor="username">Username</label>
+    <div className={styles.loginPage}>
+      <div className={styles.waifuContainer}>
+        <img src={waifuImage} alt="RSHF Assistant" className={styles.waifuImage} />
+      </div>
+      <div className={styles.formSide}>
+        <ContentBoxWithTitle
+          className={styles.loginFormContainer}
+          title={<span>Login</span>} // Title text will be default color
+          backgroundColor="rgb(230, 255, 230)" // Light green background for the title bar
+          contentPadding="0.75rem" // Reduced padding from default 1rem
+        >
+        {error && <div className={styles.errorMessage}>{error}</div>}
+        <form onSubmit={handleSubmit}>
+          <div className={styles.formGroup}>
+            <label htmlFor="username" className={`${styles.formLabel} standardTextFont`}>
+              Username
+            </label>
             <input
               type="text"
               id="username"
+              className={`${styles.formInput} standardTextFont`}
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
@@ -38,11 +60,15 @@ export default function Login() {
               disabled={loading}
             />
           </div>
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="password" className={`${styles.formLabel} standardTextFont`}>
+              Password
+            </label>
             <input
               type="password"
               id="password"
+              className={`${styles.formInput} standardTextFont`}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -50,14 +76,28 @@ export default function Login() {
               disabled={loading}
             />
           </div>
-          <button type="submit" className="login-button" disabled={loading}>
-            {loading ? 'Logging in...' : 'Login'}
-          </button>
+
+          <div style={{ textAlign: 'center', marginTop: '0.4rem' }}> {/* Wrapper to center the button with less space */}
+            <button
+              type="submit"
+              className="global-button blue small" /* Added small modifier for more compact button */
+              disabled={loading}
+            >
+              {loading ? 'Logging in...' : 'Login'}
+            </button>
+          </div>
         </form>
-        <p className="register-link">
-          Don't have an account? <a href="/register">Register here</a>
+
+        <p className={`${styles.linkTextContainer} standardTextFont`}>
+          Don't have an account?{' '}
+          <Link to="/register" className="tableCellLink"> {/* Uses global table cell link style for consistency */}
+            Register here
+          </Link>
         </p>
+        </ContentBoxWithTitle>
       </div>
     </div>
   );
 }
+
+

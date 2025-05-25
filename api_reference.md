@@ -1,204 +1,603 @@
-# API REFERENCE DOCUMENTATION
+# API Reference
 
-This document provides details on all API endpoints available in the backend.
-
-## Table of Contents
-- [Authentication](#authentication)
-- [User Endpoints](#user-endpoints)
-- [Group Endpoints](#group-endpoints)
-- [Contest Endpoints](#contest-endpoints)
-- [Report Endpoints](#report-endpoints)
-- [Announcement Endpoints](#announcement-endpoints)
-- [Extension Endpoints](#extension-endpoints)
+This document provides a detailed reference for all available API endpoints.
 
 ## Authentication
 
-The API uses OAuth2 with JWT tokens for authentication. Most endpoints require authentication via a bearer token.
+The API uses OAuth2 with JWT (JSON Web Tokens) for authentication. Most endpoints require a valid Bearer Token to be included in the `Authorization` header.
 
-Token format: `Bearer <access_token>`
+**Token Format:**
+`Authorization: Bearer <your_access_token>`
+
+To obtain an access token, use the `/api/user/login` endpoint.
 
 ---
 
 ## User Endpoints
 
-### Register User
+### 1. Register User
 - **URL**: `/api/user/register`
 - **Method**: `POST`
 - **Auth Required**: No
-- **Request Body**:
+- **Description**: Creates a new user account.
+- **Request Body**: `schemas.UserRegister`
   ```json
   {
-    "user_id": "string",
-    "cf_handle": "string",
+    "user_id": "string (unique username/ID for the user)",
+    "cf_handle": "string (Codeforces handle)",
     "password": "string",
-    "role": "user",  // Optional, default: "user" (admin|moderator|user)
-    "internal_default_rated": true,  // Optional, default: true
-    "trusted_score": 0  // Optional, default: 0
+    "role": "string (Optional, default: 'user'. Enum: 'admin', 'moderator', 'user')",
+    "internal_default_rated": "boolean (Optional, default: true)",
+    "trusted_score": "integer (Optional, default: 0)"
   }
   ```
-- **Response**: `UserOut` object
+- **Response**: `schemas.UserOut`
   ```json
   {
     "user_id": "string",
     "cf_handle": "string",
     "internal_default_rated": true,
     "trusted_score": 0,
-    "role": "user"
+    "role": "string"
   }
   ```
-- **Description**: Creates a new user account
-- **Error Responses**: 400 if user already exists
+- **Error Responses**:
+    - `400 Bad Request`: If the `user_id` already exists.
 
-### Login
+### 2. Login for Access Token
 - **URL**: `/api/user/login`
 - **Method**: `POST`
 - **Auth Required**: No
-- **Request Body**: OAuth2 form with username (uses form data, not JSON)
-  ```
-  username: "string"  // This is the user_id
-  password: "string"
-  ```
-- **Response**: `TokenOut` object
+- **Description**: Authenticates a user and returns an access token.
+- **Request Body**: `OAuth2PasswordRequestForm` (form data, not JSON)
+  - `username`: "string" (This should be the `user_id`)
+  - `password`: "string"
+- **Response**: `schemas.TokenOut`
   ```json
   {
-    "access_token": "string",
-    "token_type": "bearer"
+    "access_token": "string (JWT token)",
+    "token_type": "string (bearer)"
   }
   ```
-- **Description**: Authenticates a user and returns a JWT token
-- **Error Responses**: 401 if credentials are invalid
+- **Error Responses**:
+    - `401 Unauthorized`: If credentials are invalid.
 
-### Get User
+### 3. Get User Information
 - **URL**: `/api/user`
 - **Method**: `GET`
 - **Auth Required**: Yes
+- **Description**: Retrieves information for a specific user. The `email_id` field is only returned if the authenticated user is querying their own profile.
 - **Query Parameters**:
-  - `user_id` (required): ID of the user to retrieve
-- **Response**: Single `UserOut` object
+  - `user_id`: "string" (Required, User ID to retrieve)
+- **Response**: `schemas.UserOut` (extended with email and other handles)
   ```json
   {
     "user_id": "string",
     "cf_handle": "string",
     "internal_default_rated": true,
     "trusted_score": 0,
-    "role": "user",
-    "email_id": "string",  // Only included when querying your own profile
-    "atcoder_handle": "string",
-    "codechef_handle": "string",
-    "twitter_handle": "string",
-    "group_memberships": [...],  // List of group memberships
-    "contest_participations": [...]  // List of contest participations
+    "role": "string",
+    "email_id": "string (Optional, only for self)",
+    "group_memberships": [ /* schemas.GroupMembershipOut */ ],
+    "contest_participations": [ /* schemas.ContestParticipationOut */ ],
+    "atcoder_handle": "string (Optional)",
+    "codechef_handle": "string (Optional)",
+    "twitter_handle": "string (Optional)"
   }
   ```
-- **Description**: Returns the details of a specific user. Email ID is only included when querying your own profile.
-- **Error Responses**: 404 if user not found
+- **Error Responses**:
+    - `404 Not Found`: If the user with the given `user_id` does not exist.
+    - `401 Unauthorized`: If the token is invalid or missing.
 
-### Update User
+### 4. Update User Information
 - **URL**: `/api/user`
 - **Method**: `PUT`
 - **Auth Required**: Yes
+- **Description**: Updates information for a specific user. Regular users can only update their own profiles. Admins can update any user's profile.
 - **Query Parameters**:
-  - `user_id`: ID of the user to update
-- **Request Body**:
+  - `user_id`: "string" (Required, User ID of the user to update)
+- **Request Body**: `schemas.UserUpdate`
   ```json
   {
-    "cf_handle": "string",  // Optional
-    "password": "string",  // Optional
-    "internal_default_rated": true,  // Optional
-    "trusted_score": 0,  // Optional
-    "role": "user"  // Optional
+    "cf_handle": "string (Optional)",
+    "password": "string (Optional, new password)",
+    "internal_default_rated": "boolean (Optional)",
+    "trusted_score": "integer (Optional)",
+    "role": "string (Optional, Enum: 'admin', 'moderator', 'user'. Only updatable by admin)"
   }
   ```
-- **Response**: Updated `UserOut` object
-- **Description**: Updates user information (admin can update any user, users can only update themselves)
+- **Response**: `schemas.UserOut`
 - **Error Responses**:
-  - 404 if user not found
-  - 403 if insufficient privilege
-
-### Check Membership
-- **URL**: `/api/membership`
-- **Method**: `GET`
-- **Auth Required**: Yes
-- **Query Parameters**:
-  - `group_id` (required): ID of the group to check membership for
-  - `user_id` (required): ID of the user to check membership for
-- **Response**: `GroupMembershipOut` object
-  ```json
-  {
-    "user_id": "string",
-    "group_id": "string",
-    "role": "user",
-    "user_group_rating": 1500
-  }
-  ```
-- **Description**: Checks if a user is a member of a specific group. Only accessible to admins, group moderators/admins, or the user themselves.
-- **Error Responses**:
-  - 404 if membership not found
-  - 403 if insufficient permissions to view membership
+    - `404 Not Found`: If the user with the given `user_id` does not exist.
+    - `403 Forbidden`: If a non-admin user tries to update another user or change roles.
+    - `401 Unauthorized`: If the token is invalid or missing.
 
 ---
 
 ## Group Endpoints
 
-### Register Group
+### 1. Register New Group
 - **URL**: `/api/group/register`
 - **Method**: `POST`
 - **Auth Required**: Yes
-- **Request Body**:
+- **Description**: Creates a new group. The user creating the group automatically becomes an admin of that group.
+- **Request Body**: `schemas.GroupRegister`
   ```json
   {
-    "group_id": "string",
-    "group_name": "string",
-    "creator_user_id": "string"
+    "group_id": "string (Unique ID for the group)",
+    "group_name": "string (Display name for the group)",
+    "creator_user_id": "string (User ID of the creator)"
   }
   ```
-- **Response**: `GroupOut` object
+- **Response**: `schemas.GroupOut`
   ```json
   {
     "group_id": "string",
     "group_name": "string",
-    "group_description": "string",
+    "group_description": "string (Optional)",
     "is_private": false,
-    "timestamp": "2025-05-17T14:25:36Z"
+    "timestamp": "datetime",
+    "member_count": 1 // Initially just the creator
   }
   ```
-- **Description**: Creates a new group with the creator as a moderator
-- **Error Responses**: 400 if group ID or name already exists
+- **Error Responses**:
+    - `400 Bad Request`: If a group with the same `group_id` already exists.
+    - `401 Unauthorized`.
 
-### List Groups
+### 2. List All Groups
 - **URL**: `/api/groups`
 - **Method**: `GET`
-- **Auth Required**: No
-- **Response**: List of `GroupOut` objects
+- **Auth Required**: No (publicly accessible)
+- **Description**: Retrieves a list of all public groups along with their member count.
+- **Response**: `List[schemas.GroupOut]`
   ```json
   [
     {
       "group_id": "string",
       "group_name": "string",
-      "group_description": "string",
+      "group_description": "string (Optional)",
       "is_private": false,
-      "timestamp": "2025-05-17T14:25:36Z",
-      "member_count": 10
+      "timestamp": "datetime",
+      "member_count": "integer"
     }
+    // ... more groups
   ]
   ```
-- **Description**: Lists all groups with their member count
-- **Error Responses**: None
 
-### Get Group
+### 3. Get Single Group Details
 - **URL**: `/api/group`
 - **Method**: `GET`
-- **Auth Required**: Yes
+- **Auth Required**: Yes (for private groups or detailed member info)
+- **Description**: Retrieves detailed information for a single group, including its members. Access to private groups or full member lists might be restricted.
 - **Query Parameters**:
-  - `group_id` (required): ID of the group to retrieve
-- **Response**: `GroupSingle` object
+  - `group_id`: "string" (Required, ID of the group to retrieve)
+- **Response**: `schemas.GroupSingle` (includes list of `GroupMembershipOut`)
   ```json
   {
     "group_id": "string",
     "group_name": "string",
-    "group_description": "string",
+    "group_description": "string (Optional)",
     "is_private": false,
-    "timestamp": "2025-05-17T14:25:36Z",
+    "timestamp": "datetime",
+    "memberships": [
+      {
+        "user_id": "string",
+        "group_id": "string",
+        "role": "string (Enum: 'admin', 'moderator', 'user')",
+        "user_group_rating": "integer"
+      }
+      // ... more members
+    ]
+  }
+  ```
+- **Error Responses**:
+    - `404 Not Found`: If the group does not exist.
+    - `403 Forbidden`: If trying to access a private group without permission.
+    - `401 Unauthorized`.
+
+### 4. Update Group Information
+- **URL**: `/api/group`
+- **Method**: `PUT`
+- **Auth Required**: Yes
+- **Description**: Updates information for an existing group. Requires group admin or moderator privileges.
+- **Request Body**: `schemas.GroupUpdate`
+  ```json
+  {
+    "group_id": "string (Required, ID of the group to update)",
+    "group_name": "string (Optional, new name for the group)",
+    "group_description": "string (Optional, new description)",
+    "is_private": "boolean (Optional)"
+  }
+  ```
+- **Response**: `schemas.GroupOut`
+- **Error Responses**:
+    - `404 Not Found`: If the group does not exist.
+    - `403 Forbidden`: If the user does not have sufficient privileges in the group.
+    - `401 Unauthorized`.
+
+### 5. Add User to Group
+- **URL**: `/api/group/add`
+- **Method**: `POST`
+- **Auth Required**: Yes
+- **Description**: Adds a user to a group. Requires group admin or moderator privileges.
+- **Request Body**: `schemas.GroupMembershipAdd`
+  ```json
+  {
+    "user_id": "string (User ID of the user to add)",
+    "group_id": "string (Group ID to add the user to)",
+    "role": "string (Optional, default: 'user'. Enum: 'admin', 'moderator', 'user')",
+    "user_group_rating": "integer (Optional, default: 0)"
+  }
+  ```
+- **Response**: `schemas.GroupMembershipOut`
+- **Error Responses**:
+    - `404 Not Found`: If the user or group does not exist.
+    - `400 Bad Request`: If the user is already a member of the group.
+    - `403 Forbidden`: If the current user lacks privileges to add members.
+    - `401 Unauthorized`.
+
+### 6. Remove User from Group
+- **URL**: `/api/group/remove`
+- **Method**: `POST` (Consider `DELETE` for semantic correctness, but current implementation is `POST`)
+- **Auth Required**: Yes
+- **Description**: Removes a user from a group. Requires group admin/moderator privileges, or the user removing themselves. Group admins/moderators can remove users with a lower or equal role.
+- **Request Body**: `schemas.GroupMembershipRemove`
+  ```json
+  {
+    "user_id": "string (User ID of the user to remove)",
+    "group_id": "string (Group ID from which to remove the user)"
+  }
+  ```
+- **Response**: Success message (e.g., `{"message": "User removed successfully"}`) or `204 No Content`.
+- **Error Responses**:
+    - `404 Not Found`: If the user, group, or membership does not exist.
+    - `403 Forbidden`: If the current user lacks privileges to remove the target member.
+    - `401 Unauthorized`.
+
+### 7. Check Group Membership
+- **URL**: `/api/membership`
+- **Method**: `GET`
+- **Auth Required**: Yes
+- **Description**: Checks if a specific user is a member of a specific group and returns their membership details. Access restricted to admins, group moderators/admins, or the user checking their own membership.
+- **Query Parameters**:
+    - `group_id`: "string" (Required)
+    - `user_id`: "string" (Required)
+- **Response**: `schemas.GroupMembershipOut`
+  ```json
+  {
+    "user_id": "string",
+    "group_id": "string",
+    "role": "string",
+    "user_group_rating": "integer"
+  }
+  ```
+- **Error Responses**:
+    - `404 Not Found`: If membership does not exist.
+    - `403 Forbidden`: If insufficient permissions to view membership.
+    - `401 Unauthorized`.
+
+---
+
+## Contest Endpoints
+
+### 1. Register User for a Rated Contest in a Group
+- **URL**: `/api/contest/register_rated`
+- **Method**: `POST`
+- **Auth Required**: Yes
+- **Description**: Registers a user's participation in a specific contest within a group. This is typically used to track rated participation.
+- **Request Body**: `schemas.ContestRegistration`
+  ```json
+  {
+    "contest_id": "string (ID of the contest)",
+    "group_id": "string (ID of the group)",
+    "user_id": "string (ID of the user)",
+    "rating_before": "integer (Optional, user's group rating before the contest)",
+    "rating_after": "integer (Optional, user's group rating after the contest)"
+  }
+  ```
+- **Response**: `schemas.ContestParticipationOut`
+- **Error Responses**:
+    - `404 Not Found`: If user, group, or contest does not exist.
+    - `400 Bad Request`: If user is not a member of the group, or already registered.
+    - `403 Forbidden`: If trying to register another user without sufficient privilege (e.g., group mod can register members).
+    - `401 Unauthorized`.
+
+### 2. Get Contest Participations
+- **URL**: `/api/contest/participations`
+- **Method**: `GET`
+- **Auth Required**: Yes (implicitly, as it queries based on user/group/contest)
+- **Description**: Retrieves contest participation records, filterable by group, user, or contest.
+- **Query Parameters**:
+  - `gid`: "string" (Optional, Group ID)
+  - `uid`: "string" (Optional, User ID)
+  - `cid`: "string" (Optional, Contest ID)
+- **Response**: `List[schemas.ContestParticipationOut]`
+
+### 3. List Contests
+- **URL**: `/api/contests`
+- **Method**: `GET`
+- **Auth Required**: Yes (or at least some contests might be restricted)
+- **Description**: Retrieves a list of contests, optionally filtered by their finished status.
+- **Query Parameters**:
+  - `finished`: "boolean" (Optional, filter by contest finished status)
+- **Response**: `List[schemas.ContestOut]`
+  ```json
+  [
+    {
+      "contest_id": "string",
+      "contest_name": "string",
+      "platform": "string (e.g., 'Codeforces')",
+      "start_time_posix": "integer (Unix timestamp)",
+      "duration_seconds": "integer (Optional)",
+      "link": "string (URL to the contest)",
+      "internal_contest_identifier": "string (Optional, e.g., CF contest ID)",
+      "standings": "object (Optional, raw standings data)",
+      "finished": "boolean"
+    }
+    // ... more contests
+  ]
+  ```
+- **Error Responses**:
+    - `401 Unauthorized`.
+
+### 4. Get Single Contest Details
+- **URL**: `/api/contest`
+- **Method**: `GET`
+- **Auth Required**: Yes
+- **Description**: Retrieves detailed information for a single contest.
+- **Query Parameters**:
+  - `contest_id`: "string" (Required, ID of the contest)
+- **Response**: `schemas.ContestOut`
+- **Error Responses**:
+    - `404 Not Found`: If the contest does not exist.
+    - `401 Unauthorized`.
+
+---
+
+## Report Endpoints
+
+### 1. Create Report
+- **URL**: `/api/report/create`
+- **Method**: `POST`
+- **Auth Required**: Yes
+- **Description**: Allows a user to create a report against another user within the context of a group and a contest.
+- **Request Body**: `schemas.ReportCreate`
+  ```json
+  {
+    "group_id": "string",
+    "contest_id": "string",
+    "reporter_user_id": "string (User ID of the one making the report)",
+    "respondent_user_id": "string (User ID of the one being reported)",
+    "report_description": "string (Details of the report)"
+  }
+  ```
+- **Response**: `schemas.ReportOut`
+  ```json
+  {
+    "report_id": "string (Auto-generated)",
+    "group_id": "string",
+    "contest_id": "string",
+    "reporter_user_id": "string",
+    "respondent_user_id": "string",
+    "report_description": "string",
+    "timestamp": "datetime",
+    "resolved": false,
+    "resolved_by": "string (Optional)",
+    "resolve_message": "string (Optional)"
+  }
+  ```
+- **Error Responses**:
+    - `404 Not Found`: If group, contest, reporter, or respondent not found.
+    - `400 Bad Request`: If reporter and respondent are the same, or other validation errors.
+    - `401 Unauthorized`.
+
+### 2. Get Reports
+- **URL**: `/api/reports`
+- **Method**: `GET`
+- **Auth Required**: Yes (Requires group moderator/admin or global admin privileges)
+- **Description**: Retrieves reports. Can be filtered by group, reporter, respondent, or resolved status.
+- **Query Parameters**:
+  - `group_id`: "string" (Optional)
+  - `reporter_user_id`: "string" (Optional)
+  - `respondent_user_id`: "string" (Optional)
+  - `resolved`: "boolean" (Optional)
+- **Response**: `List[schemas.ReportOut]`
+- **Error Responses**:
+    - `403 Forbidden`: If user lacks necessary privileges.
+    - `401 Unauthorized`.
+
+### 3. Resolve Report
+- **URL**: `/api/report/resolve`
+- **Method**: `POST`
+- **Auth Required**: Yes (Requires group moderator/admin privileges for the relevant group)
+- **Description**: Marks a report as resolved.
+- **Request Body**: `schemas.ReportResolve`
+  ```json
+  {
+    "report_id": "string",
+    "resolved_by": "string (User ID of the resolver, must be mod/admin in group)",
+    "resolve_message": "string (Optional, message about the resolution)"
+  }
+  ```
+- **Response**: `schemas.ReportOut` (updated report)
+- **Error Responses**:
+    - `404 Not Found`: If report not found.
+    - `403 Forbidden`: If resolver lacks privileges in the group or report already resolved.
+    - `401 Unauthorized`.
+
+---
+
+## Announcement Endpoints
+
+### 1. Create Announcement
+- **URL**: `/api/announcement/create`
+- **Method**: `POST`
+- **Auth Required**: Yes (Requires group moderator/admin privileges)
+- **Description**: Creates an announcement for a specific group.
+- **Request Body**: `schemas.AnnouncementCreate`
+  ```json
+  {
+    "group_id": "string",
+    "title": "string",
+    "content": "string"
+  }
+  ```
+- **Response**: `schemas.AnnouncementOut`
+  ```json
+  {
+    "announcement_id": "string (Auto-generated)",
+    "group_id": "string",
+    "timestamp": "datetime",
+    "title": "string",
+    "content": "string"
+  }
+  ```
+- **Error Responses**:
+    - `404 Not Found`: If group not found.
+    - `403 Forbidden`: If user lacks privileges.
+    - `401 Unauthorized`.
+
+### 2. Get Announcements for a Group
+- **URL**: `/api/announcements`
+- **Method**: `GET`
+- **Auth Required**: Yes (Access to announcements might depend on group privacy and user membership)
+- **Description**: Retrieves announcements for a specific group.
+- **Query Parameters**:
+  - `group_id`: "string" (Required)
+- **Response**: `List[schemas.AnnouncementOut]`
+- **Error Responses**:
+    - `404 Not Found`: If group not found.
+    - `401 Unauthorized`.
+
+### 3. Update Announcement
+- **URL**: `/api/announcement/update`
+- **Method**: `PUT`
+- **Auth Required**: Yes (Requires group moderator/admin who created or has rights to edit)
+- **Description**: Updates an existing announcement.
+- **Request Body**: `schemas.AnnouncementUpdate`
+  ```json
+  {
+    "announcement_id": "string",
+    "title": "string (Optional)",
+    "content": "string (Optional)"
+  }
+  ```
+- **Response**: `schemas.AnnouncementOut` (updated announcement)
+- **Error Responses**:
+    - `404 Not Found`: If announcement not found.
+    - `403 Forbidden`: If user lacks privileges.
+    - `401 Unauthorized`.
+
+### 4. Delete Announcement
+- **URL**: `/api/announcement/delete`
+- **Method**: `DELETE`
+- **Auth Required**: Yes (Requires group moderator/admin who created or has rights to delete)
+- **Description**: Deletes an announcement.
+- **Query Parameters**:
+  - `announcement_id`: "string" (Required)
+- **Response**: Success message (e.g., `{"message": "Announcement deleted"}`) or `204 No Content`.
+- **Error Responses**:
+    - `404 Not Found`: If announcement not found.
+    - `403 Forbidden`: If user lacks privileges.
+    - `401 Unauthorized`.
+
+---
+
+## Extension Endpoints
+
+These endpoints provide specialized queries or functionalities.
+
+### 1. Get Group Ratings by CF Handles
+- **URL**: `/api/ext/q1`
+- **Method**: `POST`
+- **Auth Required**: Yes
+- **Description**: For a given group and a list of Codeforces handles, returns their respective `user_group_rating` within that group.
+- **Request Body**: `schemas.ExtensionQuery1Request`
+  ```json
+  {
+    "group_id": "string",
+    "cf_handles": ["string", "string", ...]
+  }
+  ```
+- **Response**: `schemas.ExtensionQuery1Response`
+  ```json
+  {
+    "ratings": [null, 1500, 1650, null, ...] // List of ratings, null if user not in group or no CF handle match
+  }
+  ```
+- **Error Responses**:
+    - `404 Not Found`: If group not found.
+    - `401 Unauthorized`.
+
+### 2. Get Custom Group Membership Data
+- **URL**: `/api/ext/custom_membership_data`
+- **Method**: `GET`
+- **Auth Required**: Yes (Requires group moderator/admin privileges)
+- **Description**: Retrieves enriched membership data for all users in a group, including CF handle, role, ratings, join date, and number of rated contests in that group.
+- **Query Parameters**:
+  - `group_id`: "string" (Required)
+- **Response**: `List[schemas.CustomMembershipData]`
+  ```json
+  [
+    {
+      "cf_handle": "string",
+      "role": "string",
+      "user_group_rating": "integer",
+      "user_group_max_rating": "integer",
+      "date_joined": "datetime",
+      "number_of_rated_contests": "integer"
+    }
+    // ... more members
+  ]
+  ```
+- **Error Responses**:
+    - `404 Not Found`: If group not found.
+    - `403 Forbidden`: If user lacks privileges.
+    - `401 Unauthorized`.
+
+---
+
+## Admin Endpoints
+
+These endpoints are typically restricted to users with global 'admin' roles.
+
+### 1. Update Finished Contests from Codeforces
+- **URL**: `/api/admin/update-finished-contests`
+- **Method**: `POST`
+- **Auth Required**: Yes (Admin role required)
+- **Description**: Triggers an update to fetch and store information about recently finished contests from Codeforces.
+- **Query Parameters**:
+  - `cutoff_days`: "integer" (Optional, number of days to look back for finished contests. Default might be set in backend.)
+- **Response**: `{"message": "Finished contests updated successfully"}`
+- **Error Responses**:
+    - `403 Forbidden`: If user is not an admin.
+    - `401 Unauthorized`.
+
+### 2. Update Upcoming Contests from Codeforces
+- **URL**: `/api/admin/update-upcoming-contests`
+- **Method**: `POST`
+- **Auth Required**: Yes (Admin role required)
+- **Description**: Triggers an update to fetch and store information about upcoming contests from Codeforces.
+- **Response**: `{"message": "Upcoming contests updated successfully"}`
+- **Error Responses**:
+    - `403 Forbidden`: If user is not an admin.
+    - `401 Unauthorized`.
+
+---
+
+## Development Endpoints
+
+These endpoints are intended for development and testing purposes only and should not be exposed or used in a production environment.
+
+### 1. Seed Database
+- **URL**: `/api/dev/seed`
+- **Method**: `POST`
+- **Auth Required**: No (This endpoint is intentionally open for development ease)
+- **Description**: Resets and seeds the database with test data. **USE WITH EXTREME CAUTION.**
+- **Response**: `{"message": "Database has been reset and seeded with test data"}`
+
+---
+
     "memberships": [
       {
         "user_id": "string",

@@ -1,0 +1,99 @@
+.formGroup {
+  margin-bottom: 0.6rem; /* Reduced from 1rem */
+}
+
+.formLabel {
+  display: block;
+  margin-bottom: 3px; /* Reduced from 5px */
+  font-weight: 500;
+  font-family: 'Inter', Arial, sans-serif;
+  font-size: 0.9rem;
+}
+
+.formInput {
+  width: 100%;
+  padding: 6px 8px; /* Reduced from 10px */
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+  font-family: 'Inter', Arial, sans-serif;
+  font-size: 0.9rem;
+}
+
+.formInput:focus {
+  border-color: #448ee3; /* Using the blue button color for focus */
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(68, 142, 227, 0.2);
+}
+
+.errorMessage {
+  color: var(--button-red);
+  margin-bottom: 1rem;
+  text-align: center;
+  font-family: 'Inter', Arial, sans-serif;
+  font-size: 0.85rem;
+}
+
+.linkTextContainer {
+  text-align: center;
+  margin-top: 0.75rem; /* Reduced from 1.5rem */
+  margin-bottom: 0; /* Ensure no bottom margin */
+}
+
+/* Special rules for the login page layout */
+:global(body.loginPage) :global(.main) {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+:global(body.loginPage) :global(.footer) {
+  margin-top: 0 !important;
+}
+
+.loginPage {
+  display: flex;
+  min-height: 100vh; /* Full viewport height */
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  max-width: 1200px; /* Match page-container width */
+  margin: 0 auto;
+  /* Remove any margin-bottom on the login page */
+  margin-bottom: 0 !important;
+}
+
+.waifuContainer {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100vh; /* Full viewport height */
+  margin: 0;
+  padding: 0;
+  padding-top:0;
+  padding-right: 0;
+}
+
+.waifuImage {
+  height: 100vh; /* Full viewport height */
+  width: auto;
+  object-fit: contain;
+  margin: 0;
+  padding: 0;
+}
+
+.formSide {
+  flex: 1;
+  display: flex;
+  align-items: flex-start; /* Align to top instead of center */
+  justify-content: center;
+  padding-left: 0.3rem; /* Space between waifu and form */
+  padding-right: 100px;
+  padding-top: 1px; /* Position form higher up to align with pointing */
+}
+
+.loginFormContainer {
+  max-width: 400px;
+  margin: 0;
+}
