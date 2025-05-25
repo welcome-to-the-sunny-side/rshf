@@ -97,7 +97,7 @@ class Contest(ModelBase):
 
     participations = relationship("ContestParticipation", back_populates="contest", cascade="all, delete")
     def __repr__(self):
-        return f"<Contest(id={self.contest_id}, cf_contest_id={self.cf_contest_id})>"
+        return f"<Contest(id={self.contest_id}, name={self.contest_name})>"
 
 
 
