@@ -26,8 +26,8 @@ export const AuthProvider = ({ children }) => {
     }
   }, [user]);
 
-  // Define the backend URL - make sure this matches your backend server
-  const BACKEND_URL = 'http://localhost:8000';
+  // Use environment variable for backend URL, fallback to localhost for development
+  const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
   const login = async (username, password) => {
     setLoading(true);

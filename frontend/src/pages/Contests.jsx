@@ -8,7 +8,7 @@ import titleStyles from '../components/ContentBoxWithTitle.module.css';
 import styles from './Contests.module.css';
 
 // Backend URL
-const BACKEND_URL = 'http://localhost:8000/api';
+const BACKEND_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api`;
 
 export default function Contests() {
   const navigate = useNavigate();

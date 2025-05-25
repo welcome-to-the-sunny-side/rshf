@@ -42,7 +42,7 @@ export default function Home() {
 
   // Fetch groups data from the backend
   // Define backend URL - should match the one in AuthContext.jsx
-  const BACKEND_URL = 'http://localhost:8000';
+  const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
   
   // Fetch data from the backend
   useEffect(() => {
