@@ -2,19 +2,19 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import SortablePagedTableBox from '../components/SortablePagedTableBox';
 import ContentBoxWithTitle from '../components/ContentBoxWithTitle';
-
-// Backend URL
-const BACKEND_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api`;
+import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
+import styles from './Groups.module.css';
 
 export default function Groups() {
   const navigate = useNavigate();
+  const { user, token } = useAuth();
   const [groups, setGroups] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
   useEffect(() => {
     // Check if the user is authenticated
-    const token = localStorage.getItem('token');
     if (!token) {
       navigate('/login');
       return;
@@ -22,24 +22,22 @@ export default function Groups() {
     
     // Fetch groups when component mounts
     fetchGroups();
-  }, [navigate]);
+  }, [navigate, token]);
   
   const fetchGroups = async () => {
     try {
       setLoading(true);
+      setError(null);
       
-      const response = await fetch(`${BACKEND_URL}/groups`);
+      const response = await axios.get('/api/groups', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch groups: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('Groups data:', data);
-      setGroups(data);
+      setGroups(response.data);
     } catch (err) {
       console.error('Error fetching groups:', err);
-      setError(err.message);
+      setError('Failed to load groups. Please try again later.');
+      setGroups([]);
     } finally {
       setLoading(false);
     }
@@ -92,25 +90,17 @@ export default function Groups() {
   
   // Transform other groups data
   const otherGroupsRows = useMemo(() => {
-    if (loading) {
-      return [["Loading groups...", "", "", ""]];
-    }
-    
-    if (error) {
-      return [[`Error: ${error}`, "", "", ""]];
-    }
-    
     if (otherGroups.length === 0) {
-      return [["No groups found", "", "", ""]];
+      return [];
     }
     
     return otherGroups.map(group => [
       <Link to={`/group/${group.group_id}`} className="tableCellLink">{group.group_name}</Link>,
       group.is_private ? 'private' : 'public',
       group.member_count.toLocaleString(),
-      formatDate(group.create_date)
+      formatDate(group.timestamp)
     ]);
-  }, [otherGroups, loading, error]);
+  }, [otherGroups]);
 
   // Find if we have any pinnedRows to show
   const pinnedRows = useMemo(() => {
@@ -119,34 +109,39 @@ export default function Groups() {
 
   return (
     <div className="page-container">
-      {loading && !otherGroupsRows.length && (
-        <ContentBoxWithTitle title="Loading...">
-          <p>Fetching groups data...</p>
-        </ContentBoxWithTitle>
+      {/* Error message */}
+      {error && (
+        <div className="error-message" style={{ color: 'red', margin: '20px', textAlign: 'center' }}>
+          {error}
+        </div>
       )}
       
-      {error && !otherGroupsRows.length && (
-        <ContentBoxWithTitle title="Error">
-          <p>{error}</p>
-        </ContentBoxWithTitle>
-      )}
-      
-      {!loading && !error && groups.length === 0 && (
-        <ContentBoxWithTitle title="No Groups">
-          <p>No groups found.</p>
-        </ContentBoxWithTitle>
-      )}
-      
-      {otherGroupsRows.length > 0 && (
-        <SortablePagedTableBox 
-          columns={columns}
-          data={otherGroupsRows}
-          pinnedRows={pinnedRows}
-          backgroundColor="rgb(230, 240, 255)"
-          itemsPerPage={15}
-          initialSortColumnIndex={2} // Member Count column
-          initialSortDirection="desc" // Descending order
-        />
+      {/* Loading indicator */}
+      {loading ? (
+        <div className="loading-indicator" style={{ textAlign: 'center', margin: '50px' }}>
+          Loading groups...
+        </div>
+      ) : (
+        <>
+          {groups.length === 0 ? (
+            <ContentBoxWithTitle title="No Groups">
+              <p>No groups found.</p>
+            </ContentBoxWithTitle>
+          ) : (
+            <div className={styles.groupsTableWrapper}>
+              <SortablePagedTableBox 
+                columns={columns}
+                data={otherGroupsRows}
+                pinnedRows={pinnedRows}
+                backgroundColor="rgb(230, 240, 255)"
+                itemsPerPage={15}
+                initialSortColumnIndex={2} // Member Count column
+                initialSortDirection="desc" // Descending order
+                className="groupsTable"
+              />
+            </div>
+          )}
+        </>
       )}
     </div>
   );

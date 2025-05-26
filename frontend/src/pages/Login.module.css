@@ -40,16 +40,6 @@
   margin-bottom: 0; /* Ensure no bottom margin */
 }
 
-/* Special rules for the login page layout */
-:global(body.loginPage) :global(.main) {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-:global(body.loginPage) :global(.footer) {
-  margin-top: 0 !important;
-}
-
 .loginPage {
   display: flex;
   min-height: 100vh; /* Full viewport height */
@@ -79,8 +69,10 @@
   height: 100vh; /* Full viewport height */
   width: auto;
   object-fit: contain;
+  object-position: bottom right; /* Position from bottom */
   margin: 0;
   padding: 0;
+  display: block; /* Ensure proper rendering */
 }
 
 .formSide {

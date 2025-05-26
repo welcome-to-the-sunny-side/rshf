@@ -77,11 +77,11 @@ def gather_unique_cf_handles(cids: List[int]) -> List[str]:
 def build_users(cfhandles: List[str]) -> List[User]:
     banner("building users")
     users: list[User] = [
-        User(user_id="shrey", role=Role.admin, cf_handle="negative-xp", email_id="shrey@example.com", trusted_score=88, hashed_password=hash_password(DEFAULT_PASS)),
-        User(user_id="ani", role=Role.admin, cf_handle="roomTemperatureIQ", email_id="ani@example.com", trusted_score=88, hashed_password=hash_password(DEFAULT_PASS)),
+        User(user_id="negative-xp", role=Role.admin, cf_handle="negative-xp", email_id="shrey@example.com", trusted_score=88, hashed_password=hash_password(DEFAULT_PASS)),
+        User(user_id="roomTemperatureIQ", role=Role.admin, cf_handle="roomTemperatureIQ", email_id="ani@example.com", trusted_score=88, hashed_password=hash_password(DEFAULT_PASS)),
     ]
     for h in cfhandles:
-        uid = f"uid{h}"
+        uid = h
         users.append(
             User(
                 user_id=uid,
@@ -138,7 +138,7 @@ def build_memberships(users: List[User], groups: List[Group]) -> List[GroupMembe
             GroupMembership(
                 user_id=u.user_id,
                 group_id="main",
-                role=Role.admin if u.user_id in {"shrey", "ani"} else Role.user,
+                role=Role.admin if u.user_id in {"negative-xp", "roomTemperatureIQ"} else Role.user,
                 user_group_rating=random.randint(1200, 2000),
                 user_group_max_rating=random.randint(1400, 2400),
             )

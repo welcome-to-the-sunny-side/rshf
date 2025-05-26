@@ -1,26 +1,150 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import SortablePagedTableBox from '../components/SortablePagedTableBox';
 import { getRatingColor } from '../utils/ratingUtils';
 import GroupNavBar from '../components/GroupNavBar';
 import ContentBoxWithTitle from '../components/ContentBoxWithTitle';
+import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
+import styles from './GroupReports.module.css';
 
 export default function GroupReports() {
   const { groupId } = useParams();
+  const { user, token } = useAuth();
   
   // State for report form
   const [respondent, setRespondent] = useState('');
   const [contestIds, setContestIds] = useState('');
   const [reportText, setReportText] = useState('');
   
-  // Handle report creation (just a placeholder function)
-  const handleCreateReport = () => {
-    console.log('Creating report:', { respondent, contestIds, reportText });
-    // In a real app, this would call an API to create the report
-    alert('Report created!');
-    setRespondent('');
-    setContestIds('');
-    setReportText('');
+  // State for reports data
+  const [reportsData, setReportsData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [submitLoading, setSubmitLoading] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  
+  // User role state
+  const [userRole, setUserRole] = useState(null);
+  const [showModViewButton, setShowModViewButton] = useState(false);
+  
+  // Check if user is a member or moderator
+  const isLoggedInUserMember = userRole === "moderator" || userRole === "member" || userRole === "admin";
+  
+  // Check user's membership in the group to determine role
+  useEffect(() => {
+    const checkMembership = async () => {
+      if (!user || !token) {
+        setUserRole(null);
+        setShowModViewButton(false);
+        return;
+      }
+      
+      try {
+        const response = await axios.get(`/api/membership`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { group_id: groupId, user_id: user.user_id }
+        });
+        
+        if (response.data && response.data.role) {
+          setUserRole(response.data.role);
+          setShowModViewButton(response.data.role === "moderator" || response.data.role === "admin");
+        } else {
+          setUserRole(null);
+          setShowModViewButton(false);
+        }
+      } catch (err) {
+        console.error('Failed to check membership:', err);
+        setUserRole(null);
+        setShowModViewButton(false);
+      }
+    };
+    
+    if (groupId) {
+      checkMembership();
+    }
+  }, [groupId, user, token]);
+  
+  // Fetch reports data
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const response = await axios.get(`/api/report`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          params: { group_id: groupId }
+        });
+        
+        setReportsData(response.data);
+      } catch (err) {
+        console.error('Failed to fetch reports:', err);
+        setError('Failed to load reports. Please try again later.');
+        setReportsData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (groupId) {
+      fetchReports();
+    }
+  }, [groupId, token]);
+  
+  // Handle report creation
+  const handleCreateReport = async () => {
+    if (!user || !token || !isLoggedInUserMember) {
+      setSubmitError('You must be logged in and a member of this group to submit a report.');
+      return;
+    }
+    
+    if (!respondent.trim()) {
+      setSubmitError('Please enter a respondent username.');
+      return;
+    }
+    
+    if (!reportText.trim()) {
+      setSubmitError('Please enter a report description.');
+      return;
+    }
+    
+    try {
+      setSubmitLoading(true);
+      setSubmitError(null);
+      setSubmitSuccess(false);
+      
+      const payload = {
+        group_id: groupId,
+        contest_id: contestIds.trim() || null,
+        reporter_user_id: user.user_id,
+        respondent_user_id: respondent.trim(),
+        report_description: reportText.trim()
+      };
+      
+      await axios.post(`/api/report`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setSubmitSuccess(true);
+      setRespondent('');
+      setContestIds('');
+      setReportText('');
+      
+      // Refresh the reports list
+      const response = await axios.get(`/api/report`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { group_id: groupId }
+      });
+      
+      setReportsData(response.data);
+    } catch (err) {
+      console.error('Failed to create report:', err);
+      setSubmitError(err.response?.data?.detail || 'Failed to create report. Please try again.');
+    } finally {
+      setSubmitLoading(false);
+    }
   };
   
   // Function to format date
@@ -29,583 +153,66 @@ export default function GroupReports() {
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
-  // Sample report data - in real app this would come from backend
-  const reportsData = [
-    { 
-      id: 1, 
-      contestId: 246,
-      reporter: {
-        username: "alice",
-        rating: 2185,
-        reportAccuracy: { accepted: 12, total: 15 }
-      },
-      respondent: {
-        username: "frank",
-        rating: 2100,
-        previouslyRemovedFromThisGroup: false,
-        previousReportIds: []
-      },
-      reportDate: "2024-03-20",
-      status: "active"
-    },
-    { 
-      id: 2, 
-      contestId: null,
-      reporter: {
-        username: "bob",
-        rating: 1890,
-        reportAccuracy: { accepted: 7, total: 10 }
-      },
-      respondent: {
-        username: "david",
-        rating: 900,
-        previouslyRemovedFromThisGroup: true,
-        previousReportIds: [101, 203]
-      },
-      reportDate: "2024-03-19",
-      status: "active"
-    },
-    { 
-      id: 3, 
-      contestId: 247,
-      reporter: {
-        username: "charlie",
-        rating: 1450,
-        reportAccuracy: { accepted: 5, total: 5 }
-      },
-      respondent: {
-        username: "eric",
-        rating: 1920,
-        previouslyRemovedFromThisGroup: false,
-        previousReportIds: []
-      },
-      reportDate: "2024-03-18",
-      status: "processed",
-      handledBy: {
-        username: "moderator1",
-        rating: 2300
-      },
-      responseDate: "2024-03-19"
-    },
-    { 
-      id: 4, 
-      contestId: null,
-      reporter: {
-        username: "diana",
-        rating: 2050,
-        reportAccuracy: { accepted: 8, total: 12 }
-      },
-      respondent: {
-        username: "grace",
-        rating: 1750,
-        previouslyRemovedFromThisGroup: true,
-        previousReportIds: [157]
-      },
-      reportDate: "2024-03-17",
-      status: "active"
-    },
-    { 
-      id: 5, 
-      contestId: 245,
-      reporter: {
-        username: "evan",
-        rating: 1780,
-        reportAccuracy: { accepted: 3, total: 9 }
-      },
-      respondent: {
-        username: "henry",
-        rating: 1350,
-        previouslyRemovedFromThisGroup: false,
-        previousReportIds: []
-      },
-      reportDate: "2024-03-16",
-      status: "processed",
-      handledBy: {
-        username: "moderator2",
-        rating: 2250
-      },
-      responseDate: "2024-03-17"
-    },
-    // Additional 20 dummy entries
-    { 
-      id: 6, 
-      contestId: 244,
-      reporter: {
-        username: "fiona",
-        rating: 1650,
-        reportAccuracy: { accepted: 10, total: 14 }
-      },
-      respondent: {
-        username: "oscar",
-        rating: 1680,
-        previouslyRemovedFromThisGroup: false,
-        previousReportIds: []
-      },
-      reportDate: "2024-03-15",
-      status: "active"
-    },
-    { 
-      id: 7, 
-      contestId: null,
-      reporter: {
-        username: "george",
-        rating: 1920,
-        reportAccuracy: { accepted: 9, total: 11 }
-      },
-      respondent: {
-        username: "peter",
-        rating: 1520,
-        previouslyRemovedFromThisGroup: true,
-        previousReportIds: [142]
-      },
-      reportDate: "2024-03-14",
-      status: "processed",
-      handledBy: {
-        username: "moderator3",
-        rating: 2150
-      },
-      responseDate: "2024-03-15"
-    },
-    { 
-      id: 8, 
-      contestId: 243,
-      reporter: {
-        username: "hannah",
-        rating: 2150,
-        reportAccuracy: { accepted: 15, total: 18 }
-      },
-      respondent: {
-        username: "quinn",
-        rating: 1310,
-        previouslyRemovedFromThisGroup: false,
-        previousReportIds: []
-      },
-      reportDate: "2024-03-13",
-      status: "active"
-    },
-    { 
-      id: 9, 
-      contestId: 242,
-      reporter: {
-        username: "isaac",
-        rating: 1800,
-        reportAccuracy: { accepted: 6, total: 8 }
-      },
-      respondent: {
-        username: "rachel",
-        rating: 2050,
-        previouslyRemovedFromThisGroup: false,
-        previousReportIds: []
-      },
-      reportDate: "2024-03-12",
-      status: "processed",
-      handledBy: {
-        username: "moderator1",
-        rating: 2300
-      },
-      responseDate: "2024-03-13"
-    },
-    { 
-      id: 10, 
-      contestId: null,
-      reporter: {
-        username: "julia",
-        rating: 1550,
-        reportAccuracy: { accepted: 11, total: 16 }
-      },
-      respondent: {
-        username: "steve",
-        rating: 1780,
-        previouslyRemovedFromThisGroup: true,
-        previousReportIds: [178]
-      },
-      reportDate: "2024-03-11",
-      status: "active"
-    },
-    { 
-      id: 11, 
-      contestId: 241,
-      reporter: {
-        username: "kevin",
-        rating: 1720,
-        reportAccuracy: { accepted: 8, total: 13 }
-      },
-      respondent: {
-        username: "taylor",
-        rating: 1150,
-        previouslyRemovedFromThisGroup: false,
-        previousReportIds: []
-      },
-      reportDate: "2024-03-10",
-      status: "processed",
-      handledBy: {
-        username: "moderator2",
-        rating: 2250
-      },
-      responseDate: "2024-03-11"
-    },
-    { 
-      id: 12, 
-      contestId: 240,
-      reporter: {
-        username: "laura",
-        rating: 2010,
-        reportAccuracy: { accepted: 14, total: 17 }
-      },
-      respondent: {
-        username: "ursula",
-        rating: 1470,
-        previouslyRemovedFromThisGroup: false,
-        previousReportIds: []
-      },
-      reportDate: "2024-03-09",
-      status: "active"
-    },
-    { 
-      id: 13, 
-      contestId: null,
-      reporter: {
-        username: "mike",
-        rating: 1600,
-        reportAccuracy: { accepted: 4, total: 7 }
-      },
-      respondent: {
-        username: "victor",
-        rating: 1830,
-        previouslyRemovedFromThisGroup: true,
-        previousReportIds: [132, 165]
-      },
-      reportDate: "2024-03-08",
-      status: "processed",
-      handledBy: {
-        username: "moderator3",
-        rating: 2150
-      },
-      responseDate: "2024-03-09"
-    },
-    { 
-      id: 14, 
-      contestId: 239,
-      reporter: {
-        username: "natalie",
-        rating: 1850,
-        reportAccuracy: { accepted: 10, total: 15 }
-      },
-      respondent: {
-        username: "wendy",
-        rating: 1250,
-        previouslyRemovedFromThisGroup: false,
-        previousReportIds: []
-      },
-      reportDate: "2024-03-07",
-      status: "active"
-    },
-    { 
-      id: 15, 
-      contestId: 238,
-      reporter: {
-        username: "oliver",
-        rating: 1980,
-        reportAccuracy: { accepted: 12, total: 14 }
-      },
-      respondent: {
-        username: "xavier",
-        rating: 1580,
-        previouslyRemovedFromThisGroup: false,
-        previousReportIds: []
-      },
-      reportDate: "2024-03-06",
-      status: "processed",
-      handledBy: {
-        username: "moderator1",
-        rating: 2300
-      },
-      responseDate: "2024-03-07"
-    },
-    { 
-      id: 16, 
-      contestId: null,
-      reporter: {
-        username: "patricia",
-        rating: 1520,
-        reportAccuracy: { accepted: 9, total: 12 }
-      },
-      respondent: {
-        username: "yvonne",
-        rating: 1420,
-        previouslyRemovedFromThisGroup: true,
-        previousReportIds: [189]
-      },
-      reportDate: "2024-03-05",
-      status: "active"
-    },
-    { 
-      id: 17, 
-      contestId: 237,
-      reporter: {
-        username: "quentin",
-        rating: 1750,
-        reportAccuracy: { accepted: 7, total: 9 }
-      },
-      respondent: {
-        username: "zach",
-        rating: 1950,
-        previouslyRemovedFromThisGroup: false,
-        previousReportIds: []
-      },
-      reportDate: "2024-03-04",
-      status: "processed",
-      handledBy: {
-        username: "moderator2",
-        rating: 2250
-      },
-      responseDate: "2024-03-05"
-    },
-    { 
-      id: 18, 
-      contestId: 236,
-      reporter: {
-        username: "robert",
-        rating: 2120,
-        reportAccuracy: { accepted: 16, total: 20 }
-      },
-      respondent: {
-        username: "amanda",
-        rating: 1680,
-        previouslyRemovedFromThisGroup: false,
-        previousReportIds: []
-      },
-      reportDate: "2024-03-03",
-      status: "active"
-    },
-    { 
-      id: 19, 
-      contestId: null,
-      reporter: {
-        username: "sarah",
-        rating: 1840,
-        reportAccuracy: { accepted: 6, total: 10 }
-      },
-      respondent: {
-        username: "brandon",
-        rating: 1370,
-        previouslyRemovedFromThisGroup: true,
-        previousReportIds: [145]
-      },
-      reportDate: "2024-03-02",
-      status: "processed",
-      handledBy: {
-        username: "moderator3",
-        rating: 2150
-      },
-      responseDate: "2024-03-03"
-    },
-    { 
-      id: 20, 
-      contestId: 235,
-      reporter: {
-        username: "thomas",
-        rating: 1900,
-        reportAccuracy: { accepted: 11, total: 13 }
-      },
-      respondent: {
-        username: "cathy",
-        rating: 2080,
-        previouslyRemovedFromThisGroup: false,
-        previousReportIds: []
-      },
-      reportDate: "2024-03-01",
-      status: "active"
-    },
-    { 
-      id: 21, 
-      contestId: 234,
-      reporter: {
-        username: "uma",
-        rating: 1670,
-        reportAccuracy: { accepted: 8, total: 11 }
-      },
-      respondent: {
-        username: "derek",
-        rating: 1560,
-        previouslyRemovedFromThisGroup: false,
-        previousReportIds: []
-      },
-      reportDate: "2024-02-29",
-      status: "processed",
-      handledBy: {
-        username: "moderator1",
-        rating: 2300
-      },
-      responseDate: "2024-03-01"
-    },
-    { 
-      id: 22, 
-      contestId: null,
-      reporter: {
-        username: "vincent",
-        rating: 2000,
-        reportAccuracy: { accepted: 13, total: 16 }
-      },
-      respondent: {
-        username: "emily",
-        rating: 1790,
-        previouslyRemovedFromThisGroup: true,
-        previousReportIds: [167, 192]
-      },
-      reportDate: "2024-02-28",
-      status: "active"
-    },
-    { 
-      id: 23, 
-      contestId: 233,
-      reporter: {
-        username: "walter",
-        rating: 1930,
-        reportAccuracy: { accepted: 9, total: 12 }
-      },
-      respondent: {
-        username: "felix",
-        rating: 1640,
-        previouslyRemovedFromThisGroup: false,
-        previousReportIds: []
-      },
-      reportDate: "2024-02-27",
-      status: "processed",
-      handledBy: {
-        username: "moderator2",
-        rating: 2250
-      },
-      responseDate: "2024-02-28"
-    },
-    { 
-      id: 24, 
-      contestId: 232,
-      reporter: {
-        username: "xander",
-        rating: 1720,
-        reportAccuracy: { accepted: 7, total: 10 }
-      },
-      respondent: {
-        username: "gina",
-        rating: 1510,
-        previouslyRemovedFromThisGroup: false,
-        previousReportIds: []
-      },
-      reportDate: "2024-02-26",
-      status: "active"
-    },
-    { 
-      id: 25, 
-      contestId: null,
-      reporter: {
-        username: "yolanda",
-        rating: 1880,
-        reportAccuracy: { accepted: 10, total: 14 }
-      },
-      respondent: {
-        username: "harry",
-        rating: 1970,
-        previouslyRemovedFromThisGroup: true,
-        previousReportIds: [138]
-      },
-      reportDate: "2024-02-25",
-      status: "processed",
-      handledBy: {
-        username: "moderator3",
-        rating: 2150
-      },
-      responseDate: "2024-02-26"
-    }
-  ];
-
   // Split reports into active and processed
-  const activeReports = reportsData.filter(report => report.status === "active");
-  const processedReports = reportsData.filter(report => report.status === "processed");
+  const activeReports = reportsData.filter(report => !report.resolved);
+  const processedReports = reportsData.filter(report => report.resolved);
 
   // Function to transform report data into table rows
   const transformReportsData = (reports, includeHandledBy = false) => {
     return reports.map(report => {
       // Create the "Contest ID" content
-      const contestContent = report.contestId ? (
-        <Link to={`/group/${groupId}/contest/${report.contestId}`} className="tableCellLink">
-          {report.contestId}
+      const contestContent = report.contest_id ? (
+        <Link to={`/group/${groupId}/contest/${report.contest_id}`} className="tableCellLink">
+          {report.contest_id}
         </Link>
       ) : (
         <span>-</span>
       );
       
-      // Calculate report accuracy percentage
-      const accuracyPercentage = Math.round((report.reporter.reportAccuracy.accepted / report.reporter.reportAccuracy.total) * 100);
-      
-      // Create the "Previously Removed" content
-      let previouslyRemovedContent;
-      if (report.respondent.previouslyRemovedFromThisGroup) {
-        // If previously removed, show links to reports
-        previouslyRemovedContent = (
-          <div style={{ color: 'red' }}>
-            Yes - 
-            {report.respondent.previousReportIds.map((reportId, index) => (
-              <span key={reportId}>
-                {index > 0 && ", "}
-                <Link to={`/group/${groupId}/report/${reportId}`} className="tableCellLink">
-                  {reportId}
-                </Link>
-              </span>
-            ))}
-          </div>
-        );
-      } else {
-        // If not previously removed, show "No" in green
-        previouslyRemovedContent = <div style={{ color: 'green' }}>No</div>;
-      }
+      // Reporter and respondent usernames (we'll need to get them from their IDs in a real app)
+      const reporterId = report.reporter_user_id;
+      const respondentId = report.respondent_user_id;
       
       // Create the row data with base columns
       const rowData = [
-        report.id,
+        report.report_id,
         contestContent,
-        <Link to={`/user/${report.reporter.username}`} className="tableCellLink" style={{ color: getRatingColor(report.reporter.rating), fontWeight: 'bold' }}>
-          {report.reporter.username}
+        <Link to={`/user/${reporterId}`} className="tableCellLink">
+          {reporterId}
         </Link>,
-        <span title={`${report.reporter.reportAccuracy.accepted} accepted out of ${report.reporter.reportAccuracy.total} reports`}>
-          {accuracyPercentage}% ({report.reporter.reportAccuracy.accepted}/{report.reporter.reportAccuracy.total})
-        </span>,
-        <Link to={`/user/${report.respondent.username}`} className="tableCellLink" style={{ color: getRatingColor(report.respondent.rating), fontWeight: 'bold' }}>
-          {report.respondent.username}
+        <span>-</span>, // Report accuracy placeholder
+        <Link to={`/user/${respondentId}`} className="tableCellLink">
+          {respondentId}
         </Link>,
-        previouslyRemovedContent,
-        formatDate(report.reportDate),
+        formatDate(report.timestamp),
       ];
       
       // Add additional columns for processed reports
-      if (includeHandledBy && report.handledBy) {
-        // Add reportee
+      if (includeHandledBy && report.resolved_by) {
+        // Add resolver
         rowData.push(
-          <Link to={`/user/${report.handledBy.username}`} className="tableCellLink" style={{ color: getRatingColor(report.handledBy.rating), fontWeight: 'bold' }}>
-            {report.handledBy.username}
+          <Link to={`/user/${report.resolved_by}`} className="tableCellLink">
+            {report.resolved_by}
           </Link>
         );
         
-        // Add response date
-        rowData.push(
-          formatDate(report.responseDate)
-        );
+        // Add resolve message if available
+        rowData.push(report.resolve_message || "-");
       }
       
-      // Add action link as the last column
+      // Add action button
       rowData.push(
         <Link 
-          to={`/group/${groupId}/report/${report.id}`}
+          to={`/group/${groupId}/report/${report.report_id}`}
           style={{
             display: 'inline-block',
-            backgroundColor: '#4a90e2',
-            padding: '6px 12px',
+            padding: '4px 12px',
+            backgroundColor: '#3498db',
             borderRadius: '4px',
             textDecoration: 'none',
             color: 'white',
             fontWeight: '500',
             boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-            transition: 'all 0.2s ease'
           }}
         >
           View →
@@ -617,8 +224,8 @@ export default function GroupReports() {
   };
 
   // Define columns for the tables
-  const activeColumns = ["Report ID", "Contest ID", "Reporter", "Report Accuracy", "Respondent", "Previously Removed", "Report Date", "Action"];
-  const processedColumns = [...activeColumns.slice(0, -1), "Reportee", "Response Date", "Action"];
+  const activeColumns = ["Report ID", "Contest ID", "Reporter", "Report Accuracy", "Respondent", "Report Date", "Action"];
+  const processedColumns = [...activeColumns.slice(0, -1), "Resolved By", "Resolution", "Action"];
   
   // Transform the data for the table components
   const activeTableRows = transformReportsData(activeReports);
@@ -627,97 +234,136 @@ export default function GroupReports() {
   return (
     <div className="page-container">
       {/* Floating button box */}
-      <GroupNavBar groupId={groupId} showModViewButton={true} />
+      <GroupNavBar groupId={groupId} showModViewButton={showModViewButton} />
       
-      {/* Create Report Box */}
-      <ContentBoxWithTitle title="Create Report" backgroundColor="rgb(240, 240, 255)">
-        <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto', padding: '15px' }}>
-          <div style={{ marginBottom: '15px' }}>
-            <label htmlFor="respondent" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
-              Respondent:
-            </label>
-            <input
-              id="respondent"
-              type="text"
-              value={respondent}
-              onChange={(e) => setRespondent(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '8px',
-                borderRadius: '4px',
-                border: '1px solid #ccc'
-              }}
-            />
-          </div>
-          
-          <div style={{ marginBottom: '15px' }}>
-            <label htmlFor="contest-ids" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
-              Contest ID(s):
-            </label>
-            <input
-              id="contest-ids"
-              type="text"
-              value={contestIds}
-              onChange={(e) => setContestIds(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '8px',
-                borderRadius: '4px',
-                border: '1px solid #ccc'
-              }}
-            />
-          </div>
-          
-          <div style={{ marginBottom: '20px' }}>
-            <label htmlFor="report-text" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
-              Report (Max 500 characters):
-            </label>
-            <textarea
-              id="report-text"
-              value={reportText}
-              onChange={(e) => setReportText(e.target.value)}
-              maxLength={500}
-              style={{
-                width: '100%',
-                padding: '8px',
-                borderRadius: '4px',
-                border: '1px solid #ccc',
-                minHeight: '100px',
-                resize: 'vertical'
-              }}
-            />
-          </div>
-          
-          <button
-            onClick={handleCreateReport}
-            className="global-button blue"
-          >
-            Create
-          </button>
+      {/* Error message */}
+      {error && (
+        <div className="error-message" style={{ color: 'red', margin: '20px', textAlign: 'center' }}>
+          {error}
         </div>
-      </ContentBoxWithTitle>
+      )}
       
-      {/* Active Reports Table */}
-      <SortablePagedTableBox 
-        title="Active Reports"
-        columns={activeColumns}
-        data={activeTableRows}
-        backgroundColor="rgb(255, 245, 230)" // Light orange
-        itemsPerPage={10}
-        initialSortColumnIndex={0} // Report ID column
-        initialSortDirection="desc" // Descending order
-      />
-      
-      {/* Processed Reports Table */}
-      <SortablePagedTableBox 
-        title="Processed Reports"
-        columns={processedColumns}
-        data={processedTableRows}
-        backgroundColor="rgb(230, 255, 240)" // Light green
-        itemsPerPage={10}
-        initialSortColumnIndex={0} // Report ID column
-        initialSortDirection="desc" // Descending order
-      />
+      {/* Loading indicator */}
+      {loading ? (
+        <div className="loading-indicator" style={{ textAlign: 'center', margin: '50px' }}>
+          Loading reports...
+        </div>
+      ) : (
+        <>
+          {/* Create Report Box - Only show for members */}
+          {isLoggedInUserMember && (
+            <ContentBoxWithTitle title="Create Report" backgroundColor="rgb(240, 240, 255)">
+              <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto', padding: '15px' }}>
+                {submitSuccess && (
+                  <div style={{ backgroundColor: '#d4edda', color: '#155724', padding: '10px', borderRadius: '4px', marginBottom: '15px' }}>
+                    Report successfully created!
+                  </div>
+                )}
+                
+                {submitError && (
+                  <div style={{ backgroundColor: '#f8d7da', color: '#721c24', padding: '10px', borderRadius: '4px', marginBottom: '15px' }}>
+                    {submitError}
+                  </div>
+                )}
+                
+                <div style={{ marginBottom: '15px' }}>
+                  <label htmlFor="respondent" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                    Respondent:
+                  </label>
+                  <input
+                    id="respondent"
+                    type="text"
+                    value={respondent}
+                    onChange={(e) => setRespondent(e.target.value)}
+                    disabled={submitLoading}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      borderRadius: '4px',
+                      border: '1px solid #ccc'
+                    }}
+                  />
+                </div>
+                
+                <div style={{ marginBottom: '15px' }}>
+                  <label htmlFor="contest-ids" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                    Contest ID (optional):
+                  </label>
+                  <input
+                    id="contest-ids"
+                    type="text"
+                    value={contestIds}
+                    onChange={(e) => setContestIds(e.target.value)}
+                    disabled={submitLoading}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      borderRadius: '4px',
+                      border: '1px solid #ccc'
+                    }}
+                  />
+                </div>
+                
+                <div style={{ marginBottom: '20px' }}>
+                  <label htmlFor="report-text" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                    Report (Max 500 characters):
+                  </label>
+                  <textarea
+                    id="report-text"
+                    value={reportText}
+                    onChange={(e) => setReportText(e.target.value)}
+                    disabled={submitLoading}
+                    maxLength={500}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      borderRadius: '4px',
+                      border: '1px solid #ccc',
+                      minHeight: '100px',
+                      resize: 'vertical'
+                    }}
+                  />
+                </div>
+                
+                <button
+                  onClick={handleCreateReport}
+                  disabled={submitLoading}
+                  className="global-button blue"
+                >
+                  {submitLoading ? 'Creating...' : 'Create Report'}
+                </button>
+              </div>
+            </ContentBoxWithTitle>
+          )}
+          
+          {/* Reports Tables */}
+          <div className={styles.reportsTableWrapper}>
+            {/* Active Reports Table */}
+            <SortablePagedTableBox 
+              title="Active Reports"
+              columns={activeColumns}
+              data={activeTableRows}
+              backgroundColor="rgb(255, 245, 230)" // Light orange
+              itemsPerPage={10}
+              initialSortColumnIndex={0} // Report ID column
+              initialSortDirection="desc" // Descending order
+              className="reportsTable"
+            />
+            
+            {/* Processed Reports Table */}
+            <SortablePagedTableBox 
+              title="Processed Reports"
+              columns={processedColumns}
+              data={processedTableRows}
+              backgroundColor="rgb(230, 255, 240)" // Light green
+              itemsPerPage={10}
+              initialSortColumnIndex={0} // Report ID column
+              initialSortDirection="desc" // Descending order
+              className="reportsTable"
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 } 

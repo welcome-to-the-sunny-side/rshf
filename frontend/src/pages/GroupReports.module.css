@@ -1,0 +1,66 @@
+/* GroupReports table column width styles */
+:global(.reportsTable) :global(table) {
+  table-layout: fixed;
+  width: 100%;
+}
+
+/* Report ID column - 10% width */
+:global(.reportsTable) :global(table th:nth-child(1)),
+:global(.reportsTable) :global(table td:nth-child(1)) {
+  width: 7%;
+}
+
+/* Contest ID column - 10% width */
+:global(.reportsTable) :global(table th:nth-child(2)),
+:global(.reportsTable) :global(table td:nth-child(2)) {
+  width: 7%;
+}
+
+/* Reporter column - 15% width */
+:global(.reportsTable) :global(table th:nth-child(3)),
+:global(.reportsTable) :global(table td:nth-child(3)) {
+  width: 15%;
+}
+
+/* Report Accuracy column - 15% width */
+:global(.reportsTable) :global(table th:nth-child(4)),
+:global(.reportsTable) :global(table td:nth-child(4)) {
+  width: 10%;
+  text-align: center;
+}
+
+/* Respondent column - 15% width */
+:global(.reportsTable) :global(table th:nth-child(5)),
+:global(.reportsTable) :global(table td:nth-child(5)) {
+  width: 15%;
+}
+
+/* Report Date column - 15% width */
+:global(.reportsTable) :global(table th:nth-child(6)),
+:global(.reportsTable) :global(table td:nth-child(6)) {
+  width: 15%;
+  text-align: center;
+}
+
+/* Action column - 10% width */
+:global(.reportsTable) :global(table th:nth-child(7)),
+:global(.reportsTable) :global(table td:nth-child(7)) {
+  width: 10%;
+  text-align: center;
+}
+
+/* Resolved By column - 15% width (for processed reports) */
+:global(.reportsTable) :global(table th:nth-child(6)),
+:global(.reportsTable) :global(table td:nth-child(6)) {
+  width: 15%;
+}
+
+/* Resolution column - 15% width (for processed reports) */
+:global(.reportsTable) :global(table th:nth-child(7)),
+:global(.reportsTable) :global(table td:nth-child(7)) {
+  width: 15%;
+}
+
+.reportsTableWrapper {
+  width: 100%;
+}

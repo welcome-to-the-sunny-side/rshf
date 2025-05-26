@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import ContentBoxWithTitle from '../components/ContentBoxWithTitle';
+import styles from './Register.module.css';
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -65,15 +67,27 @@ export default function Register() {
     }
   };
 
+  // Add a class to the body to handle special register page styling
+  React.useEffect(() => {
+    document.body.classList.add('registerPage');
+    return () => {
+      document.body.classList.remove('registerPage');
+    };
+  }, []);
+
   return (
-    <div className="register-container">
-      <div className="register-form-wrapper">
-        <h2>Register for RSHF</h2>
-        {error && <div className="error-message">{error}</div>}
-        
-        <form onSubmit={handleSubmit} className="register-form">
-          <div className="form-group">
-            <label htmlFor="user_id">Username</label>
+    <div className={styles.registerPage}>
+      <div className={styles.formSide}>
+        <ContentBoxWithTitle
+          className={styles.registerFormContainer}
+          title={<span>Register</span>}
+          backgroundColor="rgb(230, 255, 230)" 
+          contentPadding="0.75rem"
+        >
+          {error && <div className={styles.errorMessage}>{error}</div>}
+          <form onSubmit={handleSubmit}>
+          <div className={styles.formGroup}>
+            <label htmlFor="user_id" className={`${styles.formLabel} standardTextFont`}>Username</label>
             <input
               type="text"
               id="user_id"
@@ -82,12 +96,13 @@ export default function Register() {
               onChange={handleChange}
               placeholder="Choose a username"
               disabled={loading}
+              className={`${styles.formInput} standardTextFont`}
             />
-            {formErrors.user_id && <div className="field-error">{formErrors.user_id}</div>}
+            {formErrors.user_id && <div className={styles.fieldError}>{formErrors.user_id}</div>}
           </div>
           
-          <div className="form-group">
-            <label htmlFor="cf_handle">Codeforces Handle</label>
+          <div className={styles.formGroup}>
+            <label htmlFor="cf_handle" className={`${styles.formLabel} standardTextFont`}>Codeforces Handle</label>
             <input
               type="text"
               id="cf_handle"
@@ -96,12 +111,13 @@ export default function Register() {
               onChange={handleChange}
               placeholder="Your Codeforces handle"
               disabled={loading}
+              className={`${styles.formInput} standardTextFont`}
             />
-            {formErrors.cf_handle && <div className="field-error">{formErrors.cf_handle}</div>}
+            {formErrors.cf_handle && <div className={styles.fieldError}>{formErrors.cf_handle}</div>}
           </div>
           
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
+          <div className={styles.formGroup}>
+            <label htmlFor="password" className={`${styles.formLabel} standardTextFont`}>Password</label>
             <input
               type="password"
               id="password"
@@ -110,12 +126,13 @@ export default function Register() {
               onChange={handleChange}
               placeholder="Choose a password"
               disabled={loading}
+              className={`${styles.formInput} standardTextFont`}
             />
-            {formErrors.password && <div className="field-error">{formErrors.password}</div>}
+            {formErrors.password && <div className={styles.fieldError}>{formErrors.password}</div>}
           </div>
           
-          <div className="form-group">
-            <label htmlFor="confirmPassword">Confirm Password</label>
+          <div className={styles.formGroup}>
+            <label htmlFor="confirmPassword" className={`${styles.formLabel} standardTextFont`}>Confirm Password</label>
             <input
               type="password"
               id="confirmPassword"
@@ -124,18 +141,29 @@ export default function Register() {
               onChange={handleChange}
               placeholder="Confirm your password"
               disabled={loading}
+              className={`${styles.formInput} standardTextFont`}
             />
-            {formErrors.confirmPassword && <div className="field-error">{formErrors.confirmPassword}</div>}
+            {formErrors.confirmPassword && <div className={styles.fieldError}>{formErrors.confirmPassword}</div>}
           </div>
           
-          <button type="submit" className="register-button" disabled={loading}>
-            {loading ? 'Registering...' : 'Register'}
-          </button>
-        </form>
-        
-        <p className="login-link">
-          Already have an account? <a href="/login">Login here</a>
-        </p>
+          <div style={{ textAlign: 'center', marginTop: '0.4rem' }}>
+            <button
+              type="submit"
+              className="global-button blue small"
+              disabled={loading}
+            >
+              {loading ? 'Registering...' : 'Register'}
+            </button>
+          </div>
+          </form>
+
+          <p className={`${styles.linkTextContainer} standardTextFont`}>
+            Already have an account?{' '}
+            <Link to="/login" className="tableCellLink">
+              Login here
+            </Link>
+          </p>
+        </ContentBoxWithTitle>
       </div>
     </div>
   );

@@ -3,7 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ContentBoxWithTitle from '../components/ContentBoxWithTitle';
 import styles from './Login.module.css'; // Import the new CSS module
-import waifuImage from '../assets/rshf_waifu.jpg'; // Import the waifu image
+import waifuImage from '../assets/rshf_waifu.png'; // Import the waifu image
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -34,10 +34,10 @@ export default function Login() {
   return (
     <div className={styles.loginPage}>
       <div className={styles.waifuContainer}>
-        <img src={waifuImage} alt="RSHF Assistant" className={styles.waifuImage} />
+        <img src={waifuImage} alt="RSHF Waifu" className={styles.waifuImage} />
       </div>
       <div className={styles.formSide}>
-        <ContentBoxWithTitle
+         <ContentBoxWithTitle
           className={styles.loginFormContainer}
           title={<span>Login</span>} // Title text will be default color
           backgroundColor="rgb(230, 255, 230)" // Light green background for the title bar
@@ -77,10 +77,10 @@ export default function Login() {
             />
           </div>
 
-          <div style={{ textAlign: 'center', marginTop: '0.4rem' }}> {/* Wrapper to center the button with less space */}
+          <div style={{ textAlign: 'center', marginTop: '0.4rem' }}>
             <button
               type="submit"
-              className="global-button blue small" /* Added small modifier for more compact button */
+              className="global-button blue small"
               disabled={loading}
             >
               {loading ? 'Logging in...' : 'Login'}
@@ -90,12 +90,12 @@ export default function Login() {
 
         <p className={`${styles.linkTextContainer} standardTextFont`}>
           Don't have an account?{' '}
-          <Link to="/register" className="tableCellLink"> {/* Uses global table cell link style for consistency */}
+          <Link to="/register" className="tableCellLink">
             Register here
           </Link>
         </p>
         </ContentBoxWithTitle>
-      </div>
+      </div> 
     </div>
   );
 }

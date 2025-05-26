@@ -3,57 +3,83 @@ import { useParams, Link } from 'react-router-dom';
 import SortablePagedTableBox from '../components/SortablePagedTableBox';
 import { getRatingColor } from '../utils/ratingUtils';
 import GroupNavBar from '../components/GroupNavBar';
+import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
+import styles from './GroupMembers.module.css';
 
 export default function GroupMembers() {
   const { groupId } = useParams();
+  const { user, token } = useAuth();
   
-  // User state simulation (would come from auth context in real app)
-  const userRole = "moderator"; // Options: "moderator", "member", null (not a member), undefined (logged out)
-  
-  // Determine which buttons to show based on user role
-  const showModViewButton = userRole === "moderator";
+  // User role and permission state
+  const [userRole, setUserRole] = useState(null);
+  const [showModViewButton, setShowModViewButton] = useState(false);
   
   // State for members data
   const [membersData, setMembersData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  // Function to generate random report accuracy data (since it's not in the API)
+  // Create placeholder for report accuracy data since it's not in the API
   const generateReportAccuracy = () => {
-    const total = Math.floor(Math.random() * 15) + 5; // 5-20 total reports
-    const accepted = Math.floor(Math.random() * (total + 1)); // 0 to total accepted reports
-    return { accepted, total };
+    return { accepted: 0, total: 0 };
   };
   
+  // Check user's membership in the group to determine role
+  useEffect(() => {
+    const checkMembership = async () => {
+      if (!user || !token) {
+        setUserRole(null);
+        setShowModViewButton(false);
+        return;
+      }
+      
+      try {
+        const response = await axios.get(`/api/membership`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { group_id: groupId, user_id: user.user_id }
+        });
+        
+        if (response.data && response.data.role) {
+          setUserRole(response.data.role);
+          setShowModViewButton(response.data.role === "moderator" || response.data.role === "admin");
+        } else {
+          setUserRole(null);
+          setShowModViewButton(false);
+        }
+      } catch (err) {
+        console.error('Failed to check membership:', err);
+        setUserRole(null);
+        setShowModViewButton(false);
+      }
+    };
+    
+    if (groupId) {
+      checkMembership();
+    }
+  }, [groupId, user, token]);
+
   // Fetch members data from API
   useEffect(() => {
     const fetchMembersData = async () => {
       try {
         setLoading(true);
         
-        // Use real API endpoint to get group members data
-        const response = await fetch(`/api/group_members_custom_data?group_id=${groupId}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}` // Assume token is stored in localStorage
-          }
+        const response = await axios.get(`/api/group_members_custom_data`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { group_id: groupId }
         });
         
-        if (!response.ok) {
-          throw new Error(`Error fetching group members: ${response.statusText}`);
-        }
-        
-        const data = await response.json();
+        const data = response.data;
         
         // Transform API data to match expected format
-        // The API response includes cf_handle, role, user_group_rating, user_group_max_rating, 
-        // date_joined, and number_of_rated_contests, but not report accuracy
         const transformedData = data.map(member => ({
           username: member.cf_handle,
           role: member.role,
           rating: member.user_group_rating,
           maxRating: member.user_group_max_rating,
           ratedContests: member.number_of_rated_contests,
-          reportAccuracy: generateReportAccuracy(), // Using dummy data for report accuracy
+          reportAccuracy: generateReportAccuracy(), // Placeholder for report accuracy
           dateJoined: member.date_joined
         }));
         
@@ -62,8 +88,6 @@ export default function GroupMembers() {
       } catch (err) {
         console.error('Failed to fetch members data:', err);
         setError('Failed to load group members. Please try again later.');
-        
-        // Fallback to empty array if there's an error
         setMembersData([]);
       } finally {
         setLoading(false);
@@ -73,7 +97,7 @@ export default function GroupMembers() {
     if (groupId) {
       fetchMembersData();
     }
-  }, [groupId]);
+  }, [groupId, token]);
   
   // Function to format date
   const formatDate = (dateString) => {
@@ -91,9 +115,13 @@ export default function GroupMembers() {
     <span style={{ color: getRatingColor(member.rating), fontWeight: 'bold' }}>{member.rating}</span>,
     <span style={{ color: getRatingColor(member.maxRating), fontWeight: 'bold' }}>{member.maxRating}</span>,
     member.ratedContests,
-    <span title={`${member.reportAccuracy.accepted} accepted out of ${member.reportAccuracy.total} reports`}>
-      {Math.round((member.reportAccuracy.accepted / member.reportAccuracy.total) * 100)}% ({member.reportAccuracy.accepted}/{member.reportAccuracy.total})
-    </span>,
+    member.reportAccuracy.total > 0 ? (
+      <span title={`${member.reportAccuracy.accepted} accepted out of ${member.reportAccuracy.total} reports`}>
+        {Math.round((member.reportAccuracy.accepted / member.reportAccuracy.total) * 100)}% ({member.reportAccuracy.accepted}/{member.reportAccuracy.total})
+      </span>
+    ) : (
+      <span>No reports</span>
+    ),
     formatDate(member.dateJoined)
   ]);
 
@@ -116,14 +144,17 @@ export default function GroupMembers() {
         </div>
       ) : (
         /* Members table */
-        <SortablePagedTableBox 
-          columns={columns}
-          data={tableRows}
-          backgroundColor="rgb(230, 240, 255)"
-          itemsPerPage={15}
-          initialSortColumnIndex={2} // Rating column
-          initialSortDirection="desc" // Descending order
-        />
+        <div className={styles.membersTableWrapper}>
+          <SortablePagedTableBox 
+            columns={columns}
+            data={tableRows}
+            backgroundColor="rgb(230, 240, 255)"
+            itemsPerPage={15}
+            initialSortColumnIndex={2} // Rating column
+            initialSortDirection="desc" // Descending order
+            className="membersTable"
+          />
+        </div>
       )}
     </div>
   );

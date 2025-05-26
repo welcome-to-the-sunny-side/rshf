@@ -93,7 +93,7 @@ To obtain an access token, use the `/api/user/login` endpoint.
 - **URL**: `/api/user`
 - **Method**: `PUT`
 - **Auth Required**: Yes
-- **Description**: Updates information for a specific user. Regular users can only update their own profiles. Admins can update any user's profile.
+- **Description**: Updates information for a specific user. Regular users can only update their own profiles. Moderators and admins can update any user's profile.
 - **Query Parameters**:
   - `user_id`: "string" (Required, User ID of the user to update)
 - **Request Body**: `schemas.UserUpdate`
@@ -109,7 +109,7 @@ To obtain an access token, use the `/api/user/login` endpoint.
 - **Response**: `schemas.UserOut`
 - **Error Responses**:
     - `404 Not Found`: If the user with the given `user_id` does not exist.
-    - `403 Forbidden`: If a non-admin user tries to update another user or change roles.
+    - `403 Forbidden`: If a user attempts to update another user's profile without moderator or admin privileges, or if a non-admin user attempts to change a user's role.
     - `401 Unauthorized`: If the token is invalid or missing.
 
 ---
@@ -167,7 +167,7 @@ To obtain an access token, use the `/api/user/login` endpoint.
 ### 3. Get Single Group Details
 - **URL**: `/api/group`
 - **Method**: `GET`
-- **Auth Required**: Yes (for private groups or detailed member info)
+- **Auth Required**: Yes
 - **Description**: Retrieves detailed information for a single group, including its members. Access to private groups or full member lists might be restricted.
 - **Query Parameters**:
   - `group_id`: "string" (Required, ID of the group to retrieve)
@@ -216,10 +216,10 @@ To obtain an access token, use the `/api/user/login` endpoint.
     - `401 Unauthorized`.
 
 ### 5. Add User to Group
-- **URL**: `/api/group/add`
+- **URL**: `/api/add_to_group`
 - **Method**: `POST`
 - **Auth Required**: Yes
-- **Description**: Adds a user to a group. Requires group admin or moderator privileges.
+- **Description**: Adds a user to a group. The requesting user must have a higher role within the group than the user being added.
 - **Request Body**: `schemas.GroupMembershipAdd`
   ```json
   {
@@ -233,14 +233,14 @@ To obtain an access token, use the `/api/user/login` endpoint.
 - **Error Responses**:
     - `404 Not Found`: If the user or group does not exist.
     - `400 Bad Request`: If the user is already a member of the group.
-    - `403 Forbidden`: If the current user lacks privileges to add members.
+    - `403 Forbidden`: If the requesting user's role in the group is not higher than the role of the user being added.
     - `401 Unauthorized`.
 
 ### 6. Remove User from Group
-- **URL**: `/api/group/remove`
+- **URL**: `/api/remove_from_group`
 - **Method**: `POST` (Consider `DELETE` for semantic correctness, but current implementation is `POST`)
 - **Auth Required**: Yes
-- **Description**: Removes a user from a group. Requires group admin/moderator privileges, or the user removing themselves. Group admins/moderators can remove users with a lower or equal role.
+- **Description**: Removes a user from a group. The requesting user must have a higher role within the group than the user being removed.
 - **Request Body**: `schemas.GroupMembershipRemove`
   ```json
   {
@@ -251,7 +251,7 @@ To obtain an access token, use the `/api/user/login` endpoint.
 - **Response**: Success message (e.g., `{"message": "User removed successfully"}`) or `204 No Content`.
 - **Error Responses**:
     - `404 Not Found`: If the user, group, or membership does not exist.
-    - `403 Forbidden`: If the current user lacks privileges to remove the target member.
+    - `403 Forbidden`: If the requesting user's role in the group is not higher than the role of the user being removed.
     - `401 Unauthorized`.
 
 ### 7. Check Group Membership
@@ -281,7 +281,7 @@ To obtain an access token, use the `/api/user/login` endpoint.
 ## Contest Endpoints
 
 ### 1. Register User for a Rated Contest in a Group
-- **URL**: `/api/contest/register_rated`
+- **URL**: `/api/register_rated`
 - **Method**: `POST`
 - **Auth Required**: Yes
 - **Description**: Registers a user's participation in a specific contest within a group. This is typically used to track rated participation.
@@ -295,15 +295,21 @@ To obtain an access token, use the `/api/user/login` endpoint.
     "rating_after": "integer (Optional, user's group rating after the contest)"
   }
   ```
-- **Response**: `schemas.ContestParticipationOut`
+- **Response**:
+  ```json
+  {
+    "detail": "participation recorded",
+    "participation_id": "string (contest_id of the participation)"
+  }
+  ```
 - **Error Responses**:
     - `404 Not Found`: If user, group, or contest does not exist.
     - `400 Bad Request`: If user is not a member of the group, or already registered.
-    - `403 Forbidden`: If trying to register another user without sufficient privilege (e.g., group mod can register members).
+    - `403 Forbidden`: If a non-moderator/non-admin user tries to register another user.
     - `401 Unauthorized`.
 
 ### 2. Get Contest Participations
-- **URL**: `/api/contest/participations`
+- **URL**: `/api/contest_participations`
 - **Method**: `GET`
 - **Auth Required**: Yes (implicitly, as it queries based on user/group/contest)
 - **Description**: Retrieves contest participation records, filterable by group, user, or contest.
@@ -312,6 +318,8 @@ To obtain an access token, use the `/api/user/login` endpoint.
   - `uid`: "string" (Optional, User ID)
   - `cid`: "string" (Optional, Contest ID)
 - **Response**: `List[schemas.ContestParticipationOut]`
+- **Error Responses**:
+    - `400 Bad Request`: If none of `gid`, `uid`, or `cid` are provided.
 
 ### 3. List Contests
 - **URL**: `/api/contests`
@@ -349,7 +357,7 @@ To obtain an access token, use the `/api/user/login` endpoint.
   - `contest_id`: "string" (Required, ID of the contest)
 - **Response**: `schemas.ContestOut`
 - **Error Responses**:
-    - `404 Not Found`: If the contest does not exist.
+    - `404 Not Found`: If the contest with the given `contest_id` does not exist.
     - `401 Unauthorized`.
 
 ---
@@ -357,7 +365,7 @@ To obtain an access token, use the `/api/user/login` endpoint.
 ## Report Endpoints
 
 ### 1. Create Report
-- **URL**: `/api/report/create`
+- **URL**: `/api/report`
 - **Method**: `POST`
 - **Auth Required**: Yes
 - **Description**: Allows a user to create a report against another user within the context of a group and a contest.
@@ -389,28 +397,31 @@ To obtain an access token, use the `/api/user/login` endpoint.
 - **Error Responses**:
     - `404 Not Found`: If group, contest, reporter, or respondent not found.
     - `400 Bad Request`: If reporter and respondent are the same, or other validation errors.
+    - `403 Forbidden`: If the reporting user is not a member of the specified group.
     - `401 Unauthorized`.
 
 ### 2. Get Reports
-- **URL**: `/api/reports`
+- **URL**: `/api/report`
 - **Method**: `GET`
-- **Auth Required**: Yes (Requires group moderator/admin or global admin privileges)
-- **Description**: Retrieves reports. Can be filtered by group, reporter, respondent, or resolved status.
+- **Auth Required**: Yes
+- **Description**: Retrieves reports. Can be filtered by `group_id` and `unresolved_only` status. Regular users querying by `group_id` must be a member of that group. Moderators/Admins have broader access.
 - **Query Parameters**:
-  - `group_id`: "string" (Optional)
-  - `reporter_user_id`: "string" (Optional)
-  - `respondent_user_id`: "string" (Optional)
-  - `resolved`: "boolean" (Optional)
+  - `group_id`: "string" (Optional, ID of the group to filter by)
+  - `unresolved_only`: "boolean" (Optional, default: `false`. If `true`, only unresolved reports are returned)
 - **Response**: `List[schemas.ReportOut]`
 - **Error Responses**:
-    - `403 Forbidden`: If user lacks necessary privileges.
+    - `403 Forbidden`: If a regular user tries to list reports for a group they are not a member of.
     - `401 Unauthorized`.
 
 ### 3. Resolve Report
 - **URL**: `/api/report/resolve`
-- **Method**: `POST`
+- **Method**: `PUT`
 - **Auth Required**: Yes (Requires group moderator/admin privileges for the relevant group)
 - **Description**: Marks a report as resolved.
+- **Error Responses**:
+    - `404 Not Found`: If the report with the given `report_id` does not exist.
+    - `403 Forbidden`: If the user lacks moderator/admin privileges in the report's group.
+    - `401 Unauthorized`.
 - **Request Body**: `schemas.ReportResolve`
   ```json
   {
@@ -430,7 +441,7 @@ To obtain an access token, use the `/api/user/login` endpoint.
 ## Announcement Endpoints
 
 ### 1. Create Announcement
-- **URL**: `/api/announcement/create`
+- **URL**: `/api/announcement`
 - **Method**: `POST`
 - **Auth Required**: Yes (Requires group moderator/admin privileges)
 - **Description**: Creates an announcement for a specific group.
@@ -458,19 +469,20 @@ To obtain an access token, use the `/api/user/login` endpoint.
     - `401 Unauthorized`.
 
 ### 2. Get Announcements for a Group
-- **URL**: `/api/announcements`
+- **URL**: `/api/announcement`
 - **Method**: `GET`
 - **Auth Required**: Yes (Access to announcements might depend on group privacy and user membership)
-- **Description**: Retrieves announcements for a specific group.
+- **Description**: Retrieves announcements. Can be filtered by `group_id`. If `group_id` is provided, regular users must be a member of that group to view its announcements. Moderators/Admins have broader access. If `group_id` is not provided, behavior depends on backend logic (e.g., may list all accessible announcements).
 - **Query Parameters**:
-  - `group_id`: "string" (Required)
+  - `group_id`: "string" (Optional, ID of the group to filter announcements by)
 - **Response**: `List[schemas.AnnouncementOut]`
 - **Error Responses**:
-    - `404 Not Found`: If group not found.
+    - `404 Not Found`: If the specified group (when `group_id` is provided) does not exist.
+    - `403 Forbidden`: If a regular user tries to list announcements for a specific group they are not a member of.
     - `401 Unauthorized`.
 
 ### 3. Update Announcement
-- **URL**: `/api/announcement/update`
+- **URL**: `/api/announcement`
 - **Method**: `PUT`
 - **Auth Required**: Yes (Requires group moderator/admin who created or has rights to edit)
 - **Description**: Updates an existing announcement.
@@ -488,17 +500,60 @@ To obtain an access token, use the `/api/user/login` endpoint.
     - `403 Forbidden`: If user lacks privileges.
     - `401 Unauthorized`.
 
-### 4. Delete Announcement
-- **URL**: `/api/announcement/delete`
-- **Method**: `DELETE`
-- **Auth Required**: Yes (Requires group moderator/admin who created or has rights to delete)
-- **Description**: Deletes an announcement.
+---
+
+## Custom Group Data Endpoints
+
+### 1. Get Group Members Custom Data
+- **URL**: `/api/group_members_custom_data`
+- **Method**: `GET`
+- **Auth Required**: Yes
+- **Description**: Retrieves custom membership data for all members in a specified group, including the number of rated contests they have participated in. Regular users must be a member of the group to access this data; administrators have unrestricted access.
 - **Query Parameters**:
-  - `announcement_id`: "string" (Required)
-- **Response**: Success message (e.g., `{"message": "Announcement deleted"}`) or `204 No Content`.
+  - `group_id`: "string" (Required, ID of the group to retrieve custom data for)
+- **Response**: `List[schemas.CustomMembershipData]`
+  ```json
+  // Example structure (actual fields depend on schemas.CustomMembershipData)
+  [
+    {
+      "user_id": "string",
+      // ... other fields from CustomMembershipData like username, rated_contests_count
+    }
+  ]
+  ```
 - **Error Responses**:
-    - `404 Not Found`: If announcement not found.
-    - `403 Forbidden`: If user lacks privileges.
+    - `404 Not Found`: If the group with the given `group_id` does not exist.
+    - `403 Forbidden`: If a regular user (non-admin) tries to access data for a group they are not a member of.
+    - `401 Unauthorized`.
+
+---
+
+## Membership Endpoints
+
+### 1. Check Membership
+- **URL**: `/api/membership`
+- **Method**: `GET`
+- **Auth Required**: Yes
+- **Description**: Checks if a specified user is a member of a specified group. Access to this information is restricted: the requesting user must either be an admin, the user whose membership is being checked, or a moderator/admin of the group in question.
+- **Query Parameters**:
+  - `group_id`: "string" (Required, ID of the group)
+  - `user_id`: "string" (Required, ID of the user)
+- **Response**: `schemas.GroupMembershipOut`
+  ```json
+  // Example structure (actual fields depend on schemas.GroupMembershipOut)
+  {
+    "user_id": "string",
+    "group_id": "string",
+    "role": "member", // or "moderator", "admin"
+    "date_joined": "datetime",
+    "user_group_rating": 1500,
+    "user_group_max_rating": 1600
+    // ... other fields from GroupMembershipOut
+  }
+  ```
+- **Error Responses**:
+    - `404 Not Found`: If the specified user is not a member of the specified group.
+    - `403 Forbidden`: If the requesting user does not have sufficient permissions to view this membership information.
     - `401 Unauthorized`.
 
 ---
@@ -508,7 +563,7 @@ To obtain an access token, use the `/api/user/login` endpoint.
 These endpoints provide specialized queries or functionalities.
 
 ### 1. Get Group Ratings by CF Handles
-- **URL**: `/api/ext/q1`
+- **URL**: `/api/extension_query_1`
 - **Method**: `POST`
 - **Auth Required**: Yes
 - **Description**: For a given group and a list of Codeforces handles, returns their respective `user_group_rating` within that group.
@@ -527,32 +582,6 @@ These endpoints provide specialized queries or functionalities.
   ```
 - **Error Responses**:
     - `404 Not Found`: If group not found.
-    - `401 Unauthorized`.
-
-### 2. Get Custom Group Membership Data
-- **URL**: `/api/ext/custom_membership_data`
-- **Method**: `GET`
-- **Auth Required**: Yes (Requires group moderator/admin privileges)
-- **Description**: Retrieves enriched membership data for all users in a group, including CF handle, role, ratings, join date, and number of rated contests in that group.
-- **Query Parameters**:
-  - `group_id`: "string" (Required)
-- **Response**: `List[schemas.CustomMembershipData]`
-  ```json
-  [
-    {
-      "cf_handle": "string",
-      "role": "string",
-      "user_group_rating": "integer",
-      "user_group_max_rating": "integer",
-      "date_joined": "datetime",
-      "number_of_rated_contests": "integer"
-    }
-    // ... more members
-  ]
-  ```
-- **Error Responses**:
-    - `404 Not Found`: If group not found.
-    - `403 Forbidden`: If user lacks privileges.
     - `401 Unauthorized`.
 
 ---
@@ -597,14 +626,6 @@ These endpoints are intended for development and testing purposes only and shoul
 - **Response**: `{"message": "Database has been reset and seeded with test data"}`
 
 ---
-
-    "memberships": [
-      {
-        "user_id": "string",
-        "group_id": "string",
-        "role": "user",
-        "user_group_rating": 1500
-      }
     ]
   }
   ```

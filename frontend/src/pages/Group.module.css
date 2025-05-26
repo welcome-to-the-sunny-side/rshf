@@ -9,12 +9,12 @@
 }
 
 .contentBoxLeft {
-  flex: 0 0 75%; /* Fixed at 75% width */
+  flex: 0 0 66%; /* Fixed at 66% width */
   min-width: 0; /* Prevent overflow */
 }
 
 .contentBoxRight {
-  flex: 0 0 25%; /* Fixed at 25% width */
+  flex: 0 0 34%; /* Fixed at 34% width */
   min-width: 0; /* Prevent overflow */
   display: flex;
   flex-direction: column;
@@ -120,4 +120,44 @@
 .fullWidthSection {
   width: 100%;
   margin-bottom: 20px;
+}
+
+/* Announcement table column width styles */
+:global(.announcementsTable) :global(table) {
+  table-layout: fixed;
+  width: 100%;
+}
+
+:global(.announcementsTable) :global(table th:nth-child(1)),
+:global(.announcementsTable) :global(table td:nth-child(1)) {
+  width: 80%;
+}
+
+:global(.announcementsTable) :global(table th:nth-child(2)),
+:global(.announcementsTable) :global(table td:nth-child(2)) {
+  width: 20%;
+  text-align: right;
+}
+
+/* Leaderboard table column width styles */
+:global(.leaderboardTable) :global(table) {
+  table-layout: fixed;
+  width: 100%;
+}
+
+:global(.leaderboardTable) :global(table th:nth-child(1)),
+:global(.leaderboardTable) :global(table td:nth-child(1)) {
+  width: 10%;
+  text-align: center;
+}
+
+:global(.leaderboardTable) :global(table th:nth-child(2)),
+:global(.leaderboardTable) :global(table td:nth-child(2)) {
+  width: 75%;
+}
+
+:global(.leaderboardTable) :global(table th:nth-child(3)),
+:global(.leaderboardTable) :global(table td:nth-child(3)) {
+  width: 15%;
+  text-align: right;
 }

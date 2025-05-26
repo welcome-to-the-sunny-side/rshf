@@ -9,6 +9,7 @@ import GroupNavBar from '../components/GroupNavBar';
 import ParticipationGraph from '../components/ParticipationGraph';
 import titleStyles from '../components/ContentBoxWithTitle.module.css';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 
 // Generate varied dummy participation data
 const generateDummyParticipationData = (numPoints) => {
@@ -69,6 +70,7 @@ const generateDummyParticipationData = (numPoints) => {
 
 export default function Group() {
   const { groupId } = useParams();
+  const { user, token } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [announcementsList, setAnnouncementsList] = useState([]);
@@ -78,11 +80,11 @@ export default function Group() {
   // Initialize group data with state
   const [groupData, setGroupData] = useState({
     name: "",
-    type: "", // Will be determined from is_private flag
+    type: "",
     created: "",
     memberCount: 0,
-    description: "A group dedicated to algorithm studies and competitive programming.",
-    memberships: [] // Initialize with an empty array to avoid undefined errors
+    description: "",
+    memberships: []
   });
   
   // State variables for current user's membership information
@@ -96,82 +98,65 @@ export default function Group() {
     const fetchGroupData = async () => {
       try {
         setLoading(true);
-        // Get the token from localStorage
-        const token = localStorage.getItem('token'); // In a real app, use a proper auth system
+        setError(null);
         
-        const userId = localStorage.getItem('userId'); // Get the current user's ID
-        
-        // For development without token, just use a temporary mock
-        if (!token) {
-          console.warn('No token found, using mock data');
-          // We'll continue without a token during development, but in production would require auth
-        }
-        
-        // Add baseURL for API requests - this should match your backend URL
-        // Using relative URL to work with both development and production
-        const baseURL = '';  // In production, this might be your API domain
-
+        const userId = user?.user_id;
+        const baseURL = '';
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
         
-        try {
-          // Attempt to fetch real data
-          const response = await axios.get(`${baseURL}/api/group?group_id=${groupId}`, { headers });
-          
-          const fetchedGroup = response.data;
-          
-          // Determine type from is_private flag
-          const type = fetchedGroup.is_private ? "Private" : "Public";
-          
-          setGroupData({
-            name: fetchedGroup.group_name,
-            type: type,
-            created: fetchedGroup.timestamp,
-            memberCount: fetchedGroup.memberships.length,
-            description: fetchedGroup.group_description || "No description provided.",
-            memberships: fetchedGroup.memberships || []
-          });
-          
-          // Find the current user's membership in this group
-          if (userId && fetchedGroup.memberships) {
-            const userMembership = fetchedGroup.memberships.find(membership => 
-              membership.user_id === userId
+        // Fetch group data
+        const groupResponse = await axios.get(`${baseURL}/api/group?group_id=${groupId}`, { headers });
+        const fetchedGroup = groupResponse.data;
+        
+        // Determine type from is_private flag
+        const type = fetchedGroup.is_private ? "Private" : "Public";
+        
+        setGroupData({
+          name: fetchedGroup.group_name,
+          type: type,
+          created: fetchedGroup.timestamp,
+          memberCount: fetchedGroup.memberships.length,
+          description: fetchedGroup.group_description || "No description provided.",
+          memberships: fetchedGroup.memberships || []
+        });
+        
+        // If user is logged in, fetch their membership info
+        if (userId) {
+          try {
+            // Use the dedicated membership endpoint to get user membership info
+            const membershipResponse = await axios.get(
+              `${baseURL}/api/membership?group_id=${groupId}&user_id=${userId}`,
+              { headers }
             );
             
-            if (userMembership) {
-              // User is a member of this group
-              setUserRole(userMembership.role);
-              setUserRating(userMembership.user_group_rating);
-              
-              // For max rating, we could either store it separately in the backend
-              // or for now, just set it slightly higher than current rating as a placeholder
-              // In a real app, you'd want to track this accurately
-              setUserMaxRating(Math.max(userMembership.user_group_rating, userMembership.user_group_rating + 75));
-              
-              // The timestamp when the user joined is not directly available in the API response
-              // So we'll use the group creation date as a fallback
-              // In a real app, you'd want to store and retrieve the actual join date
-              setJoinDate(fetchedGroup.timestamp);
-            } else {
-              // User is not a member of this group
+            // User is a member of this group
+            const membership = membershipResponse.data;
+           
+            setUserRole(membership.role);
+            setUserRating(membership.user_group_rating);
+            
+            // For max rating calculation
+            setUserMaxRating(Math.max(membership.user_group_rating, membership.user_group_rating + 75));
+            
+            // Use group creation date as join date for now
+            setJoinDate(fetchedGroup.timestamp);
+            
+          } catch (membershipError) {
+            // 404 error means user is not a member of this group
+            if (membershipError.response && membershipError.response.status === 404) {
               setUserRole(null);
               setUserRating(0);
               setUserMaxRating(0);
               setJoinDate("");
+            } else {
+              setError("Error fetching membership information");
             }
           }
-          
-          console.log('Group API response:', response.data); // Debug log
-        } catch (apiError) {
-          console.error('API error:', apiError);
-          // For development, fall back to dummy data
-          console.warn('Falling back to dummy data');
-          // Keep original dummy data during development
         }
-        
-        setLoading(false);
       } catch (err) {
-        console.error('Error in fetch process:', err);
-        // Don't show error to user during development, just use dummy data
+        setError("Failed to load group data");
+        console.error('Error fetching group data:', err);
+      } finally {
         setLoading(false);
       }
     };
@@ -179,52 +164,36 @@ export default function Group() {
     fetchGroupData();
   }, [groupId]);
   
-  // Fetch announcements from the API
+  // Fetch announcements from API
   useEffect(() => {
     const fetchAnnouncements = async () => {
       try {
         setAnnouncementsLoading(true);
-        // Get the token from localStorage
-        const token = localStorage.getItem('token');
+        setAnnouncementsError(null);
         
-        // For development without token, just use a temporary mock
-        if (!token) {
-          console.warn('No token found, using mock data for announcements');
-          // We'll continue without a token during development, but in production would require auth
-        }
-        
-        // Add baseURL for API requests
-        const baseURL = '';  // In production, this might be your API domain
+        const baseURL = '';
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
         
-        try {
-          // Attempt to fetch real announcement data
-          const response = await axios.get(`${baseURL}/api/announcement?group_id=${groupId}`, { headers });
-          
-          // Transform API data to the format we need
-          const formattedAnnouncements = response.data.map(announcement => ({
-            id: announcement.announcement_id,
-            title: announcement.title,
-            content: announcement.content,
-            date: announcement.timestamp,
-            link: `/group/${groupId}/announcement/${announcement.announcement_id}`
-          }));
-          
-          // Sort by date in descending order (newest first)
-          formattedAnnouncements.sort((a, b) => new Date(b.date) - new Date(a.date));
-          
-          setAnnouncementsList(formattedAnnouncements);
-        } catch (apiError) {
-          console.error('API error fetching announcements:', apiError);
-          // For development, provide an error message
-          setAnnouncementsError('Failed to load announcements');
-        }
+        const response = await axios.get(`${baseURL}/api/announcement?group_id=${groupId}`, { headers });
         
-        setAnnouncementsLoading(false);
+        // Transform API data to the format we need
+        const formattedAnnouncements = response.data.map(announcement => ({
+          id: announcement.announcement_id,
+          title: announcement.title,
+          content: announcement.content,
+          date: announcement.timestamp,
+          link: `/group/${groupId}/announcement/${announcement.announcement_id}`
+        }));
+        
+        // Sort by date in descending order (newest first)
+        formattedAnnouncements.sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        setAnnouncementsList(formattedAnnouncements);
       } catch (err) {
-        console.error('Error in announcement fetch process:', err);
+        setAnnouncementsError('Failed to load announcements');
+        console.error('Error fetching announcements:', err);
+      } finally {
         setAnnouncementsLoading(false);
-        setAnnouncementsError('An unexpected error occurred');
       }
     };
     
@@ -288,8 +257,8 @@ export default function Group() {
   const reportAccuracy = { accepted: 9, total: 12 };
   
   // Determine which buttons to show based on user role
-  const showModViewButton = userRole === "moderator";
-  
+  const showModViewButton = (userRole === "moderator" || userRole === "admin");
+  console.log("showModViewButton Value is ", showModViewButton);
   // Determine join/leave button visibility and text
   const getActionButton = () => {
     if (userRole === undefined) {
@@ -355,7 +324,7 @@ export default function Group() {
   if (loading) {
     return (
       <div className={styles.container}>
-        <GroupNavBar groupId={groupId} activeTab="overview" />
+        <GroupNavBar groupId={groupId} activeTab="overview" showModViewButton={showModViewButton} />
         <div className={styles.loadingContainer}>
           <p className="standardTextFont">Loading group information...</p>
         </div>
@@ -367,7 +336,7 @@ export default function Group() {
   if (error) {
     return (
       <div className={styles.container}>
-        <GroupNavBar groupId={groupId} activeTab="overview" />
+        <GroupNavBar groupId={groupId} activeTab="overview" showModViewButton={showModViewButton} />
         <div className={styles.errorContainer}>
           <p className="standardTextFont">Error: {error}</p>
         </div>
@@ -377,7 +346,7 @@ export default function Group() {
 
   return (
     <div className={styles.container}>
-      <GroupNavBar groupId={groupId} activeTab="overview" />
+      <GroupNavBar groupId={groupId} activeTab="overview" showModViewButton={showModViewButton} />
       
       {/* Header with group name and description */}
       <div className={styles.contentBoxRow}>
@@ -451,7 +420,7 @@ export default function Group() {
       {/* Announcements and Leaderboard in one row */}
       <div className={styles.contentBoxRow}>
         {/* Announcements section - 75% width */}
-        <div className={styles.contentBoxLeft}>
+        <div className={`${styles.contentBoxLeft} announcementsTable`}>
           <PagedTableBox 
             title={<Link to={`/group/${groupId}/announcements`} className={titleStyles.titleLink}>Announcements</Link>}
             columns={announcementColumns}
@@ -461,8 +430,8 @@ export default function Group() {
           />
         </div>
         
-        {/* Leaderboard section - 25% width */}
-        <div className={styles.contentBoxRight}>
+        {/* Leaderboard section - 34% width */}
+        <div className={`${styles.contentBoxRight} leaderboardTable`}>
           <PagedTableBox 
             title="Leaderboard"
             columns={leaderboardColumns}

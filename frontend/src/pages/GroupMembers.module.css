@@ -1,0 +1,50 @@
+/* GroupMembers table column width styles */
+:global(.membersTable) :global(table) {
+  table-layout: fixed;
+  width: 100%;
+}
+
+/* User column - 20% width */
+:global(.membersTable) :global(table th:nth-child(1)),
+:global(.membersTable) :global(table td:nth-child(1)) {
+  width: 20%;
+}
+
+/* Role column - 10% width */
+:global(.membersTable) :global(table th:nth-child(2)),
+:global(.membersTable) :global(table td:nth-child(2)) {
+  width: 10%;
+}
+
+/* Rating column - 10% width */
+:global(.membersTable) :global(table th:nth-child(3)),
+:global(.membersTable) :global(table td:nth-child(3)) {
+  width: 10%;
+}
+
+/* Max Rating column - 10% width */
+:global(.membersTable) :global(table th:nth-child(4)),
+:global(.membersTable) :global(table td:nth-child(4)) {
+  width: 10%;
+}
+
+/* Rated Contests column - 10% width */
+:global(.membersTable) :global(table th:nth-child(5)),
+:global(.membersTable) :global(table td:nth-child(5)) {
+  width: 10%;
+  text-align: center;
+}
+
+/* Report Accuracy column - 10% width */
+:global(.membersTable) :global(table th:nth-child(6)),
+:global(.membersTable) :global(table td:nth-child(6)) {
+  width: 10%;
+  text-align: center;
+}
+
+/* Date Joined column - 10% width */
+:global(.membersTable) :global(table th:nth-child(7)),
+:global(.membersTable) :global(table td:nth-child(7)) {
+  width: 10%;
+  text-align: right;
+}
