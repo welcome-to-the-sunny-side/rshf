@@ -184,7 +184,7 @@ export default function GroupContests() {
         </div>
       ) : (
         /* Contests table */
-        <div className={styles.contestsTableWrapper}>
+        <div className>
           <SortablePagedTableBox 
             columns={columns}
             data={tableRows}
@@ -192,7 +192,7 @@ export default function GroupContests() {
             itemsPerPage={15}
             initialSortColumnIndex={isLoggedInUserMember ? 6 : 2} // Date/Time or Final Rating column
             initialSortDirection="desc" // Descending order
-            className="contestsTable"
+            className="groupContestsTable"
           />
         </div>
       )}

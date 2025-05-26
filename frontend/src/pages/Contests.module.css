@@ -30,23 +30,26 @@
 }
 
 /* Contest table column width styles */
-:global(.contestsPage) :global(table) {
+:global(.contestsTable) :global(table) {
   table-layout: fixed;
   width: 100%;
 }
 
-:global(.contestsPage) :global(table th:nth-child(1)),
-:global(.contestsPage) :global(table td:nth-child(1)) {
+/* Contest name column - 70% width */
+:global(.contestsTable) :global(table th:nth-child(1)),
+:global(.contestsTable) :global(table td:nth-child(1)) {
   width: 70%;
 }
 
-:global(.contestsPage) :global(table th:nth-child(2)),
-:global(.contestsPage) :global(table td:nth-child(2)) {
+/* Platform column - 10% width */
+:global(.contestsTable) :global(table th:nth-child(2)),
+:global(.contestsTable) :global(table td:nth-child(2)) {
   width: 10%;
 }
 
-:global(.contestsPage) :global(table th:nth-child(3)),
-:global(.contestsPage) :global(table td:nth-child(3)) {
+/* Date/Time column - 20% width */
+:global(.contestsTable) :global(table th:nth-child(3)),
+:global(.contestsTable) :global(table td:nth-child(3)) {
   width: 20%;
   text-align: right;
 }

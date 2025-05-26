@@ -1,0 +1,51 @@
+/* GroupContests table column width styles */
+:global(.groupContestsTable) :global(table) {
+  table-layout: fixed;
+  width: 100%;
+}
+
+/* Contest column */
+:global(.groupContestsTable) :global(table th:nth-child(1)),
+:global(.groupContestsTable) :global(table td:nth-child(1)) {
+  width: 25%;
+}
+
+/* Platform column */
+:global(.groupContestsTable) :global(table th:nth-child(2)),
+:global(.groupContestsTable) :global(table td:nth-child(2)) {
+  width: 10%;
+}
+
+/* Date/Time column */
+:global(.groupContestsTable) :global(table th:nth-child(3)),
+:global(.groupContestsTable) :global(table td:nth-child(3)) {
+  width: 20%;
+}
+
+/* Participants column */
+:global(.groupContestsTable) :global(table th:nth-child(4)),
+:global(.groupContestsTable) :global(table td:nth-child(4)) {
+  width: 10%;
+  text-align: center;
+}
+
+/* Rank column (member view) */
+:global(.groupContestsTable) :global(table th:nth-child(5)),
+:global(.groupContestsTable) :global(table td:nth-child(5)) {
+  width: 6%;
+  text-align: center;
+}
+
+/* Rating Change column (member view) */
+:global(.groupContestsTable) :global(table th:nth-child(6)),
+:global(.groupContestsTable) :global(table td:nth-child(6)) {
+  width: 10%;
+  text-align: center;
+}
+
+/* Final Rating column (member view) */
+:global(.groupContestsTable) :global(table th:nth-child(7)),
+:global(.groupContestsTable) :global(table td:nth-child(7)) {
+  width: 10%;
+  text-align: center;
+}

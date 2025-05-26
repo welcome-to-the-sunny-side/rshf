@@ -6,20 +6,19 @@ import PagedTableBox from '../components/PagedTableBox';
 import ContentBoxWithTitle from '../components/ContentBoxWithTitle';
 import titleStyles from '../components/ContentBoxWithTitle.module.css';
 import styles from './Contests.module.css';
-
-// Backend URL
-const BACKEND_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api`;
+import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 
 export default function Contests() {
   const navigate = useNavigate();
+  const { user, token } = useAuth();
   const [upcomingContests, setUpcomingContests] = useState([]);
   const [pastContests, setPastContests] = useState([]);
-  const [loading, setLoading] = useState({ upcoming: false, past: false });
+  const [loading, setLoading] = useState({ upcoming: true, past: true });
   const [error, setError] = useState({ upcoming: null, past: null });
   
   useEffect(() => {
     // Check if the user is authenticated
-    const token = localStorage.getItem('token');
     if (!token) {
       navigate('/login');
       return;
@@ -28,31 +27,29 @@ export default function Contests() {
     // Fetch contests when component mounts
     fetchUpcomingContests();
     fetchPastContests();
-  }, [navigate]);
+  }, [navigate, token]);
   
   const fetchUpcomingContests = async () => {
     try {
       setLoading(prev => ({ ...prev, upcoming: true }));
+      setError(prev => ({ ...prev, upcoming: null }));
       
       // Fetch active/upcoming contests (finished=false)
-      const response = await fetch(`${BACKEND_URL}/contests?finished=false`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+      const response = await axios.get('/api/contests', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        params: { finished: false }
       });
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch upcoming contests: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('Upcoming contests:', data);
-      // Sort contests by start datetime in ascending order
-      const sortedData = [...data].sort((a, b) => a.start_time_posix - b.start_time_posix);
+      // Sort contests by start datetime in ascending order (upcoming shows soonest first)
+      const sortedData = [...response.data].sort((a, b) => a.start_time_posix - b.start_time_posix);
       setUpcomingContests(sortedData);
     } catch (err) {
       console.error('Error fetching upcoming contests:', err);
-      setError(prev => ({ ...prev, upcoming: err.message }));
+      setError(prev => ({ 
+        ...prev, 
+        upcoming: 'Failed to load upcoming contests. Please try again later.' 
+      }));
+      setUpcomingContests([]);
     } finally {
       setLoading(prev => ({ ...prev, upcoming: false }));
     }
@@ -61,26 +58,24 @@ export default function Contests() {
   const fetchPastContests = async () => {
     try {
       setLoading(prev => ({ ...prev, past: true }));
+      setError(prev => ({ ...prev, past: null }));
       
       // Fetch past contests (finished=true)
-      const response = await fetch(`${BACKEND_URL}/contests?finished=true`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+      const response = await axios.get('/api/contests', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        params: { finished: true }
       });
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch past contests: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('Past contests:', data);
-      // Sort contests by start datetime in ascending order
-      const sortedData = [...data].sort((a, b) => b.start_time_posix - a.start_time_posix);
+      // Sort contests by start datetime in descending order (past shows most recent first)
+      const sortedData = [...response.data].sort((a, b) => b.start_time_posix - a.start_time_posix);
       setPastContests(sortedData);
     } catch (err) {
       console.error('Error fetching past contests:', err);
-      setError(prev => ({ ...prev, past: err.message }));
+      setError(prev => ({ 
+        ...prev, 
+        past: 'Failed to load past contests. Please try again later.' 
+      }));
+      setPastContests([]);
     } finally {
       setLoading(prev => ({ ...prev, past: false }));
     }
@@ -107,51 +102,68 @@ export default function Contests() {
   };
   
   // Format data for upcoming contests
-  const upcomingData = loading.upcoming
-    ? [["Loading contests...", "", ""]]
-    : error.upcoming
-      ? [[`Error: ${error.upcoming}`, "", ""]]
-      : upcomingContests.length === 0
-        ? [["No upcoming contests", "", ""]]
-        : upcomingContests.map(contest => [
-            createContestLink(contest),
-            contest.platform,
-            formatDateTime(contest.start_time_posix)
-          ]);
+  const upcomingData = upcomingContests.length === 0 && !loading.upcoming && !error.upcoming
+    ? [["No upcoming contests", "", ""]]
+    : upcomingContests.map(contest => [
+        createContestLink(contest),
+        contest.platform,
+        formatDateTime(contest.start_time_posix)
+      ]);
   
   // Format data for past contests
-  const pastData = loading.past
-    ? [["Loading contests...", "", ""]]
-    : error.past
-      ? [[`Error: ${error.past}`, "", ""]]
-      : pastContests.length === 0
-        ? [["No past contests", "", ""]]
-        : pastContests.map(contest => [
-            createContestLink(contest),
-            contest.platform,
-            formatDateTime(contest.start_time_posix)
-          ]);
+  const pastData = pastContests.length === 0 && !loading.past && !error.past
+    ? [["No past contests", "", ""]]
+    : pastContests.map(contest => [
+        createContestLink(contest),
+        contest.platform,
+        formatDateTime(contest.start_time_posix)
+      ]);
 
   return (
     <div className="page-container contestsPage">
+      {/* Error messages */}
+      {error.upcoming && (
+        <div className="error-message" style={{ color: 'red', margin: '10px 0', textAlign: 'center' }}>
+          {error.upcoming}
+        </div>
+      )}
+      
+      {error.past && (
+        <div className="error-message" style={{ color: 'red', margin: '10px 0', textAlign: 'center' }}>
+          {error.past}
+        </div>
+      )}
+      
       {/* Active/Upcoming Contests */}
-      <TableBox 
-        title={<span className={titleStyles.titleText}>Active/Upcoming Contests</span>}
-        columns={columns}
-        data={upcomingData}
-        backgroundColor="rgb(230, 255, 230)" // Light green background
-      />
+      {loading.upcoming ? (
+        <div className="loading-indicator" style={{ textAlign: 'center', margin: '20px' }}>
+          Loading upcoming contests...
+        </div>
+      ) : (
+        <TableBox 
+          title={<span className={titleStyles.titleText}>Active/Upcoming Contests</span>}
+          columns={columns}
+          data={upcomingData}
+          backgroundColor="rgb(230, 255, 230)" // Light green background
+          className="contestsTable"
+        />
+      )}
 
       {/* Past Contests - Using PagedTableBox */}
-      {pastContests.length > 0 || loading.past || error.past ? (
+      {loading.past ? (
+        <div className="loading-indicator" style={{ textAlign: 'center', margin: '20px' }}>
+          Loading past contests...
+        </div>
+      ) : (
         <PagedTableBox 
           title={<span className={titleStyles.titleText}>Past Contests</span>}
           columns={columns}
           data={pastData}
           backgroundColor="rgb(245, 245, 245)" // Light gray background
           itemsPerPage={15}
+          className="contestsTable"
         />
-      ) : null}
+      )}
     </div>
   );
 }
