@@ -98,6 +98,7 @@ h1 {
 .contentBox.tableContainer {
   padding: 0;
   overflow: hidden; /* Ensure border radius clips content */
+  min-height: auto; /* Allow table container to shrink to content height */
 }
 
 /* Reusable content box class with transparent border */
