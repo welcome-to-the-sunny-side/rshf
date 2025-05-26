@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { useParams, Link } from 'react-router-dom';
 import SortableTableBox from '../components/SortableTableBox';
 import titleStyles from '../components/ContentBoxWithTitle.module.css';
@@ -9,74 +11,82 @@ import UserNavBar from '../components/UserNavBar';
 import styles from './UserGroups.module.css';
 
 export default function UserGroups() {
-  const { username } = useParams();
-  
-  // Updated dummy group data with rating, max rating, and join date
-  const userGroups = [
-    { 
-      name: 'root_group', 
-      rating: 2185, 
-      maxRating: 2200, 
-      joined: '2022-09-15' 
-    },
-    { 
-      name: 'Global', 
-      rating: 1450, 
-      maxRating: 1500, 
-      joined: '2022-09-15' 
-    },
-    { 
-      name: 'Math_Club', 
-      rating: 1890, 
-      maxRating: 1950, 
-      joined: '2022-10-03' 
-    },
-    { 
-      name: 'Chess_Enthusiasts', 
-      rating: 900, 
-      maxRating: 1000, 
-      joined: '2022-11-22' 
-    },
-    { 
-      name: 'Developers', 
-      rating: 1200, 
-      maxRating: 1250, 
-      joined: '2023-01-07' 
-    },
-    { 
-      name: 'Writers_Group', 
-      rating: 2100, 
-      maxRating: 2170, 
-      joined: '2023-02-14' 
+  const navigate = useNavigate();
+  const { user, token } = useAuth();
+  const { username } = useParams(); // This is the user_id from the URL
+  const [isOwnProfile, setIsOwnProfile] = useState(false);
+  const [userGroupsData, setUserGroupsData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!token) {
+      navigate('/login');
+      return;
     }
-  ];
-  
-  // Function to format the date
+
+    if (user && username && user.user_id === username) {
+      setIsOwnProfile(true);
+    } else {
+      setIsOwnProfile(false);
+    }
+
+    const fetchUserGroups = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(`/api/user?user_id=${username}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const userData = await response.json();
+        setUserGroupsData(userData.group_memberships || []);
+      } catch (e) {
+        console.error("Failed to fetch user groups:", e);
+        setError(e.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (username && token) {
+      fetchUserGroups();
+    }
+  }, [navigate, token, user, username]);
+
   const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     const options = { year: 'numeric', month: 'short', day: 'numeric' };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
-  // Transform the data for the TableBox component
   const columns = ["Group", "Rating", "Max Rating", "Date Joined"];
-  const data = userGroups.map(group => [
-    <Link to={`/group/${group.name}`} className="tableCellLink">{group.name}</Link>,
-    <span style={{ color: getRatingColor(group.rating), fontWeight: 'bold' }}>
-      {group.rating}
+  const data = userGroupsData.map(membership => [
+    <Link to={`/group/${membership.group_id}`} className="tableCellLink">{membership.group_id}</Link>,
+    <span style={{ color: getRatingColor(membership.user_group_rating), fontWeight: 'bold' }}>
+      {membership.user_group_rating}
     </span>,
-    <span style={{ color: getRatingColor(group.maxRating), fontWeight: 'bold' }}>
-      {group.maxRating}
+    <span style={{ color: getRatingColor(membership.user_group_max_rating), fontWeight: 'bold' }}>
+      {membership.user_group_max_rating}
     </span>,
-    formatDate(group.joined)
+    formatDate(membership.timestamp)
   ]);
+
+  if (loading) {
+    return <div className="page-container"><UserNavBar username={username} isOwnProfile={isOwnProfile} /><p>Loading user groups...</p></div>;
+  }
+
+  if (error) {
+    return <div className="page-container"><UserNavBar username={username} isOwnProfile={isOwnProfile} /><p>Error loading user groups: {error}</p></div>;
+  }
 
   return (
     <div className="page-container">
-      {/* Floating button box - same as in User.jsx */}
-      <UserNavBar username={username} />
-      
-      {/* Use SortableTableBox component for sortable columns */}
-      <SortableTableBox 
+      <UserNavBar username={username} isOwnProfile={isOwnProfile} />
+      <SortableTableBox
         columns={columns}
         data={data}
         initialSortColumnIndex={1} // Sort by rating initially
@@ -84,4 +94,4 @@ export default function UserGroups() {
       />
     </div>
   );
-} 
+}

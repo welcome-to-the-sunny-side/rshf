@@ -184,7 +184,9 @@ To obtain an access token, use the `/api/user/login` endpoint.
         "user_id": "string",
         "group_id": "string",
         "role": "string (Enum: 'admin', 'moderator', 'user')",
-        "user_group_rating": "integer"
+        "user_group_rating": "integer",
+        "user_group_max_rating": "integer",
+        "timestamp": "datetime (Date and time of joining the group)"
       }
       // ... more members
     ]

@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { useParams, Link } from 'react-router-dom';
 
 // Renamed component from Profile to User
@@ -102,7 +104,26 @@ const CodeChefIcon = ({ active }) => (
 );
 
 export default function User() {
+  const navigate = useNavigate();
+  const { user, token } = useAuth();
+  // const { userId } = useParams(); // This was a duplicate, username is used below from useParams
+  const [isOwnProfile, setIsOwnProfile] = useState(false);
+
+  useEffect(() => {
+    if (!token) {
+      navigate('/login');
+    }
+  }, [token, navigate]);
+
   const { username } = useParams();
+
+  useEffect(() => {
+    if (user && username && user.user_id === username) {
+      setIsOwnProfile(true);
+    } else {
+      setIsOwnProfile(false);
+    }
+  }, [user, username]);
   // Assume cf_username is the same as username for now. In a real app, these might differ.
   const cf_username = username;
   
@@ -165,7 +186,7 @@ export default function User() {
   return (
     <div className="page-container">
       {/* Updated floating button box with Links */}
-      <UserNavBar username={username} />
+      <UserNavBar username={cf_username} isOwnProfile={isOwnProfile} />
       
       {/* Two content boxes side by side */}
       <div className={styles.contentBoxRow}>

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { useParams, Link } from 'react-router-dom';
 import UserNavBar from '../components/UserNavBar';
 import ContentBoxWithTitle from '../components/ContentBoxWithTitle';
@@ -7,7 +9,10 @@ import ContentBoxWithTitle from '../components/ContentBoxWithTitle';
 import styles from './UserSettings.module.css';
 
 export default function UserSettings() {
+  const navigate = useNavigate();
+  const { user, token } = useAuth();
   const { username } = useParams();
+  const [isOwnProfile, setIsOwnProfile] = useState(false);
   
   // State for user settings
   const [email, setEmail] = useState('');
@@ -15,6 +20,31 @@ export default function UserSettings() {
   const [codeforcesHandle, setCodeforcesHandle] = useState('');
   const [atcoderHandle, setAtcoderHandle] = useState('');
   
+  useEffect(() => {
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
+    if (user && username) {
+      if (user.user_id === username) {
+        setIsOwnProfile(true);
+      } else {
+        // Logged-in user trying to access someone else's settings page
+        setIsOwnProfile(false);
+        navigate(`/user/${user.user_id}/settings`); // Redirect to their own settings
+      }
+    } else if (token && !user) {
+      // Token exists but user object is not yet available (still loading perhaps)
+      // Or, an invalid state. For settings, better to be cautious.
+      // Depending on app structure, might wait or redirect to login/home.
+      // For now, let's assume if token is there, user should become available.
+      // If user remains null with a token, AuthContext might have an issue or token is stale.
+      // Consider redirecting to login if user is persistently null with a token after a timeout.
+      // For this iteration, we'll rely on user object becoming available if token is valid.
+    }
+  }, [user, token, username, navigate]);
+
   // Fetch current user settings (in a real app, this would come from API)
   useEffect(() => {
     // Simulate fetching user data
@@ -67,7 +97,7 @@ export default function UserSettings() {
   return (
     <div className="page-container">
       {/* Floating button box */}
-      <UserNavBar username={username} />
+      <UserNavBar username={username} isOwnProfile={isOwnProfile} />
       
       {/* Content box with settings */}
       <ContentBoxWithTitle title="User Settings" backgroundColor="rgb(230, 240, 255)">

@@ -26,24 +26,28 @@
 :global(.groupContestsTable) :global(table th:nth-child(4)),
 :global(.groupContestsTable) :global(table td:nth-child(4)) {
   width: 10%; /* Maintained width */
+  text-align: center;
 }
 
 /* Rank column (only visible for members) */
 :global(.groupContestsTable) :global(table th:nth-child(5)),
 :global(.groupContestsTable) :global(table td:nth-child(5)) {
   width: 8%; /* Adjusted width */
+  text-align: center;
 }
 
 /* Rating Change column (only visible for members) */
 :global(.groupContestsTable) :global(table th:nth-child(6)),
 :global(.groupContestsTable) :global(table td:nth-child(6)) {
   width: 9%; /* Adjusted width */
+  text-align: center;
 }
 
 /* Final Rating column (only visible for members) */
 :global(.groupContestsTable) :global(table th:nth-child(7)),
 :global(.groupContestsTable) :global(table td:nth-child(7)) {
   width: 8%; /* Maintained width */
+  text-align: center;
 }
 
 .groupContestsTableWrapper {

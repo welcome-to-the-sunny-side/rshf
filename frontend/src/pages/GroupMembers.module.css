@@ -20,12 +20,14 @@
 :global(.membersTable) :global(table th:nth-child(3)),
 :global(.membersTable) :global(table td:nth-child(3)) {
   width: 10%;
+  text-align: center;
 }
 
 /* Max Rating column - 10% width */
 :global(.membersTable) :global(table th:nth-child(4)),
 :global(.membersTable) :global(table td:nth-child(4)) {
   width: 10%;
+  text-align: center;
 }
 
 /* Rated Contests column - 10% width */

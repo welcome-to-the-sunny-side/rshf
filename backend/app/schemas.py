@@ -69,6 +69,8 @@ class GroupMembershipOut(BaseModel):
     group_id: str
     role: Role
     user_group_rating: int
+    user_group_max_rating: int
+    timestamp: datetime 
 
     class Config:
         orm_mode = True
