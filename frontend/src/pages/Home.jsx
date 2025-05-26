@@ -7,6 +7,8 @@ import PagedTableBox from '../components/PagedTableBox';
 import ContentBoxWithTitle from '../components/ContentBoxWithTitle';
 import titleStyles from '../components/ContentBoxWithTitle.module.css';
 import { useAuth } from '../context/AuthContext';
+import { API_MESSAGES } from '../constants/apiMessages';
+import '../styles/apiFeedbackStyles.css';
 
 // No sample data - all data will be fetched from backend
 
@@ -194,47 +196,53 @@ export default function Home() {
 
   // Transform the data for the group table
   const groupData = loading.groups
-    ? [["Loading...", ""]]
+    ? [[API_MESSAGES.LOADING, ""]]
     : error.groups
-      ? [[`Error: ${error.groups}`, ""]]
-      : groups.map(group => [
-          <Link to={`/group/${group.name}`} className="tableCellLink">{group.name}</Link>,
-          group.memberCount.toLocaleString()
-        ]);
+      ? [[API_MESSAGES.ERROR, ""]]
+      : groups.length === 0
+        ? [[API_MESSAGES.NO_DATA, ""]]
+        : groups.map(group => [
+            <Link to={`/group/${group.name}`} className="tableCellLink">{group.name}</Link>,
+            group.memberCount.toLocaleString()
+          ]);
 
   const announcementColumns = ["Announcement", "Date"];
   // Transform the data for the announcements table
   const announcementData = loading.announcements
-    ? [["Loading...", ""]]
-    : error.announcements && !announcements.length
-      ? [["Error loading announcements", ""]]
-      : announcements.map(announcement => [
-          <Link to={announcement.link} className="tableCellLink">{announcement.title}</Link>,
-          new Date(announcement.date).toLocaleDateString('en-US', { 
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-          })
-        ]);
+    ? [[API_MESSAGES.LOADING, ""]]
+    : error.announcements
+      ? [[API_MESSAGES.ERROR, ""]]
+      : announcements.length === 0
+        ? [[API_MESSAGES.NO_DATA, ""]]
+        : announcements.map(announcement => [
+            <Link to={announcement.link} className="tableCellLink">{announcement.title}</Link>,
+            new Date(announcement.date).toLocaleDateString('en-US', { 
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric'
+            })
+          ]);
 
   const contestColumns = ["Contest", "Date"];
   // Transform the data for the contests table
   const contestData = loading.contests
-    ? [["Loading...", ""]]
+    ? [[API_MESSAGES.LOADING, ""]]
     : error.contests
-      ? [["Error loading contests", ""]]
-      : contests.map(contest => [
-          <Link to={`/contest/${contest.contest_id}`} className="tableCellLink">{contest.contest_name}</Link>,
-          contest.date
-            ? new Date(contest.date).toLocaleString('en-US', { 
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-              })
-            : "Date not specified"
-        ]);
+      ? [[API_MESSAGES.ERROR, ""]]
+      : contests.length === 0 
+        ? [[API_MESSAGES.NO_DATA, ""]]
+        : contests.map(contest => [
+            <Link to={`/contest/${contest.contest_id}`} className="tableCellLink">{contest.contest_name}</Link>,
+            contest.date
+              ? new Date(contest.date).toLocaleString('en-US', { 
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })
+              : "Date not specified"
+          ]);
 
   return (
     <div className="page-container">
@@ -253,24 +261,20 @@ export default function Home() {
               title={<Link to="/contests" className={titleStyles.titleLink}>Active/Upcoming Contests</Link>}
               backgroundColor="rgb(230, 255, 230)"
             >
-              <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
-                Loading...
-              </div>
+              <div className="api-feedback-container loading-message">{API_MESSAGES.LOADING}</div>
             </ContentBoxWithTitle>
           ) : error.contests ? (
             <ContentBoxWithTitle 
               title={<Link to="/contests" className={titleStyles.titleLink}>Active/Upcoming Contests</Link>}
               backgroundColor="rgb(230, 255, 230)"
             >
-              <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
-                No Active/Upcoming Contests T_T
-              </div>
+              <div className="api-feedback-container error-message">{API_MESSAGES.ERROR}</div>
             </ContentBoxWithTitle>
           ) : contests.length > 0 ? (
             <TableBox 
               title={<Link to="/contests" className={titleStyles.titleLink}>Active/Upcoming Contests</Link>}
               columns={contestColumns}
-              data={contestData}
+              data={contestData} 
               backgroundColor="rgb(230, 255, 230)"
             />
           ) : (
@@ -278,9 +282,7 @@ export default function Home() {
               title={<Link to="/contests" className={titleStyles.titleLink}>Active/Upcoming Contests</Link>}
               backgroundColor="rgb(230, 255, 230)"
             >
-              <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
-                No Active/Upcoming Contests T_T
-              </div>
+              <div className="api-feedback-container no-data-message">No Active/Upcoming Contests T_T</div>
             </ContentBoxWithTitle>
           )}
         </div>

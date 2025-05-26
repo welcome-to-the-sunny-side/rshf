@@ -10,6 +10,8 @@ import ParticipationGraph from '../components/ParticipationGraph';
 import titleStyles from '../components/ContentBoxWithTitle.module.css';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { API_MESSAGES } from '../constants/apiMessages';
+import '../styles/apiFeedbackStyles.css';
 
 // Calculate participation percentage based on members and participants
 const calculateParticipation = (totalMembers, participants) => {
@@ -108,12 +110,12 @@ export default function Group() {
               setUserMaxRating(0);
               setJoinDate("");
             } else {
-              setError("Error fetching membership information");
+              setError(API_MESSAGES.ERROR);
             }
           }
         }
       } catch (err) {
-        setError("Failed to load group data");
+        setError(API_MESSAGES.ERROR);
         console.error('Error fetching group data:', err);
       } finally {
         setLoading(false);
@@ -181,7 +183,7 @@ export default function Group() {
         
         setParticipationData(participationPoints);
       } catch (err) {
-        setParticipationError("Failed to load participation data");
+        setParticipationError(API_MESSAGES.ERROR);
         console.error('Error fetching participation data:', err);
       } finally {
         setParticipationLoading(false);
@@ -219,7 +221,7 @@ export default function Group() {
         
         setAnnouncementsList(formattedAnnouncements);
       } catch (err) {
-        setAnnouncementsError('Failed to load announcements');
+        setAnnouncementsError(API_MESSAGES.ERROR);
         console.error('Error fetching announcements:', err);
       } finally {
         setAnnouncementsLoading(false);
@@ -281,12 +283,12 @@ export default function Group() {
   
   // Participation data loading indicator
   const participationSection = participationLoading ? (
-    <div className="loading-indicator" style={{ textAlign: 'center', padding: '20px' }}>
-      Loading participation data...
+    <div className="api-feedback-container loading-message">
+      {API_MESSAGES.LOADING}
     </div>
   ) : participationError ? (
-    <div className="error-message" style={{ color: 'red', textAlign: 'center', padding: '20px' }}>
-      {participationError}
+    <div className="api-feedback-container error-message">
+      {API_MESSAGES.ERROR}
     </div>
   ) : participationData.length > 0 ? (
     <ParticipationGraph 
@@ -294,8 +296,8 @@ export default function Group() {
       groupName={groupId}
     />
   ) : (
-    <div className="no-data-message" style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
-      No participation data available for this group.
+    <div className="api-feedback-container no-data-message">
+      {API_MESSAGES.NO_DATA}
     </div>
   );
   
@@ -331,11 +333,11 @@ export default function Group() {
   let announcementData = [];
   
   if (announcementsLoading) {
-    announcementData = [[<span>Loading announcements...</span>, '']];
+    announcementData = [[<span className="loading-message">{API_MESSAGES.LOADING}</span>, '']];
   } else if (announcementsError) {
-    announcementData = [[<span>Error: {announcementsError}</span>, '']];
+    announcementData = [[<span className="error-message">{API_MESSAGES.ERROR}</span>, '']];
   } else if (announcementsList.length === 0) {
-    announcementData = [[<span>No announcements found</span>, '']];
+    announcementData = [[<span className="no-data-message">{API_MESSAGES.NO_DATA}</span>, '']];
   } else {
     // Transform the API data for display
     announcementData = announcementsList.map(announcement => [
@@ -355,11 +357,11 @@ export default function Group() {
   let leaderboardData = leaderboardRows;
   
   if (leaderboardLoading) {
-    leaderboardData = [[<span>Loading leaderboard...</span>, '', '']];
+    leaderboardData = [[<span className="loading-message">{API_MESSAGES.LOADING}</span>, '', '']];
   } else if (leaderboardError) {
-    leaderboardData = [[<span>Error: {leaderboardError}</span>, '', '']];
+    leaderboardData = [[<span className="error-message">{API_MESSAGES.ERROR}</span>, '', '']];
   } else if (leaderboardRows.length === 0) {
-    leaderboardData = [[<span>No rating data available</span>, '', '']];
+    leaderboardData = [[<span className="no-data-message">{API_MESSAGES.NO_DATA}</span>, '', '']];
   }
 
   // Display loading indicator if data is being fetched
@@ -367,8 +369,8 @@ export default function Group() {
     return (
       <div className={styles.container}>
         <GroupNavBar groupId={groupId} activeTab="overview" showModViewButton={showModViewButton} />
-        <div className={styles.loadingContainer}>
-          <p className="standardTextFont">Loading group information...</p>
+        <div className={`${styles.loadingContainer} api-feedback-container loading-message`}>
+          {API_MESSAGES.LOADING}
         </div>
       </div>
     );
@@ -379,8 +381,8 @@ export default function Group() {
     return (
       <div className={styles.container}>
         <GroupNavBar groupId={groupId} activeTab="overview" showModViewButton={showModViewButton} />
-        <div className={styles.errorContainer}>
-          <p className="standardTextFont">Error: {error}</p>
+        <div className={`${styles.errorContainer} api-feedback-container error-message`}>
+          {API_MESSAGES.ERROR}
         </div>
       </div>
     );

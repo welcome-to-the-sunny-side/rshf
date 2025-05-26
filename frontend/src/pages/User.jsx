@@ -7,6 +7,8 @@ import axios from 'axios';
 import styles from './User.module.css';
 import RatingGraph from '../components/RatingGraph';
 import UserNavBar from '../components/UserNavBar';
+import { API_MESSAGES } from '../constants/apiMessages';
+import '../styles/apiFeedbackStyles.css';
 
 // Import platform icon images
 import codeforcesIconPath from '../assets/codeforces-icon-180x180.png';
@@ -253,18 +255,18 @@ export default function User() {
     <div className="page-container">
       {/* Error message */}
       {error && (
-        <div className="error-message" style={{ color: 'red', margin: '20px', textAlign: 'center' }}>
-          {error}
+        <div className="api-feedback-container error-message">
+          {API_MESSAGES.ERROR}
         </div>
       )}
       
       {/* Loading indicator */}
       {loading ? (
-        <div className="loading-indicator" style={{ textAlign: 'center', margin: '50px' }}>
-          Loading user data...
+        <div className="api-feedback-container loading-message">
+          {API_MESSAGES.LOADING}
         </div>
       ) : !userData ? (
-        <div className="error-message" style={{ textAlign: 'center', margin: '50px' }}>
+        <div className="api-feedback-container no-data-message">
           User data not found.
         </div>
       ) : (
@@ -420,7 +422,7 @@ export default function User() {
                   </div>
                 </div>
               ) : (
-                <div className="standardTextFont">No group data available</div>
+                <div className="api-feedback-container no-data-message">No group data available</div>
               )}
             </div>
           </div>
@@ -428,17 +430,17 @@ export default function User() {
           {/* Rating Graph box (full width) */}
           <div className="contentBox standardTextFont" style={{ padding: '0rem' }}>
             {loadingRatingData ? (
-              <div className="loading-indicator" style={{ textAlign: 'center', padding: '20px' }}>
-                Loading rating data...
+              <div className="api-feedback-container loading-message">
+                {API_MESSAGES.LOADING}
               </div>
             ) : ratingError ? (
-              <div className="error-message" style={{ color: 'red', textAlign: 'center', padding: '20px' }}>
-                {ratingError}
+              <div className="api-feedback-container error-message">
+                {API_MESSAGES.ERROR}
               </div>
             ) : currentRatingHistory.length > 0 ? (
               <RatingGraph ratingHistory={currentRatingHistory} />
             ) : (
-              <div className="no-data-message" style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+              <div className="api-feedback-container no-data-message">
                 No rating history available for this group.
               </div>
             )}

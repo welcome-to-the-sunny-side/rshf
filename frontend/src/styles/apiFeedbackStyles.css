@@ -1,0 +1,21 @@
+.api-feedback-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  font-family: sans-serif;
+}
+
+.loading-message {
+  color: #3498db; /* Blue */
+  font-style: italic;
+}
+
+.error-message {
+  color: #e74c3c; /* Red */
+  font-weight: bold;
+}
+
+.no-data-message {
+  color: #95a5a6; /* Gray */
+}

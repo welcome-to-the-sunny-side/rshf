@@ -8,6 +8,8 @@ import titleStyles from '../components/ContentBoxWithTitle.module.css';
 import styles from './Contests.module.css';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { API_MESSAGES } from '../constants/apiMessages';
+import '../styles/apiFeedbackStyles.css';
 
 export default function Contests() {
   const navigate = useNavigate();
@@ -47,7 +49,7 @@ export default function Contests() {
       console.error('Error fetching upcoming contests:', err);
       setError(prev => ({ 
         ...prev, 
-        upcoming: 'Failed to load upcoming contests. Please try again later.' 
+        upcoming: API_MESSAGES.ERROR 
       }));
       setUpcomingContests([]);
     } finally {
@@ -73,7 +75,7 @@ export default function Contests() {
       console.error('Error fetching past contests:', err);
       setError(prev => ({ 
         ...prev, 
-        past: 'Failed to load past contests. Please try again later.' 
+        past: API_MESSAGES.ERROR 
       }));
       setPastContests([]);
     } finally {
@@ -103,7 +105,7 @@ export default function Contests() {
   
   // Format data for upcoming contests
   const upcomingData = upcomingContests.length === 0 && !loading.upcoming && !error.upcoming
-    ? [["No upcoming contests", "", ""]]
+    ? [[API_MESSAGES.NO_DATA, "", ""]]
     : upcomingContests.map(contest => [
         createContestLink(contest),
         contest.platform,
@@ -112,7 +114,7 @@ export default function Contests() {
   
   // Format data for past contests
   const pastData = pastContests.length === 0 && !loading.past && !error.past
-    ? [["No past contests", "", ""]]
+    ? [[API_MESSAGES.NO_DATA, "", ""]]
     : pastContests.map(contest => [
         createContestLink(contest),
         contest.platform,
@@ -123,21 +125,21 @@ export default function Contests() {
     <div className="page-container contestsPage">
       {/* Error messages */}
       {error.upcoming && (
-        <div className="error-message" style={{ color: 'red', margin: '10px 0', textAlign: 'center' }}>
-          {error.upcoming}
+        <div className="api-feedback-container error-message">
+          {API_MESSAGES.ERROR}
         </div>
       )}
       
       {error.past && (
-        <div className="error-message" style={{ color: 'red', margin: '10px 0', textAlign: 'center' }}>
-          {error.past}
+        <div className="api-feedback-container error-message">
+          {API_MESSAGES.ERROR}
         </div>
       )}
       
       {/* Active/Upcoming Contests */}
       {loading.upcoming ? (
-        <div className="loading-indicator" style={{ textAlign: 'center', margin: '20px' }}>
-          Loading upcoming contests...
+        <div className="api-feedback-container loading-message">
+          {API_MESSAGES.LOADING}
         </div>
       ) : (
         <TableBox 
@@ -151,8 +153,8 @@ export default function Contests() {
 
       {/* Past Contests - Using PagedTableBox */}
       {loading.past ? (
-        <div className="loading-indicator" style={{ textAlign: 'center', margin: '20px' }}>
-          Loading past contests...
+        <div className="api-feedback-container loading-message">
+          {API_MESSAGES.LOADING}
         </div>
       ) : (
         <PagedTableBox 

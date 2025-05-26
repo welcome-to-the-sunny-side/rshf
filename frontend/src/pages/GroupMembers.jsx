@@ -6,6 +6,8 @@ import GroupNavBar from '../components/GroupNavBar';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import styles from './GroupMembers.module.css';
+import { API_MESSAGES } from '../constants/apiMessages';
+import '../styles/apiFeedbackStyles.css';
 
 export default function GroupMembers() {
   const { groupId } = useParams();
@@ -87,7 +89,7 @@ export default function GroupMembers() {
         setError(null);
       } catch (err) {
         console.error('Failed to fetch members data:', err);
-        setError('Failed to load group members. Please try again later.');
+        setError(API_MESSAGES.ERROR);
         setMembersData([]);
       } finally {
         setLoading(false);
@@ -131,16 +133,20 @@ export default function GroupMembers() {
       <GroupNavBar groupId={groupId} showModViewButton={showModViewButton} />
       
       {/* Error message */}
-      {error && (
-        <div className="error-message" style={{ color: 'red', margin: '20px', textAlign: 'center' }}>
-          {error}
-        </div>
-      )}
+      
       
       {/* Loading indicator */}
       {loading ? (
-        <div className="loading-indicator" style={{ textAlign: 'center', margin: '50px' }}>
-          Loading group members...
+        <div className="api-feedback-container loading-message">
+          {API_MESSAGES.LOADING}
+        </div>
+      ) : error ? (
+        <div className="api-feedback-container error-message">
+          {API_MESSAGES.ERROR}
+        </div>
+      ) : membersData.length === 0 ? (
+        <div className="api-feedback-container no-data-message">
+          {API_MESSAGES.NO_DATA}
         </div>
       ) : (
         /* Members table */

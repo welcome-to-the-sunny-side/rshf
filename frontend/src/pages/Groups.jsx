@@ -5,6 +5,8 @@ import ContentBoxWithTitle from '../components/ContentBoxWithTitle';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import styles from './Groups.module.css';
+import { API_MESSAGES } from '../constants/apiMessages';
+import '../styles/apiFeedbackStyles.css';
 
 export default function Groups() {
   const navigate = useNavigate();
@@ -36,7 +38,7 @@ export default function Groups() {
       setGroups(response.data);
     } catch (err) {
       console.error('Error fetching groups:', err);
-      setError('Failed to load groups. Please try again later.');
+      setError(API_MESSAGES.ERROR);
       setGroups([]);
     } finally {
       setLoading(false);
@@ -111,22 +113,22 @@ export default function Groups() {
     <div className="page-container">
       {/* Error message */}
       {error && (
-        <div className="error-message" style={{ color: 'red', margin: '20px', textAlign: 'center' }}>
-          {error}
+        <div className="api-feedback-container error-message">
+          {API_MESSAGES.ERROR}
         </div>
       )}
       
       {/* Loading indicator */}
       {loading ? (
-        <div className="loading-indicator" style={{ textAlign: 'center', margin: '50px' }}>
-          Loading groups...
+        <div className="api-feedback-container loading-message">
+          {API_MESSAGES.LOADING}
         </div>
       ) : (
         <>
           {groups.length === 0 ? (
-            <ContentBoxWithTitle title="No Groups">
-              <p>No groups found.</p>
-            </ContentBoxWithTitle>
+            <div className="api-feedback-container no-data-message">
+              No groups found.
+            </div>
           ) : (
             <div className={styles.groupsTableWrapper}>
               <SortablePagedTableBox 
