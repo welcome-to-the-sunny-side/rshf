@@ -120,7 +120,7 @@ def build_groups() -> List[Group]:
         groups.append(
             Group(
                 group_id=gid,
-                group_name=faker.unique.catch_phrase().lower().replace(" ", "-"),
+                group_name=gid,
                 group_description=faker.sentence(),
                 is_private=random.random() < 0.3,
             )

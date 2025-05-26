@@ -11,61 +11,17 @@ import titleStyles from '../components/ContentBoxWithTitle.module.css';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 
-// Generate varied dummy participation data
-const generateDummyParticipationData = (numPoints) => {
-  const data = [];
-  let participation = Math.floor(Math.random() * 50) + 20; // Start between 20-70
-  let strength = Math.floor(Math.random() * 60) + 30;     // Start between 30-90
-  let currentDate = new Date(2023, 0, 1); // Start date Jan 1, 2023
+// Calculate participation percentage based on members and participants
+const calculateParticipation = (totalMembers, participants) => {
+  if (!totalMembers || totalMembers === 0) return 0;
+  return Math.round((participants / totalMembers) * 100);
+};
 
-  for (let i = 0; i < numPoints; i++) {
-    // Simulate participation change (can go up or down)
-    const participationChange = Math.floor((Math.random() - 0.4) * 15); // Tends to increase slightly
-    participation = Math.max(5, Math.min(100, participation + participationChange)); // Between 5-100
-    
-    // Simulate strength change (tends to follow participation but smoother)
-    const strengthChange = Math.floor((Math.random() - 0.3) * 10); // Tends to increase slightly
-    strength = Math.max(10, Math.min(100, strength + strengthChange)); // Between 10-100
-    
-    // Simulate time passing (15-45 days)
-    const daysToAdd = Math.floor(Math.random() * 30) + 15;
-    currentDate.setDate(currentDate.getDate() + daysToAdd);
-    
-    // Format date as YYYY-MM-DD
-    const dateString = currentDate.toISOString().split('T')[0];
-    // Add contest ID
-    const contest_id = Math.floor(Math.random() * 10000) + 1;
-    
-    data.push({ 
-      date: dateString, 
-      participation: participation, 
-      strength: strength, 
-      contest_id: contest_id 
-    });
-  }
-  
-  // Add one more point closer to today for better visualization
-  const today = new Date();
-  today.setDate(today.getDate() - Math.floor(Math.random() * 30)); // Within the last 30 days
-  
-  const lastParticipationChange = Math.floor((Math.random() - 0.3) * 10);
-  participation = Math.max(5, Math.min(100, participation + lastParticipationChange));
-  
-  const lastStrengthChange = Math.floor((Math.random() - 0.2) * 8);
-  strength = Math.max(10, Math.min(100, strength + lastStrengthChange));
-  
-  const last_contest_id = Math.floor(Math.random() * 10000) + 1;
-  
-  data.push({ 
-    date: today.toISOString().split('T')[0], 
-    participation: participation, 
-    strength: strength, 
-    contest_id: last_contest_id 
-  });
-  
-  // Ensure data is sorted by date
-  data.sort((a, b) => Date.parse(a.date) - Date.parse(b.date));
-  return data;
+// Calculate group strength (average rating of participants)
+const calculateStrength = (ratings) => {
+  if (!ratings || ratings.length === 0) return 0;
+  const sum = ratings.reduce((a, b) => a + b, 0);
+  return Math.round(sum / ratings.length);
 };
 
 export default function Group() {
@@ -76,6 +32,9 @@ export default function Group() {
   const [announcementsList, setAnnouncementsList] = useState([]);
   const [announcementsLoading, setAnnouncementsLoading] = useState(true);
   const [announcementsError, setAnnouncementsError] = useState(null);
+  const [participationData, setParticipationData] = useState([]);
+  const [participationLoading, setParticipationLoading] = useState(true);
+  const [participationError, setParticipationError] = useState(null);
   
   // Initialize group data with state
   const [groupData, setGroupData] = useState({
@@ -164,6 +123,76 @@ export default function Group() {
     fetchGroupData();
   }, [groupId]);
   
+  // Fetch participation data from API
+  useEffect(() => {
+    const fetchParticipationData = async () => {
+      try {
+        setParticipationLoading(true);
+        setParticipationError(null);
+        
+        const baseURL = '';
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        
+        // Fetch finished contests data
+        const contestsResponse = await axios.get(`${baseURL}/api/contests?finished=true`, { headers });
+        const contests = contestsResponse.data;
+        
+        // Process contest data to extract participation for this group
+        const participationPoints = [];
+        
+        // Filter contests that have data for this group
+        contests.forEach(contest => {
+          if (contest.group_views && contest.group_views[groupId]) {
+            const groupData = contest.group_views[groupId];
+            const totalMembers = groupData.total_members || 0;
+            const participants = groupData.total_participation || 0;
+            
+            // Extract ratings if available for strength calculation
+            const ratings = [];
+            if (contest.standings) {
+              // Get all participants from this group with ratings
+              Object.entries(contest.standings).forEach(([userId, data]) => {
+                // Check if this user belongs to our group
+                if (data.group_id === groupId && data.rating_after) {
+                  ratings.push(data.rating_after);
+                }
+              });
+            }
+            
+            // Calculate participation percentage and group strength
+            const participation = calculateParticipation(totalMembers, participants);
+            const strength = calculateStrength(ratings);
+            
+            // Convert contest start time to date string
+            const date = new Date(contest.start_time_posix * 1000).toISOString().split('T')[0];
+            
+            // Add data point
+            participationPoints.push({
+              date,
+              participation,
+              strength,
+              contest_id: contest.contest_id
+            });
+          }
+        });
+        
+        // Sort by date
+        participationPoints.sort((a, b) => Date.parse(a.date) - Date.parse(b.date));
+        
+        setParticipationData(participationPoints);
+      } catch (err) {
+        setParticipationError("Failed to load participation data");
+        console.error('Error fetching participation data:', err);
+      } finally {
+        setParticipationLoading(false);
+      }
+    };
+    
+    if (groupId && token) {
+      fetchParticipationData();
+    }
+  }, [groupId, token]);
+  
   // Fetch announcements from API
   useEffect(() => {
     const fetchAnnouncements = async () => {
@@ -250,13 +279,26 @@ export default function Group() {
     }
   }, [groupData, loading]); // This will run when groupData is updated
   
-  // Generate dummy participation data
-  const participationData = generateDummyParticipationData(12);
+  // Participation data loading indicator
+  const participationSection = participationLoading ? (
+    <div className="loading-indicator" style={{ textAlign: 'center', padding: '20px' }}>
+      Loading participation data...
+    </div>
+  ) : participationError ? (
+    <div className="error-message" style={{ color: 'red', textAlign: 'center', padding: '20px' }}>
+      {participationError}
+    </div>
+  ) : participationData.length > 0 ? (
+    <ParticipationGraph 
+      participationData={participationData} 
+      groupName={groupId}
+    />
+  ) : (
+    <div className="no-data-message" style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+      No participation data available for this group.
+    </div>
+  );
   
-  // Dummy report accuracy data
-  const reportAccuracy = { accepted: 9, total: 12 };
-  
-  // Determine which buttons to show based on user role
   const showModViewButton = (userRole === "moderator" || userRole === "admin");
   console.log("showModViewButton Value is ", showModViewButton);
   // Determine join/leave button visibility and text
@@ -445,10 +487,7 @@ export default function Group() {
       {/* Participation Graph section */}
       <div className={`${styles.fullWidthSection} standardTextFont`}>
         <ContentBoxWithTitle title="Participation" backgroundColor="rgb(230, 255, 255)" contentPadding="5px">
-          <ParticipationGraph 
-            participationData={participationData} 
-            groupName={groupId}
-          />
+          {participationSection}
         </ContentBoxWithTitle>
       </div>
     </div>

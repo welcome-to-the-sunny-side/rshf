@@ -1,7 +1,7 @@
 # app/crud.py
 from typing import List, Optional, Dict, Any
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from app import models
 from app.utils import hash_password, verify_password
@@ -200,7 +200,8 @@ def filter_contest_participations(
     uid: Optional[str] = None,
     cid: Optional[str] = None,
 ) -> List[models.ContestParticipation]:
-    q = db.query(models.ContestParticipation)
+    # Use joinedload to eagerly load the contest relationship
+    q = db.query(models.ContestParticipation).options(joinedload(models.ContestParticipation.contest))
     if gid is not None:
         q = q.filter(models.ContestParticipation.group_id == gid)
     if uid is not None:

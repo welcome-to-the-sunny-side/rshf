@@ -118,6 +118,7 @@ class ContestParticipationOut(BaseModel):
     rating_before: Optional[int] = None
     rating_after: Optional[int] = None
     rank: Optional[int] = None
+    contest: Optional['ContestOut'] = None
 
     class Config:
         orm_mode = True
@@ -254,4 +255,5 @@ class CustomMembershipData(BaseModel):
 GroupOut.model_rebuild()
 UserOut.model_rebuild()
 GroupSingle.model_rebuild()
+ContestParticipationOut.model_rebuild()
 

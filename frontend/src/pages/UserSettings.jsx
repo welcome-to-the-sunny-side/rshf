@@ -101,7 +101,7 @@ export default function UserSettings() {
       
       {/* Content box with settings */}
       <ContentBoxWithTitle title="User Settings" backgroundColor="rgb(230, 240, 255)">
-        <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', padding: '15px' }}>
+        <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', padding: '15px', display: 'flex', flexDirection: 'column' }}>
           {/* Email Address */}
           <div style={{ marginBottom: '20px' }}>
             <label htmlFor="email" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
@@ -113,8 +113,9 @@ export default function UserSettings() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                className="standardTextFont"
                 style={{
-                  flex: '1',
+                  width: '100%',
                   padding: '8px',
                   borderRadius: '4px',
                   border: '1px solid #ccc'
@@ -141,8 +142,9 @@ export default function UserSettings() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter new password"
+                className="standardTextFont"
                 style={{
-                  flex: '1',
+                  width: '100%',
                   padding: '8px',
                   borderRadius: '4px',
                   border: '1px solid #ccc'
@@ -168,8 +170,9 @@ export default function UserSettings() {
                 type="text"
                 value={codeforcesHandle}
                 onChange={(e) => setCodeforcesHandle(e.target.value)}
+                className="standardTextFont"
                 style={{
-                  flex: '1',
+                  width: '100%',
                   padding: '8px',
                   borderRadius: '4px',
                   border: '1px solid #ccc'
@@ -195,8 +198,9 @@ export default function UserSettings() {
                 type="text"
                 value={atcoderHandle}
                 onChange={(e) => setAtcoderHandle(e.target.value)}
+                className="standardTextFont"
                 style={{
-                  flex: '1',
+                  width: '100%',
                   padding: '8px',
                   borderRadius: '4px',
                   border: '1px solid #ccc'

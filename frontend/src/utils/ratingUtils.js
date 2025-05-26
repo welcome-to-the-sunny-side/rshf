@@ -1,6 +1,20 @@
 // Rating utility functions for the application
 // Contains helper functions for determining rating colors and rank names
 
+// Rating graph color bands (for use in RatingGraph)
+export const ratingGraphColors = [
+  { color: '#a00', yaxis: { from: 3000 } },
+  { color: '#f33', yaxis: { from: 2600, to: 2999 } },
+  { color: '#f77', yaxis: { from: 2400, to: 2599 } },
+  { color: '#ffbb55', yaxis: { from: 2300, to: 2399 } },
+  { color: '#ffcc88', yaxis: { from: 2100, to: 2299 } },
+  { color: '#f8f', yaxis: { from: 1900, to: 2099 } },
+  { color: '#aaf', yaxis: { from: 1600, to: 1899 } },
+  { color: '#77ddbb', yaxis: { from: 1400, to: 1599 } },
+  { color: '#7f7', yaxis: { from: 1200, to: 1399 } },
+  { color: '#ccc', yaxis: { from: 0, to: 1199 } },
+];
+
 // RANK COLORS
 export const RANK_COLORS = {
   newbie      : '#808080',    //   < 1200

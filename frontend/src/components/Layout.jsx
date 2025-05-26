@@ -27,12 +27,13 @@ export default function Layout({ children }) {
               {user.user_id}
             </Link>
             <span className={styles.userActionSeparator}>|</span>
-            <button 
+            <span 
               onClick={handleLogout} 
-              className={styles.logoutLink}
+              className={styles.usernameLink}
+              style={{ cursor: 'pointer' }}
             >
               Logout
-            </button>
+            </span>
           </div>
         )}
       </header>
