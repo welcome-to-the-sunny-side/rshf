@@ -269,18 +269,11 @@ def update_contest_info_from_cf_api(db: Session, cf_contest_id: str, group_id: O
         print("contest not in db")
         return
 
-    print("updating contest object...")
-    update_contest(
-        db,
-        contest_id=contest.contest_id,
-        finished=True,
-        standings=cf_api.contest_standings(contest.internal_contest_identifier)
-    )
-    print("updated contest object!!")
-
     # update contest participation objects
     group_rank = dict()
     standingsObj = cf_api.contest_standings(contest.internal_contest_identifier)
+
+    group_view = dict()
     
     print("updating participation objects...")
     updated_parts = []
@@ -298,9 +291,28 @@ def update_contest_info_from_cf_api(db: Session, cf_contest_id: str, group_id: O
             part.took_part = True
             group_rank[part.group_id] = group_rank.get(part.group_id, 0) + 1
             updated_parts.append(part)
-    
+
+            if part.group_id not in group_view:
+                group_view[part.group_id] = {
+                    "total_members": part.group.memberships.count(),
+                    "total_participants": 0,
+                }
+            group_view[part.group_id]["total_participants"] += 1
+
     db.commit()
     print("updated participation objects!!")
+    
+    print("updating contest object...")
+    update_contest(
+        db,
+        contest_id=contest.contest_id,
+        finished=True,
+        standings=cf_api.contest_standings(contest.internal_contest_identifier),
+        group_views=group_view
+    )
+    print("updated contest object!!")
+
+    db.commit()
     return updated_parts
     
 
@@ -442,7 +454,24 @@ def list_groups_for_user(db: Session, user_id: str) -> List[models.Group]:
 # ───────────── reports ─────────────
 
 def create_report(db: Session, payload: schemas.ReportCreate) -> models.Report:
-    rpt = models.Report(**payload.model_dump())
+    count = db.query(func.count(models.Report.report_id)).scalar()
+    report_id = f"r{count + 1}"
+
+    reporter_membership = db.query(models.GroupMembership).filter(
+        models.GroupMembership.user_id == payload.reporter_user_id,
+        models.GroupMembership.group_id == payload.group_id,
+    ).first()
+    respondent_membership = db.query(models.GroupMembership).filter(
+        models.GroupMembership.user_id == payload.respondent_user_id,
+        models.GroupMembership.group_id == payload.group_id,
+    ).first()
+
+    reporter_rating_at_report_time = reporter_membership.user_group_rating
+    respondent_rating_at_report_time = respondent_membership.user_group_rating
+    
+    
+
+    rpt = models.Report(report_id=report_id, reporter_rating_at_report_time=reporter_rating_at_report_time, respondent_rating_at_report_time=respondent_rating_at_report_time, **payload.model_dump())
     db.add(rpt)
     db.commit()
     db.refresh(rpt)
@@ -451,14 +480,31 @@ def create_report(db: Session, payload: schemas.ReportCreate) -> models.Report:
 
 def list_reports(
     db: Session,
+    report_id: Optional[str] = None,
     group_id: Optional[str] = None,
-    unresolved_only: bool = False,
+    contest_id: Optional[str] = None,
+    reporter_user_id: Optional[str] = None,
+    respondent_user_id: Optional[str] = None,
+    resolved: Optional[bool] = None,
+    resolved_by: Optional[str] = None,
 ) -> List[models.Report]:
     q = db.query(models.Report)
+    
+    if report_id:
+        q = q.filter(models.Report.report_id == report_id)
     if group_id:
         q = q.filter(models.Report.group_id == group_id)
-    if unresolved_only:
-        q = q.filter(models.Report.resolved.is_(False))
+    if contest_id:
+        q = q.filter(models.Report.contest_id == contest_id)
+    if reporter_user_id:
+        q = q.filter(models.Report.reporter_user_id == reporter_user_id)
+    if respondent_user_id:
+        q = q.filter(models.Report.respondent_user_id == respondent_user_id)
+    if resolved is not None:
+        q = q.filter(models.Report.resolved.is_(resolved))
+    if resolved_by:
+        q = q.filter(models.Report.resolved_by == resolved_by)
+        
     return q.all()
 
 
@@ -466,9 +512,18 @@ def resolve_report(db: Session, payload: schemas.ReportResolve) -> Optional[mode
     rpt = db.query(models.Report).filter(models.Report.report_id == payload.report_id).first()
     if not rpt:
         return None
+
+    resolver_membership = db.query(models.GroupMembership).filter(
+        models.GroupMembership.user_id == payload.resolved_by,
+        models.GroupMembership.group_id == rpt.group_id,
+    ).first()
+    resolver_rating_at_resolve_time = resolver_membership.user_group_rating
+    
     rpt.resolved = True
     rpt.resolved_by = payload.resolved_by
     rpt.resolve_message = payload.resolve_message
+    rpt.resolver_rating_at_resolve_time = resolver_rating_at_resolve_time
+    rpt.resolve_timestamp = datetime.utcnow()
     db.commit()
     db.refresh(rpt)
     return rpt

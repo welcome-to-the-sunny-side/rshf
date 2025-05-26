@@ -19,7 +19,7 @@ class Status(str, enum.Enum):
 
 class ModelBase(Base):
     __abstract__ = True
-    timestamp = Column(DateTime, server_default=func.timezone('UTC', func.now()), nullable=False)
+    timestamp = Column(DateTime, server_default=func.timezone('UTC', func.now()), nullable=False, index=True)
 
 class User(ModelBase):
     __tablename__ = "users"
@@ -41,7 +41,7 @@ class User(ModelBase):
     # hqas to be hashed
     hashed_password = Column(String, nullable=False, default=hash_password("devpass"))
 
-    memberships = relationship("GroupMembership", back_populates="user", cascade="all, delete")
+    memberships = relationship("GroupMembership", back_populates="user", cascade="all, delete", lazy="dynamic")
     def __repr__(self):
         return f"<User(id={self.user_id}, cf_handle='{self.cf_handle}', trusted_score={self.trusted_score})>"
 
@@ -56,7 +56,7 @@ class Group(ModelBase):
     group_description = Column(String, nullable=True)
     is_private = Column(Boolean, nullable=False, default=False)
 
-    memberships = relationship("GroupMembership", back_populates="group", cascade="all, delete")
+    memberships = relationship("GroupMembership", back_populates="group", cascade="all, delete", lazy="dynamic")
     def __repr__(self):
         return f"<Group(id={self.group_id}, name='{self.group_name}')>"
 
@@ -94,6 +94,7 @@ class Contest(ModelBase):
     internal_contest_identifier = Column(String, nullable=True)
     standings = Column(JSON, nullable=True)
     finished = Column(Boolean, nullable=False, default=False)
+    group_views = Column(JSON, nullable=True)
 
     participations = relationship("ContestParticipation", back_populates="contest", cascade="all, delete")
     def __repr__(self):
@@ -126,17 +127,23 @@ class Report(ModelBase):
     __tablename__ = "reports"
 
     report_id = Column(String, primary_key=True, index=True)
-    group_id = Column(String, ForeignKey("groups.group_id"), nullable=False)
-    contest_id = Column(String, ForeignKey("contests.contest_id"), nullable=False)
+    group_id = Column(String, ForeignKey("groups.group_id"), nullable=False, index=True)
+    contest_id = Column(String, ForeignKey("contests.contest_id"), nullable=False, index=True)
 
-    reporter_user_id = Column(String, ForeignKey("users.user_id"), nullable=False)
-    respondent_user_id = Column(String, ForeignKey("users.user_id"), nullable=False)
+    reporter_user_id = Column(String, ForeignKey("users.user_id"), nullable=False, index=True)
+    respondent_user_id = Column(String, ForeignKey("users.user_id"), nullable=False, index=True)
+
+    # rating snapshots
+    reporter_rating_at_report_time = Column(Integer, nullable=True)
+    respondent_rating_at_report_time = Column(Integer, nullable=True)
+    resolver_rating_at_resolve_time = Column(Integer, nullable=True)
+    
 
     report_description = Column(String, nullable=False)
-    resolved = Column(Boolean, nullable=False, default=False)
-    resolved_by = Column(String, ForeignKey("users.user_id"), nullable=True)
+    resolved = Column(Boolean, nullable=False, default=False, index=True)
+    resolved_by = Column(String, ForeignKey("users.user_id"), nullable=True, index=True)
     resolve_message = Column(String, nullable=True)
-    resolve_timestamp = Column(DateTime, nullable=True)
+    resolve_timestamp = Column(DateTime, server_default=func.timezone('UTC', func.now()), nullable=True, index=True)
 
 
 class Announcement(ModelBase):

@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from app import crud, database, models, schemas
 from typing import List, Optional
@@ -316,22 +317,49 @@ def create_report(
     current: models.User = Depends(get_current_user),
 ):
     # any member of the group can file
+    
     if not crud.get_membership(db, current.user_id, payload.group_id):
         raise HTTPException(403, "not a member of that group")
+    
+    # Generate report_id in O(1) time
+    
     return crud.create_report(db, payload)
 
-
 @router.get("/report", response_model=List[schemas.ReportOut])
-def list_reports(
-    group_id: Optional[str] = Query(None),
-    unresolved_only: bool = Query(False),
+def get_reports(
+    report_id: Optional[str] = Query(None, description="Filter by report ID"),
+    group_id: Optional[str] = Query(None, description="Filter by group ID"),
+    contest_id: Optional[str] = Query(None, description="Filter by contest ID"),
+    reporter_user_id: Optional[str] = Query(None, description="Filter by reporter user ID"),
+    respondent_user_id: Optional[str] = Query(None, description="Filter by respondent user ID"),
+    resolved: Optional[bool] = Query(None, description="Filter by resolved status"),
+    resolved_by: Optional[str] = Query(None, description="Filter by resolver user ID"),
     db: Session = Depends(get_db),
     current: models.User = Depends(get_current_user),
 ):
+    """
+    Get a list of reports with optional filters.
+    
+    All filter parameters are optional. If none are provided, all reports will be returned.
+    """
+    # Check permissions if filtering by group_id and user is not an admin or moderator
     if group_id and current.role == models.Role.user:
         if not crud.get_membership(db, current.user_id, group_id):
             raise HTTPException(403, "insufficient privilege")
-    return crud.list_reports(db, group_id, unresolved_only)
+    
+    # Retrieve reports based on the provided filters
+    reports = crud.list_reports(
+        db=db,
+        report_id=report_id,
+        group_id=group_id,
+        contest_id=contest_id,
+        reporter_user_id=reporter_user_id,
+        respondent_user_id=respondent_user_id,
+        resolved=resolved,
+        resolved_by=resolved_by,
+    )
+    
+    return reports
 
 
 @router.put("/report/resolve", response_model=schemas.ReportOut)
@@ -566,3 +594,40 @@ def run_seed():
     seed()
     
     return {"message": "Database has been reset and seeded with test data"}
+
+
+# ------------------------- custom routes --------------------
+
+@router.get("/contest_group_counts")
+def contest_group_counts(
+    contest_id: str = Query(..., description="Contest ID"),
+    group_id: str = Query(..., description="Group ID"),
+    db: Session = Depends(get_db),
+    current: models.User = Depends(get_current_user),
+):
+    """
+    Get the total members and participation counts for a specific group in a contest.
+    
+    Args:
+        contest_id: ID of the contest
+        group_id: ID of the group
+        db: Database session
+        current: Current authenticated user
+        
+    Returns:
+        Dict with total_members and total_participation counts, or None if group_views is null
+        
+    Raises:
+        HTTPException: If contest not found
+    """
+    # Retrieve the contest object
+    contest = crud.get_contest(db, contest_id)
+    if not contest:
+        raise HTTPException(status_code=404, detail="Contest not found")
+    
+    # Check if group_views is null
+    if contest.group_views is None:
+        return None
+    
+    # Return the group's counts from the group_views dictionary
+    return contest.group_views.get(group_id)

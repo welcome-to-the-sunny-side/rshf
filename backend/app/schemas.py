@@ -133,6 +133,7 @@ class ContestOut(BaseModel):
     internal_contest_identifier: Optional[str] = None
     standings: Optional[dict] = None
     finished: bool
+    group_views: Optional[dict] = None
 
     class Config:
         orm_mode = True
@@ -182,6 +183,10 @@ class ReportOut(BaseModel):
     resolved: bool
     resolved_by: Optional[str] = None
     resolve_message: Optional[str] = None
+
+    reporter_rating_at_report_time: Optional[int] = None
+    respondent_rating_at_report_time: Optional[int] = None
+    resolver_rating_at_resolve_time: Optional[int] = None
 
     class Config:
         orm_mode = True
