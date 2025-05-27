@@ -149,7 +149,8 @@ export default function Group() {
               date,
               participation,
               strength,
-              contest_id: contest.contest_id
+              contest_id: contest.contest_id,
+              contest_name: contest.contest_name
             });
           }
         });

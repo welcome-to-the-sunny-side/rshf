@@ -158,33 +158,49 @@ const CustomTooltip = ({ active, payload, label }) => {
     
     return (
       <div className={styles.tooltip}>
-        <p style={{ fontWeight: 'bold', marginBottom: '4px' }}>{formatTooltipLabel(label)}</p>
+        {/* Contest name first in bold, then contest date */}
+        {/* Define a common style for equal spacing */}
+        {(() => {
+          const commonStyle = { marginBottom: '8px' };
+          return (
+            <>
+              {data.contest_name && (
+                <p style={{ fontWeight: 'bold', ...commonStyle }}>{data.contest_name}</p>
+              )}
+              <p style={{ fontSize: '0.9em', color: '#666', ...commonStyle }}>{formatTooltipLabel(label)}</p>
+            </>
+          );
+        })()}
         
-        {/* Add contest name if available */}
-        {data.contest_id && (
+        {/* Display the data values explicitly: Member Count first, then Participation */}
+        {payload && (
           <>
-            <p style={{ fontSize: '0.9em', color: '#666' }}>Contest #{data.contest_id}</p>
-            <p style={{ fontSize: '0.9em', color: '#666' }}>{data.group_id ? `Group: ${data.group_id}` : ''}</p>
+            {/* Member Count first */}
+            {payload.find(entry => entry.name === 'Member Count') && (
+              <p
+                style={{
+                  fontWeight: 'bold',
+                  color: payload.find(entry => entry.name === 'Member Count').color,
+                  marginBottom: '8px'
+                }}
+              >
+                {`Member Count: ${payload.find(entry => entry.name === 'Member Count').value}`}
+              </p>
+            )}
+            {/* Participation second */}
+            {payload.find(entry => entry.name === 'Participation') && (
+              <p
+                style={{
+                  fontWeight: 'bold',
+                  color: payload.find(entry => entry.name === 'Participation').color,
+                  marginBottom: '8px'
+                }}
+              >
+                {`Participation: ${payload.find(entry => entry.name === 'Participation').value}`}
+              </p>
+            )}
           </>
         )}
-        
-        {/* Display the data values with Member Count above Participation */}
-        {payload
-          .slice() // copy to avoid mutating original
-          .sort((a, b) => {
-            if (a.name === 'Member Count') return -1;
-            if (b.name === 'Member Count') return 1;
-            return 0;
-          })
-          .map((entry, index) => (
-            <p key={`tooltip-${index}`} style={{ 
-              fontWeight: 'bold',
-              color: entry.color,
-              marginTop: '4px'
-            }}>
-              {`${entry.name}: ${entry.value}`}
-            </p>
-          ))}
       </div>
     );
   }
