@@ -1,190 +1,203 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 import { getRatingColor } from '../utils/ratingUtils';
 import ContentBoxWithTitle from '../components/ContentBoxWithTitle';
 import GroupNavBar from '../components/GroupNavBar';
-import styles from './Group.module.css'; // Import the styles from Group.jsx
+import styles from './Group.module.css'; // Assuming styles are relevant
 
 export default function Report() {
   const { groupId, reportId } = useParams();
-  
-  // State for form inputs in the "Take Action" section
-  const [reporterStatus, setReporterStatus] = useState('Member');
-  const [respondentStatus, setRespondentStatus] = useState('Member');
-  const [reviewerNote, setReviewerNote] = useState('');
-  
-  // Sample report data - in a real app, this would come from an API call
-  // Note: isActive field would determine whether this is an active or processed report
-  const [report, setReport] = useState({
-    id: reportId,
-    contestId: 246,
-    isActive: false, // This would come from the backend
-    reporter: {
-      username: "alice",
-      rating: 2185,
-      currentStatus: "Member", // Current status of reporter in the group
-      reportAccuracy: { accepted: 12, total: 15 }
-    },
-    respondent: {
-      username: "frank",
-      rating: 2100,
-      currentStatus: "Member", // Current status of respondent in the group
-      previouslyRemovedFromThisGroup: false,
-      previousReportIds: []
-    },
-    reportDate: "2024-03-20",
-    reportText: "User was found to be using external resources during the contest. The solution was identical to a solution found online with minor modifications.",
-    // Fields below would only be populated for processed reports
-    reviewer: {
-      username: "moderator1",
-      rating: 2300
-    },
-    reviewDate: "2024-03-22",
-    reviewerNote: "Verified the similarities between the solution and online resources. Clear violation of contest rules.",
-    accepted: true,
-    reporterStatusChange: "No change",
-    respondentStatusChange: "Outsider"
-  });
+  const { user, token } = useAuth();
 
-  // Function to format date
+  const [reportData, setReportData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isModerator, setIsModerator] = useState(false);
+
+  // State for form inputs in the "Take Action" section
+  const [actionReporterStatus, setActionReporterStatus] = useState('No change');
+  const [actionRespondentStatus, setActionRespondentStatus] = useState('Member');
+  const [actionReviewerNote, setActionReviewerNote] = useState('');
+
+  useEffect(() => {
+    const fetchReportDetails = async () => {
+      if (!token || !reportId) {
+        setLoading(false);
+        setError('Report ID missing or not authenticated.');
+        return;
+      }
+      try {
+        setLoading(true);
+        const response = await axios.get(`/api/report`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { report_id: reportId },
+        });
+        if (response.data && response.data.length > 0) {
+          setReportData(response.data[0]); // Expecting a single report in an array
+          setError(null);
+        } else {
+          setError('Report not found or access denied.');
+          setReportData(null);
+        }
+      } catch (err) {
+        console.error('Failed to fetch report details:', err);
+        setError('Failed to load report details. Please try again later.');
+        setReportData(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReportDetails();
+  }, [reportId, token]);
+
+  useEffect(() => {
+    const checkMembership = async () => {
+      if (!user || !token || !groupId) {
+        setIsModerator(false);
+        return;
+      }
+      try {
+        const response = await axios.get(`/api/membership`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { group_id: groupId, user_id: user.user_id },
+        });
+        if (response.data && (response.data.role === 'moderator' || response.data.role === 'admin')) {
+          setIsModerator(true);
+        } else {
+          setIsModerator(false);
+        }
+      } catch (err) {
+        console.error('Failed to check membership:', err);
+        setIsModerator(false);
+      }
+    };
+
+    checkMembership();
+  }, [groupId, user, token]);
+
   const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     const options = { year: 'numeric', month: 'short', day: 'numeric' };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
-  // Handle action submission (accept or reject)
   const handleAction = (accepted) => {
-    console.log('Taking action:', { 
-      reportId, 
-      accepted, 
-      reporterStatus, 
-      respondentStatus, 
-      reviewerNote 
-    });
-    // In a real app, this would call an API to process the report
-    alert(`Report ${accepted ? 'accepted' : 'rejected'}!`);
-    
-    // Update local state to show the processed view
-    setReport(prev => ({
+    if (!user) {
+        alert('You must be logged in to perform this action.');
+        return;
+    }
+    // This is a dummy action as the backend endpoint is not ready.
+    // It updates local state to simulate report resolution.
+    alert(`Report ${accepted ? 'accepted' : 'rejected'}! (Client-side simulation)`);
+    setReportData(prev => ({
       ...prev,
-      isActive: false,
-      accepted: accepted,
-      reviewer: {
-        username: "moderator1", // In a real app, this would be the current user
-        rating: 2300
-      },
-      reviewDate: new Date().toISOString().split('T')[0],
-      reviewerNote: reviewerNote,
-      reporterStatusChange: reporterStatus,
-      respondentStatusChange: respondentStatus
+      resolved: true,
+      // Store resolution details locally for UI update
+      locally_resolved_accepted: accepted, 
+      locally_resolved_by_username: user.user_id, // Use current user's ID
+      locally_resolved_by_rating: null, // Rating not available directly, could fetch if needed
+      locally_resolved_review_date: new Date().toISOString().split('T')[0],
+      locally_resolved_reviewer_note: actionReviewerNote,
+      locally_resolved_reporter_status_change: actionReporterStatus,
+      locally_resolved_respondent_status_change: actionRespondentStatus,
     }));
   };
 
+  if (loading) {
+    return <div className="page-container standardTextFont">Loading report details...</div>;
+  }
+
+  if (error) {
+    return <div className="page-container standardTextFont" style={{ color: 'red' }}>Error: {error}</div>;
+  }
+
+  if (!reportData) {
+    return <div className="page-container standardTextFont">Report not found.</div>;
+  }
+
+  // Determine if the report is active (not resolved)
+  const isActive = !reportData.resolved;
+  // For locally resolved reports, use the locally stored 'accepted' status
+  const isAccepted = reportData.resolved ? (reportData.locally_resolved_accepted !== undefined ? reportData.locally_resolved_accepted : null) : null;
+
   return (
     <div className="page-container">
-      {/* Floating button box */}
-      <GroupNavBar groupId={groupId} showModViewButton={true} />
+      <GroupNavBar groupId={groupId} showModViewButton={isModerator} />
       
-      {/* Report Details Box */}
       <ContentBoxWithTitle title="Report Details" backgroundColor="rgb(240, 240, 255)">
         <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto', padding: '15px' }}>
-          {/* Display report status at the top */}
-          <div style={{ marginBottom: '15px', fontWeight: 'bold', fontSize: '1.1em' }}>
-            <strong>Report Status:</strong>{' '}
-            <span style={{ 
-              color: report.isActive ? 'rgb(230, 126, 34)' : (report.accepted ? 'rgb(0, 150, 0)' : 'rgb(200, 0, 0)') 
+          <div style={{ marginBottom: '15px', fontWeight: 'bold', fontSize: '1em' }}>
+            Report Status<strong>:</strong>{' '}
+            <span style={{
+              color: isActive ? 'rgb(230, 126, 34)' : (isAccepted === true ? 'rgb(0, 150, 0)' : (isAccepted === false ? 'rgb(200, 0, 0)' : 'rgb(100, 100, 100)'))
             }}>
-              {report.isActive ? 'Active' : (report.accepted ? 'Accepted' : 'Rejected')}
+              {isActive ? 'Active' : (isAccepted === true ? 'Accepted' : (isAccepted === false ? 'Rejected' : 'Resolved'))}
             </span>
           </div>
           
-          {/* List of details */}
           <div style={{ marginBottom: '15px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <div>
-                <strong>Report ID:</strong> {report.id}
-              </div>
-              
-              <div>
-                <strong>Contest ID:</strong>{' '}
-                {report.contestId ? (
-                  <Link to={`/group/${groupId}/contest/${report.contestId}`} className="tableCellLink">
-                    {report.contestId}
-                  </Link>
-                ) : (
-                  <span>-</span>
-                )}
-              </div>
-              
-              <div>
-                <strong>Reporter:</strong>{' '}
-                <Link to={`/user/${report.reporter.username}`} className="tableCellLink" style={{ color: getRatingColor(report.reporter.rating), fontWeight: 'bold' }}>
-                  {report.reporter.username}
-                </Link>
-              </div>
-              
-              <div>
-                <strong>Report Accuracy:</strong>{' '}
-                <span title={`${report.reporter.reportAccuracy.accepted} accepted out of ${report.reporter.reportAccuracy.total} reports`}>
-                  {Math.round((report.reporter.reportAccuracy.accepted / report.reporter.reportAccuracy.total) * 100)}% 
-                  ({report.reporter.reportAccuracy.accepted}/{report.reporter.reportAccuracy.total})
-                </span>
-              </div>
-              
-              <div>
-                <strong>Respondent:</strong>{' '}
-                <Link to={`/user/${report.respondent.username}`} className="tableCellLink" style={{ color: getRatingColor(report.respondent.rating), fontWeight: 'bold' }}>
-                  {report.respondent.username}
-                </Link>
-              </div>
-              
-              <div>
-                <strong>Previously Removed:</strong>{' '}
-                {report.respondent.previouslyRemovedFromThisGroup ? (
-                  <div style={{ color: 'red', display: 'inline' }}>
-                    Yes - 
-                    {report.respondent.previousReportIds.map((reportId, index) => (
-                      <span key={reportId}>
-                        {index > 0 && ", "}
-                        <Link to={`/group/${groupId}/report/${reportId}`} className="tableCellLink">
-                          {reportId}
-                        </Link>
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <div style={{ color: 'green', display: 'inline' }}>No</div>
-                )}
-              </div>
-              
-              <div>
-                <strong>Report Date:</strong> {formatDate(report.reportDate)}
-              </div>
-            </div>
+            <strong>Report ID:</strong> {reportData.report_id}
           </div>
           
-          {/* Report message box styled like the about box in Group.jsx - moved below the list */}
-          <div className={styles.aboutBox}>
-            <h4 style={{ margin: '0 0 8px 0' }}>Report Message:</h4>
-            <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{report.reportText}</p>
+          {reportData.contest_id && (
+            <div style={{ marginBottom: '15px' }}>
+              <strong>Contest:</strong>{' '}
+              <Link to={`/contest/${reportData.contest_id}`} className="tableCellLink">
+                {reportData.contest_id}
+              </Link>
+            </div>
+          )}
+          
+          <div style={{ marginBottom: '15px' }}>
+            <strong>Reporter:</strong>{' '}
+            <Link 
+              to={`/user/${reportData.reporter_user_id}`} 
+              className="tableCellLink" 
+              style={{ color: getRatingColor(reportData.reporter_rating_at_report_time), fontWeight: 'bold' }}
+            >
+              {reportData.reporter_user_id}
+            </Link>
+            {reportData.reporter_rating_at_report_time !== null && ` (Rating: ${reportData.reporter_rating_at_report_time})`}
+          </div>
+          
+          <div style={{ marginBottom: '15px' }}>
+            <strong>Respondent:</strong>{' '}
+            <Link 
+              to={`/user/${reportData.respondent_user_id}`} 
+              className="tableCellLink" 
+              style={{ color: getRatingColor(reportData.respondent_rating_at_report_time), fontWeight: 'bold' }}
+            >
+              {reportData.respondent_user_id}
+            </Link>
+            {reportData.respondent_rating_at_report_time !== null && ` (Rating: ${reportData.respondent_rating_at_report_time})`}
+          </div>
+          
+          <div style={{ marginBottom: '15px' }}>
+            <strong>Report Date:</strong> {formatDate(reportData.timestamp)}
+          </div>
+          
+          <div className={styles.aboutBox} style={{ marginTop: '10px' }}>
+            <h4 style={{ margin: '0 0 8px 0' }}>Report Text:</h4>
+            <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{reportData.report_description}</p>
           </div>
         </div>
       </ContentBoxWithTitle>
       
-      {/* Conditional rendering based on report status */}
-      {report.isActive ? (
-        // For active reports - display the "Take Action" section
+      {isActive && isModerator && (
         <ContentBoxWithTitle title="Take Action" backgroundColor="rgb(255, 245, 230)">
           <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto', padding: '15px' }}>
-            <div style={{ marginBottom: '15px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <label htmlFor="reporter-status" style={{ fontWeight: '500', whiteSpace: 'nowrap' }}>
-                  Modify Reporter Status: <span style={{ fontWeight: 'bold' }}>{report.reporter.currentStatus}</span> →
+            <div style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
+              <div>
+                <label htmlFor="reporter-status" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                  Reporter Status Change:
                 </label>
                 <select
                   id="reporter-status"
-                  value={reporterStatus}
-                  onChange={(e) => setReporterStatus(e.target.value)}
+                  value={actionReporterStatus}
+                  onChange={(e) => setActionReporterStatus(e.target.value)}
                   style={{
                     padding: '6px',
                     borderRadius: '4px',
@@ -192,22 +205,21 @@ export default function Report() {
                     width: '160px'
                   }}
                 >
+                  <option value="No change">No change</option>
                   <option value="Moderator">Moderator</option>
                   <option value="Member">Member</option>
                   <option value="Outsider">Outsider</option>
                 </select>
               </div>
-            </div>
-            
-            <div style={{ marginBottom: '15px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <label htmlFor="respondent-status" style={{ fontWeight: '500', whiteSpace: 'nowrap' }}>
-                  Modify Respondent Status: <span style={{ fontWeight: 'bold' }}>{report.respondent.currentStatus}</span> →
+              
+              <div>
+                <label htmlFor="respondent-status" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                  Respondent Status Change:
                 </label>
                 <select
                   id="respondent-status"
-                  value={respondentStatus}
-                  onChange={(e) => setRespondentStatus(e.target.value)}
+                  value={actionRespondentStatus}
+                  onChange={(e) => setActionRespondentStatus(e.target.value)}
                   style={{
                     padding: '6px',
                     borderRadius: '4px',
@@ -215,7 +227,6 @@ export default function Report() {
                     width: '160px'
                   }}
                 >
-                  <option value="Moderator">Moderator</option>
                   <option value="Member">Member</option>
                   <option value="Outsider">Outsider</option>
                 </select>
@@ -228,8 +239,8 @@ export default function Report() {
               </label>
               <textarea
                 id="reviewer-note"
-                value={reviewerNote}
-                onChange={(e) => setReviewerNote(e.target.value)}
+                value={actionReviewerNote}
+                onChange={(e) => setActionReviewerNote(e.target.value)}
                 maxLength={1000}
                 style={{
                   width: '100%',
@@ -258,53 +269,70 @@ export default function Report() {
             </div>
           </div>
         </ContentBoxWithTitle>
-      ) : (
-        // For processed reports - display the review outcome
+      )}
+      
+      {reportData.resolved && (
         <ContentBoxWithTitle 
           title="Review Outcome" 
-          backgroundColor={report.accepted ? "rgb(230, 255, 240)" : "rgb(255, 230, 230)"}
+          backgroundColor={isAccepted === true ? "rgb(230, 255, 240)" : (isAccepted === false ? "rgb(255, 230, 230)" : "rgb(240, 240, 240)")}
         >
           <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto', padding: '15px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <div>
-                <strong>Reviewed By:</strong>{' '}
-                <Link to={`/user/${report.reviewer.username}`} className="tableCellLink" style={{ color: getRatingColor(report.reviewer.rating), fontWeight: 'bold' }}>
-                  {report.reviewer.username}
-                </Link>
-              </div>
+              {(reportData.resolved_by || reportData.locally_resolved_by_username) && (
+                <div>
+                  <strong>Reviewed By:</strong>{' '}
+                  <Link 
+                    to={`/user/${reportData.locally_resolved_by_username || reportData.resolved_by}`} 
+                    className="tableCellLink" 
+                    style={{ color: getRatingColor(reportData.locally_resolved_by_rating || reportData.resolver_rating_at_resolve_time), fontWeight: 'bold' }}
+                  >
+                    {reportData.locally_resolved_by_username || reportData.resolved_by}
+                  </Link>
+                  {(reportData.locally_resolved_by_rating || reportData.resolver_rating_at_resolve_time) !== null && 
+                    ` (Rating: ${reportData.locally_resolved_by_rating || reportData.resolver_rating_at_resolve_time})`
+                  }
+                </div>
+              )}
               
-              <div>
-                <strong>Review Date:</strong> {formatDate(report.reviewDate)}
-              </div>
+              {reportData.locally_resolved_review_date && (
+                 <div>
+                   <strong>Review Date:</strong> {formatDate(reportData.locally_resolved_review_date)}
+                 </div>
+              )}
               
               <div>
                 <strong>Status:</strong>{' '}
                 <span style={{ 
-                  color: report.accepted ? 'rgb(0, 150, 0)' : 'rgb(200, 0, 0)',
+                  color: isAccepted === true ? 'rgb(0, 150, 0)' : (isAccepted === false ? 'rgb(200, 0, 0)' : 'rgb(100,100,100)'),
                   fontWeight: 'bold'
                 }}>
-                  {report.accepted ? 'Accepted' : 'Rejected'}
+                  {isAccepted === true ? 'Accepted' : (isAccepted === false ? 'Rejected' : 'Resolved (Status Unknown)')}
                 </span>
               </div>
               
-              <div>
-                <strong>Reporter Status Change:</strong>{' '}
-                <span style={{ fontWeight: 'bold' }}>{report.reporter.currentStatus}</span> → {report.reporterStatusChange}
-              </div>
+              {/* Display status changes only if resolved locally, as API doesn't provide this for pre-resolved reports */}
+              {reportData.locally_resolved_reporter_status_change && (
+                <div>
+                  <strong>Reporter Status Set To:</strong> {reportData.locally_resolved_reporter_status_change}
+                </div>
+              )}
               
-              <div>
-                <strong>Respondent Status Change:</strong>{' '}
-                <span style={{ fontWeight: 'bold' }}>{report.respondent.currentStatus}</span> → {report.respondentStatusChange}
-              </div>
+              {reportData.locally_resolved_respondent_status_change && (
+                <div>
+                  <strong>Respondent Status Set To:</strong> {reportData.locally_resolved_respondent_status_change}
+                </div>
+              )}
               
-              <div className={styles.aboutBox} style={{ marginTop: '10px' }}>
-                <h4 style={{ margin: '0 0 8px 0' }}>Reviewer's Note:</h4>
-                <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{report.reviewerNote}</p>
-              </div>
+              {(reportData.resolve_message || reportData.locally_resolved_reviewer_note) && (
+                <div className={styles.aboutBox} style={{ marginTop: '10px' }}>
+                  <h4 style={{ margin: '0 0 8px 0' }}>Reviewer's Note:</h4>
+                  <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{reportData.locally_resolved_reviewer_note || reportData.resolve_message}</p>
+                </div>
+              )}
             </div>
           </div>
         </ContentBoxWithTitle>
       )}
     </div>
   );
-} 
+}

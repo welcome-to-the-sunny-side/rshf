@@ -169,29 +169,24 @@ export default function GroupReports() {
         <span>-</span>
       );
       
-      // Reporter and respondent usernames (we'll need to get them from their IDs in a real app)
-      const reporterId = report.reporter_user_id;
-      const respondentId = report.respondent_user_id;
-      
       // Create the row data with base columns
       const rowData = [
         report.report_id,
         contestContent,
-        <Link to={`/user/${reporterId}`} className="tableCellLink">
-          {reporterId}
+        <Link to={`/user/${report.reporter_user_id}`} className="tableCellLink" style={{ color: getRatingColor(report.reporter_rating_at_report_time), fontWeight: 'bold' }}>
+          {report.reporter_user_id}
         </Link>,
         <span>-</span>, // Report accuracy placeholder
-        <Link to={`/user/${respondentId}`} className="tableCellLink">
-          {respondentId}
+        <Link to={`/user/${report.respondent_user_id}`} className="tableCellLink" style={{ color: getRatingColor(report.respondent_rating_at_report_time), fontWeight: 'bold' }}>
+          {report.respondent_user_id}
         </Link>,
         formatDate(report.timestamp),
       ];
       
-      // Add additional columns for processed reports
-      if (includeHandledBy && report.resolved_by) {
-        // Add resolver
+      // Add resolved by and resolution message for processed reports
+      if (includeHandledBy && report.resolved) {
         rowData.push(
-          <Link to={`/user/${report.resolved_by}`} className="tableCellLink">
+          <Link to={`/user/${report.resolved_by}`} className="tableCellLink" style={{ color: getRatingColor(report.resolver_rating_at_resolve_time), fontWeight: 'bold' }}>
             {report.resolved_by}
           </Link>
         );

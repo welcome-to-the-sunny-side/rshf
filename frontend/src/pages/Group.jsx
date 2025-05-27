@@ -242,12 +242,6 @@ export default function Group() {
     
     // No need for a separate API call, we can use the group data that contains memberships
     // Debug output to help diagnose the issue
-    console.log('Processing leaderboard data:', { 
-      groupData, 
-      loading, 
-      hasMemberships: groupData && groupData.memberships ? 'yes' : 'no',
-      membershipCount: groupData && groupData.memberships ? groupData.memberships.length : 0 
-    });
     
     if (groupData && !loading && groupData.memberships && groupData.memberships.length > 0) {
       try {
@@ -302,7 +296,6 @@ export default function Group() {
   );
   
   const showModViewButton = (userRole === "moderator" || userRole === "admin");
-  console.log("showModViewButton Value is ", showModViewButton);
   // Determine join/leave button visibility and text
   const getActionButton = () => {
     if (userRole === undefined) {

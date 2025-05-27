@@ -52,7 +52,6 @@ export default function Home() {
       try {
         setLoading(prev => ({ ...prev, groups: true }));
         
-        console.log('Fetching groups from backend...');
         const response = await fetch(`${BACKEND_URL}/api/groups`, {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -68,7 +67,6 @@ export default function Home() {
         
         // Check that we have content before parsing
         const text = await response.text();
-        console.log('Response text:', text);
         
         if (!text) {
           throw new Error('Empty response from server');
@@ -119,8 +117,6 @@ export default function Home() {
         }
         
         const contestsData = JSON.parse(contestsText);
-        console.log('Contests data:', contestsData);
-        
  
         const activeContests = contestsData;
         
@@ -146,7 +142,6 @@ export default function Home() {
       try {
         setLoading(prev => ({ ...prev, announcements: true }));
         
-        console.log('Fetching announcements from backend...');
         const response = await fetch(`${BACKEND_URL}/api/announcement`, {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -160,7 +155,6 @@ export default function Home() {
         }
         
         const text = await response.text();
-        console.log('Announcements response text:', text);
         
         if (!text) {
           throw new Error('Empty announcements response from server');
