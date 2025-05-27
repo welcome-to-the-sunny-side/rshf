@@ -216,13 +216,26 @@ export default function User() {
           // Format as ISO string date (YYYY-MM-DD)
           const isoDate = new Date(timestamp).toISOString().split('T')[0];
           
+          const rating_before = participation.rating_before;
+          const rating_after = participation.rating_after;
+          const rank = participation.rank;
+
+          let rating_delta = null;
+          if (typeof rating_after === 'number' && typeof rating_before === 'number') {
+            rating_delta = rating_after - rating_before;
+          }
+
           return {
             date: timestamp,
-            rating: participation.rating_after || participation.rating_before || 0,
+            // The main 'rating' for the graph point should be the rating *after* the contest.
+            // If rating_after is null (e.g. contest not processed yet), use rating_before or 0 as fallback for plotting.
+            rating: rating_after !== null ? rating_after : (rating_before !== null ? rating_before : 0),
             contest_id: participation.contest_id,
             group_id: groupId, // Add the group_id from selectedGroup[0]
             contest_name: participation.contest.contest_name || 'Unknown Contest',
-            finished: participation.contest.finished || false // Ensure 'finished' status is carried over
+            finished: participation.contest.finished || false, // Ensure 'finished' status is carried over
+            rank: rank, // Add rank from participation
+            rating_delta: rating_delta // Add calculated rating_delta
           };
         }).filter(item => item !== null); // Filter out any null items
         console.log(formattedRatingData); 

@@ -92,6 +92,8 @@ export default function RatingGraph({ ratingHistory }) {
           contest_id: item.contest_id,
           group_id: item.group_id, // Include group_id
           contest_name: item.contest_name || 'Contest',
+          rank: item.rank, // Include rank
+          rating_delta: item.rating_delta, // Include rating_delta
           dateTimestamp: timestamp, // Keep original timestamp for sorting
         };
         return formattedItem;
@@ -108,8 +110,18 @@ export default function RatingGraph({ ratingHistory }) {
       return (
         <div className={styles.tooltip}>
           <p style={{ fontWeight: 'bold', marginBottom: '4px' }}>{data.contest_name}</p>
-          <p style={{ fontSize: '0.9em', color: '#666' }}>Contest #{data.contest_id}</p>
+          {/* <p style={{ fontSize: '0.9em', color: '#666' }}>Contest #{data.contest_id}</p> */}
           <p style={{ fontSize: '0.9em', color: '#666' }}>{data.date}</p>
+          
+          {typeof data.rank === 'number' && <p style={{ fontSize: '0.9em', color: '#666' }}>Rank: {data.rank}</p>}
+          {typeof data.rating_delta === 'number' && 
+            <p style={{
+              fontSize: '0.9em', 
+              color: data.rating_delta > 0 ? 'green' : (data.rating_delta < 0 ? 'red' : '#666')
+            }}>
+              Δ: {data.rating_delta > 0 ? '+' : ''}{data.rating_delta}
+            </p>
+          }
           <p style={{ 
             fontWeight: 'bold',
             color: ratingInfo.color,

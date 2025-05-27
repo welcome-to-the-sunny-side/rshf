@@ -8,7 +8,7 @@
 
 /* Custom tooltip styles for Recharts */
 .tooltip {
-  background-color: transparent;
+  background-color: #ffffff;
   border: 1px solid #000;
   border-radius: 4px;
   padding: 10px;

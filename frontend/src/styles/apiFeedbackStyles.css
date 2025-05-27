@@ -14,7 +14,7 @@
 
 .error-message {
   color: #e74c3c; /* Red */
-  font-weight: bold;
+  /* font-weight: bold; */
 }
 
 .no-data-message {
