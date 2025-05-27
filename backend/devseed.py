@@ -8,11 +8,13 @@ keep transactions small and independent.
 import random
 import time
 from typing import List
+from collections import defaultdict
 
 import numpy as np
 import requests
 from faker import Faker
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload # Added for eager loading memberships
 
 from app.database import SessionLocal
 from app.utils import hash_password, reset_db
@@ -299,6 +301,55 @@ def seed():
 
     participations = build_contest_participations(groups, memberships, contests)
     commit_batch(db, participations, "participations")
+
+    # Populate group_views for finished contests
+    banner("populating group_views for finished contests")
+
+    # Create a quick lookup for group objects by their ID
+    groups_by_id = {group.group_id: group for group in groups}
+
+    # Create a structure to hold contest participations grouped by contest_id and then group_id
+    # contest_participations_map[contest_id][group_id] = list_of_participating_user_ids
+    contest_participations_map = defaultdict(lambda: defaultdict(list))
+    for p in participations:
+        contest_participations_map[p.contest_id][p.group_id].append(p.user_id)
+
+    updated_contests_count = 0
+    for contest_obj in contests:  # contests list holds SQLAlchemy model instances from build_contests()
+        if contest_obj.finished:
+            current_contest_group_views = {}
+            # Check if this contest had any participations
+            if contest_obj.contest_id in contest_participations_map:
+                participating_groups_data = contest_participations_map[contest_obj.contest_id]
+                for group_id_val, participating_users in participating_groups_data.items():
+                    group_object = groups_by_id.get(group_id_val)
+                    if group_object:
+                        # Ensure memberships are loaded for count. 
+                        # The 'groups' list from build_groups should have them if 'lazy="dynamic"' is handled by accessing the attribute.
+                        # If not, a DB query might be needed here per group, or ensure groups are pre-loaded with member counts.
+                        # For devseed, direct access should be fine if objects are still in session and relationships are eager/noload or handled.
+                        # Assuming 'group_object.memberships' is accessible and gives a queryable/countable collection.
+                        # A more robust way for lazy='dynamic' is 'group_object.memberships.count()'
+                        # However, 'groups' list elements are detached after commit usually, so we might need to query.
+                        # Let's try direct count on the object as it might be loaded by build_groups or build_memberships implicitly.
+                        # A safer bet for devseed is to query, but let's try with current objects first.
+                        # Re-querying the group from the current session 'db' is safest.
+                        group_in_session = db.query(Group).filter(Group.group_id == group_id_val).first()
+                        total_members_in_group = group_in_session.memberships.count() if group_in_session else 0
+                        
+                        current_contest_group_views[group_id_val] = {
+                            "total_members": total_members_in_group,
+                            "total_participants": len(participating_users)
+                        }
+            
+            contest_obj.group_views = current_contest_group_views
+            updated_contests_count += 1
+    
+    if updated_contests_count > 0:
+        banner(f"committing group_views for {updated_contests_count} finished contests")
+        db.commit()  # Commit changes made to existing contest_obj instances in the session
+    else:
+        print("   no finished contests required group_views update.")
 
     reports = build_reports(participations, memberships)
     commit_batch(db, reports, "reports")

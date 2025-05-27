@@ -154,7 +154,10 @@ export default function ParticipationGraph({ participationData, groupName }) {
   // Find max values for Y-axis
   const maxParticipation = Math.max(...chartData.map(p => p.participation), 0);
   const maxStrength = Math.max(...chartData.map(p => p.strength), 0);
-  const yMax = Math.max(100, Math.ceil((Math.max(maxParticipation, maxStrength) + 10) / 10) * 10);
+  const currentMaxDataValue = Math.max(maxParticipation, maxStrength);
+  const padding = Math.max(10, currentMaxDataValue * 0.1); // Add 5% padding, or at least 10
+  const yMaxWithPadding = Math.ceil((currentMaxDataValue + padding) / 10) * 10; // Round to nearest 10
+  const yMax = Math.max(100, yMaxWithPadding); // Ensure yMax is at least 100
 
   // Determine X-axis min/max timestamps
   const minTimestamp = chartData[0].timestamp;
@@ -183,7 +186,6 @@ export default function ParticipationGraph({ participationData, groupName }) {
           />
           <YAxis
             domain={[0, yMax]}
-            allowDataOverflow={true}
           />
 
           <Tooltip content={<CustomTooltip />} />

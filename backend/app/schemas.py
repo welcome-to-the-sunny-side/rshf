@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Dict # Added Dict
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -124,6 +124,12 @@ class ContestParticipationOut(BaseModel):
         orm_mode = True
 
 
+# Specific model for the structure within group_views
+class GroupViewDetail(BaseModel):
+    total_members: int
+    total_participants: int
+
+
 class ContestOut(BaseModel):
     contest_id: str
     contest_name: str
@@ -134,7 +140,7 @@ class ContestOut(BaseModel):
     internal_contest_identifier: Optional[str] = None
     standings: Optional[dict] = None
     finished: bool
-    group_views: Optional[dict] = None
+    group_views: Optional[Dict[str, GroupViewDetail]] = None
 
     class Config:
         orm_mode = True

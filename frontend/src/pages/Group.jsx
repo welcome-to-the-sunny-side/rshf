@@ -141,30 +141,19 @@ export default function Group() {
         
         // Process contest data to extract participation for this group
         const participationPoints = [];
-        
+        console.log(contests);
         // Filter contests that have data for this group
         contests.forEach(contest => {
           if (contest.group_views && contest.group_views[groupId]) {
             const groupData = contest.group_views[groupId];
-            const totalMembers = groupData.total_members || 0;
-            const participants = groupData.total_participation || 0;
+            // const totalMembers = groupData.total_members || 0;
+            // const participants = groupData.total_participation || 0;
             
-            // Extract ratings if available for strength calculation
-            const ratings = [];
-            if (contest.standings) {
-              // Get all participants from this group with ratings
-              Object.entries(contest.standings).forEach(([userId, data]) => {
-                // Check if this user belongs to our group
-                if (data.group_id === groupId && data.rating_after) {
-                  ratings.push(data.rating_after);
-                }
-              });
-            }
-            
-            // Calculate participation percentage and group strength
-            const participation = calculateParticipation(totalMembers, participants);
-            const strength = calculateStrength(ratings);
-            
+            // const participation = calculateParticipation(totalMembers, participants);
+            // const strength = calculateStrength(ratings);
+            const participation = groupData.total_participants || 0;
+            const strength = groupData.total_members || 0;
+
             // Convert contest start time to date string
             const date = new Date(contest.start_time_posix * 1000).toISOString().split('T')[0];
             
