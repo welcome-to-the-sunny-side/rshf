@@ -7,8 +7,9 @@
 }
 
 .loading-message {
-  color: #3498db; /* Blue */
-  font-style: italic;
+  color: #010406; /* Blue */
+  /* font-style: italic; */
+  /* font-weight: bold; */
 }
 
 .error-message {

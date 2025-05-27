@@ -288,23 +288,17 @@ export default function User() {
                   </div>
                 )}
                 {/* Username - Now displays cf_handle and links to Codeforces profile */}
-                <a 
-                  href={socialLinks.codeforces || `#`} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
+                <span
                   className={styles.usernameLink}
+                  style={{ 
+                    fontSize: '1.5rem', 
+                    fontWeight: 'bold',
+                    display: 'inline-block',
+                    color: selectedGroup ? selectedGroup[3] : getRatingColor(userData.group_memberships?.[0]?.user_group_rating || 0)
+                  }}
                 >
-                  <span 
-                    style={{ 
-                      fontSize: '1.5rem', 
-                      fontWeight: 'bold',
-                      display: 'inline-block',
-                      color: getRatingColor(userData.group_memberships?.[0]?.user_group_rating || 0)
-                    }}
-                  >
-                    {userData.user_id}
-                  </span>
-                </a>
+                  {userData.user_id}
+                </span>
                 {/* Add margin between username and stats list */}
                 <div style={{ marginBottom: '7px' }}></div>
                 {/* Stats List */}
