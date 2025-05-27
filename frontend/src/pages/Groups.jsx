@@ -139,7 +139,7 @@ export default function Groups() {
                 itemsPerPage={15}
                 initialSortColumnIndex={2} // Member Count column
                 initialSortDirection="desc" // Descending order
-                className="groupsTable"
+                className="groupPageGroupsTable"
               />
             </div>
           )}

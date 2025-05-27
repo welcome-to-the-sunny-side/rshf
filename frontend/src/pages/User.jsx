@@ -425,7 +425,7 @@ export default function User() {
           </div>
           
           {/* Rating Graph box (full width) */}
-          <div className="contentBox standardTextFont" style={{ padding: '0rem' }}>
+          <div className="contentBox standardTextFont" style={{ padding: '0.1rem' }}>
             {loadingRatingData ? (
               <div className="api-feedback-container loading-message">
                 {API_MESSAGES.LOADING}

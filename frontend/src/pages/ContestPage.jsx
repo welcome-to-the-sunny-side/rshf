@@ -1,62 +1,103 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import ContentBoxWithTitle from '../components/ContentBoxWithTitle';
-import PagedTableBox from '../components/PagedTableBox';
+import TableBox from '../components/TableBox';
 import { getRatingColor } from '../utils/ratingUtils';
 import styles from './ContestPage.module.css';
+import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
+import { API_MESSAGES } from '../constants/apiMessages';
+import '../styles/apiFeedbackStyles.css';
 
 const ContestPage = () => {
-  // Set this to false to switch to completed contest view
-  const isUpcoming = false;
+  const { contest_id } = useParams();
+  const navigate = useNavigate();
+  const { user, token } = useAuth();
+
+  // State for contest and participation data
+  const [contestData, setContestData] = useState(null);
+  const [participationData, setParticipationData] = useState([]);
   
-  // Dummy contest data
-  const contestData = {
-    name: "CodeForces Round #950",
-    status: isUpcoming ? "active/upcoming" : "completed",
-    link: "https://codeforces.com/contest/950",
-    date: "May 15, 2025",
-    time: "14:00",
-    platform: "codeforces"
+  // Loading and error states
+  const [loading, setLoading] = useState({
+    contest: true,
+    participations: true
+  });
+  const [error, setError] = useState({
+    contest: null,
+    participations: null
+  });
+
+  useEffect(() => {
+    // Check if the user is authenticated
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
+    // Fetch contest and participation data
+    fetchContestData();
+    fetchParticipationData();
+  }, [contest_id, token, navigate]);
+
+  // Function to fetch contest data
+  const fetchContestData = async () => {
+    try {
+      setLoading(prev => ({ ...prev, contest: true }));
+      setError(prev => ({ ...prev, contest: null }));
+
+      const response = await axios.get('/api/contest', {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { contest_id: contest_id }
+      });
+
+      setContestData(response.data);
+    } catch (err) {
+      console.error('Error fetching contest data:', err);
+      setError(prev => ({ ...prev, contest: API_MESSAGES.ERROR }));
+    } finally {
+      setLoading(prev => ({ ...prev, contest: false }));
+    }
+  };
+
+  // Function to fetch participation data
+  const fetchParticipationData = async () => {
+    try {
+      setLoading(prev => ({ ...prev, participations: true }));
+      setError(prev => ({ ...prev, participations: null }));
+
+      const response = await axios.get('/api/contest_participations', {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { cid: contest_id, uid: user.user_id }
+      });
+
+      setParticipationData(response.data);
+    } catch (err) {
+      console.error('Error fetching participation data:', err);
+      setError(prev => ({ ...prev, participations: API_MESSAGES.ERROR }));
+    } finally {
+      setLoading(prev => ({ ...prev, participations: false }));
+    }
+  };
+
+  // Format date for display
+  const formatDateTime = (timestamp) => {
+    if (!timestamp) return 'TBD';
+
+    const dateTime = new Date(timestamp * 1000); // Convert from Unix seconds to JavaScript milliseconds
+    return dateTime.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
   
-  // Dummy group data for upcoming contest
-  const upcomingGroupsData = [
-    { id: 1, name: "main", registeredUsers: 1045, totalUsers: 2543, isRegistered: true },
-    { id: 2, name: "CompetitiveProgramming", registeredUsers: 345, totalUsers: 1247, isRegistered: false },
-    { id: 3, name: "WebDevelopment", registeredUsers: 120, totalUsers: 856, isRegistered: false },
-    { id: 4, name: "MachineLearning", registeredUsers: 235, totalUsers: 943, isRegistered: true },
-    { id: 5, name: "AlgorithmStudy", registeredUsers: 205, totalUsers: 621, isRegistered: false },
-    { id: 6, name: "SystemDesign", registeredUsers: 180, totalUsers: 734, isRegistered: false },
-    { id: 7, name: "DataStructures", registeredUsers: 158, totalUsers: 512, isRegistered: true },
-    { id: 8, name: "GameDevelopment", registeredUsers: 92, totalUsers: 389, isRegistered: false },
-    { id: 9, name: "UIUXDesign", registeredUsers: 56, totalUsers: 278, isRegistered: false },
-    { id: 10, name: "MobileAppDev", registeredUsers: 123, totalUsers: 456, isRegistered: false },
-    { id: 11, name: "CloudComputing", registeredUsers: 87, totalUsers: 321, isRegistered: false },
-    { id: 12, name: "DevOps", registeredUsers: 65, totalUsers: 298, isRegistered: false }
-  ];
-  
-  // Dummy group data for completed contest
-  const completedGroupsData = [
-    { id: 1, name: "main", participatedUsers: 950, totalUsers: 2543, rank: 1, ratingChange: 15, finalRating: 2050 },
-    { id: 2, name: "CompetitiveProgramming", participatedUsers: 340, totalUsers: 1247, rank: 3, ratingChange: 8, finalRating: 1800 },
-    { id: 3, name: "WebDevelopment", participatedUsers: 110, totalUsers: 856, rank: 8, ratingChange: -5, finalRating: 1350 },
-    { id: 4, name: "MachineLearning", participatedUsers: 230, totalUsers: 943, rank: 2, ratingChange: 12, finalRating: 1950 },
-    { id: 5, name: "AlgorithmStudy", participatedUsers: 200, totalUsers: 621, rank: 4, ratingChange: 5, finalRating: 1750 },
-    { id: 6, name: "SystemDesign", participatedUsers: 170, totalUsers: 734, rank: 6, ratingChange: -2, finalRating: 1650 },
-    { id: 7, name: "DataStructures", participatedUsers: 150, totalUsers: 512, rank: 5, ratingChange: 3, finalRating: 1725 },
-    { id: 8, name: "GameDevelopment", participatedUsers: 85, totalUsers: 389, rank: 10, ratingChange: -8, finalRating: 1250 },
-    { id: 9, name: "UIUXDesign", participatedUsers: 50, totalUsers: 278, rank: 12, ratingChange: -12, finalRating: 1100 },
-    { id: 10, name: "MobileAppDev", participatedUsers: 120, totalUsers: 456, rank: 7, ratingChange: 2, finalRating: 1550 },
-    { id: 11, name: "CloudComputing", participatedUsers: 80, totalUsers: 321, rank: 9, ratingChange: -6, finalRating: 1475 },
-    { id: 12, name: "DevOps", participatedUsers: 60, totalUsers: 298, rank: 11, ratingChange: -10, finalRating: 1300 }
-  ];
-  
-  // Handle registration/unregistration button click
+  // Handle registration/unregistration button click (disabled for now)
   const handleRegistrationClick = (groupId, currentStatus) => {
-    // In a real app, this would send a request to the server
+    // This would send a request to the server in a fully implemented version
     console.log(`${currentStatus ? 'Unregistering' : 'Registering'} for group ID ${groupId}`);
-    // Refresh the page or update the state after the operation
-    window.location.reload();
   };
   
   // Define columns for the upcoming contest table
@@ -65,79 +106,122 @@ const ContestPage = () => {
   // Define columns for the completed contest table
   const completedColumns = ["Group", "Rank/Participants/Members", "Rating Change", "Final Rating"];
   
-  // Transform data for the upcoming contest table
-  const upcomingRows = upcomingGroupsData.map(group => [
-    <Link to={`/group/${group.name}/contest/${contestData.link.split('/').pop()}`} className="tableCellLink">{group.name}</Link>,
-    `${group.registeredUsers}/${group.totalUsers}`,
-    <button 
-      className={`global-button ${group.isRegistered ? 'red' : 'green'}`}
-      onClick={() => handleRegistrationClick(group.id, group.isRegistered)}
-    >
-      {group.isRegistered ? 'Unregister' : 'Register'}
-    </button>
-  ]);
-  
-  // Transform data for the completed contest table
-  const completedRows = completedGroupsData.map(group => {
-    const ratingChangeText = group.ratingChange > 0 ? `+${group.ratingChange}` : group.ratingChange.toString();
-    const ratingChangeColor = group.ratingChange > 0 ? 'green' : (group.ratingChange < 0 ? 'red' : 'gray');
+  // Transform participation data for display
+  const getTableData = () => {
+    if (!contestData || !participationData.length) return [];
     
-    return [
-      <Link to={`/group/${group.name}/contest/${contestData.link.split('/').pop()}`} className="tableCellLink">{group.name}</Link>,
-      <>
-        <span style={{ fontWeight: 'bold' }}>{group.rank}</span>
-        <span style={{ fontSize: '0.7rem' }}>
-          /{group.participatedUsers}/{group.totalUsers}
-        </span>
-      </>,
-      <span style={{ color: ratingChangeColor, fontWeight: 'bold' }}>{ratingChangeText}</span>,
-      <span style={{ color: getRatingColor(group.finalRating), fontWeight: 'bold' }}>{group.finalRating}</span>
-    ];
-  });
+    if (!contestData.finished) {
+      // For upcoming contests
+      return participationData.map(participation => [
+        <Link to={`/group/${participation.group_id}/contest/${contestId}`} className="tableCellLink">
+          {participation.group_id}
+        </Link>,
+        `${participation.registered_count || 0}/${participation.total_members || 0}`,
+        <button 
+          className={`global-button ${participation.is_registered ? 'red' : 'green'}`}
+          onClick={() => handleRegistrationClick(participation.group_id, participation.is_registered)}
+          disabled={true} // Registration functionality disabled
+        >
+          {participation.is_registered ? 'Unregister' : 'Register'}
+        </button>
+      ]);
+    } else {
+      // For completed contests
+      return participationData.map(participation => {
+        const ratingChange = participation.rating_after - participation.rating_before;
+        const ratingChangeText = ratingChange > 0 ? `+${ratingChange}` : ratingChange.toString();
+        const ratingChangeColor = ratingChange > 0 ? 'green' : (ratingChange < 0 ? 'red' : 'gray');
+        
+        return [
+          <Link to={`/group/${participation.group_id}/contest/${contest_id}`} className="tableCellLink">
+            {participation.group_id}
+          </Link>,
+          <>
+            <span style={{ fontWeight: 'bold' }}>{participation.rank || 'N/A'}</span>
+            <span style={{ fontSize: '0.7rem' }}>
+              /{participation.participant_count || 0}/{participation.total_members || 0}
+            </span>
+          </>,
+          <span style={{ color: ratingChangeColor, fontWeight: 'bold' }}>{ratingChangeText}</span>,
+          <span style={{ color: getRatingColor(participation.rating_after), fontWeight: 'bold' }}>
+            {participation.rating_after}
+          </span>
+        ];
+      });
+    }
+  };
   
   return (
     <div className="page-container">
-      {/* Contest Info Box */}
-      <ContentBoxWithTitle title="Contest Info" backgroundColor="rgb(240, 240, 255)">
-        <div>
-          {/* Contest name with drastically reduced padding */}
-          <h2 className="profileName" style={{ margin: '2.5px 0 5px 0' }}>{contestData.name}</h2>
-          
-          {/* Information elements list with standard font - applied to parent */}
-          <div className={`${styles.statsList}`}>
-            <div className={`${styles.statItem} standardTextFont`}>
-              Status: <span style={{ 
-                color: contestData.status === "active/upcoming" ? 'green' : '#E6A700' 
-              }}>
-                {contestData.status}
-              </span>
-            </div>
-            <div className={`${styles.statItem} standardTextFont`}>
-              Link: <a href={contestData.link} target="_blank" rel="noopener noreferrer">{contestData.link}</a>
-            </div>
-            <div className={`${styles.statItem} standardTextFont`}>
-              Date: <span>{contestData.date}</span>
-            </div>
-            <div className={`${styles.statItem} standardTextFont`}>
-              Time: <span>{contestData.time}</span>
-            </div>
-            <div className={`${styles.statItem} standardTextFont`}>
-              Platform: <span>{contestData.platform.charAt(0).toUpperCase() + contestData.platform.slice(1)}</span>
-            </div>
-          </div>
+      {loading.contest ? (
+        <div className="api-feedback-container loading-message">
+          {API_MESSAGES.LOADING}
         </div>
-      </ContentBoxWithTitle>
-      
-      {/* Group View Box */}
-      <div style={{ marginTop: '20px' }}>
-        <PagedTableBox 
-          title="Group View"
-          columns={isUpcoming ? upcomingColumns : completedColumns}
-          data={isUpcoming ? upcomingRows : completedRows}
-          backgroundColor="rgb(230, 255, 230)"
-          itemsPerPage={5}
-        />
-      </div>
+      ) : error.contest ? (
+        <div className="api-feedback-container error-message">
+          {error.contest}
+        </div>
+      ) : contestData ? (
+        <>
+          {/* Contest Info Box */}
+          <ContentBoxWithTitle title="Contest Info" backgroundColor="rgb(240, 240, 255)">
+            <div>
+              {/* Contest name with drastically reduced padding */}
+              <h2 className="profileName" style={{ margin: '2.5px 0 5px 0' }}>{contestData.contest_name}</h2>
+              
+              {/* Information elements list with standard font - applied to parent */}
+              <div className={`${styles.statsList}`}>
+                <div className={`${styles.statItem} standardTextFont`}>
+                  Status: <span style={{ 
+                    color: !contestData.finished ? 'green' : '#E6A700' 
+                  }}>
+                    {!contestData.finished ? 'active/upcoming' : 'completed'}
+                  </span>
+                </div>
+                <div className={`${styles.statItem} standardTextFont`}>
+                  Link: <a href={contestData.link} target="_blank" rel="noopener noreferrer">{contestData.link}</a>
+                </div>
+                <div className={`${styles.statItem} standardTextFont`}>
+                  Date/Time: <span>{formatDateTime(contestData.start_time_posix)}</span>
+                </div>
+                {contestData.duration_seconds && (
+                  <div className={`${styles.statItem} standardTextFont`}>
+                    Duration: <span>{Math.floor(contestData.duration_seconds / 3600)} hours {Math.floor((contestData.duration_seconds % 3600) / 60)} minutes</span>
+                  </div>
+                )}
+                <div className={`${styles.statItem} standardTextFont`}>
+                  Platform: <span>{contestData.platform.charAt(0).toUpperCase() + contestData.platform.slice(1)}</span>
+                </div>
+              </div>
+            </div>
+          </ContentBoxWithTitle>
+          
+          {/* Group View Box */}
+          {loading.participations ? (
+            <div className="api-feedback-container loading-message" style={{ marginTop: '20px' }}>
+              {API_MESSAGES.LOADING}
+            </div>
+          ) : error.participations ? (
+            <div className="api-feedback-container error-message" style={{ marginTop: '20px' }}>
+              {error.participations}
+            </div>
+          ) : (
+            <div style={{ marginTop: '20px' }}>
+              <TableBox 
+                title="Group View"
+                columns={!contestData.finished ? upcomingColumns : completedColumns}
+                data={getTableData()}
+                backgroundColor="rgb(230, 255, 230)"
+                emptyMessage={API_MESSAGES.NO_DATA}
+              />
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="api-feedback-container error-message">
+          {API_MESSAGES.NOT_FOUND}
+        </div>
+      )}
     </div>
   );
 };

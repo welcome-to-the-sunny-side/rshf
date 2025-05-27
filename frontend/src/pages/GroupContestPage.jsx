@@ -78,22 +78,7 @@ const GroupContestPage = () => {
       // Check if the current user is registered
       if (user) {
         const userParticipation = response.data.find(p => p.user_id === user.user_id);
-        if (userParticipation) {
-          setIsRegistered(true);
-
-          // If contest is finished, set user contest status
-          if (contestData && contestData.finished) {
-            setUserContestStatus({
-              rank: userParticipation.rank,
-              participantCount: response.data.length,
-              memberCount: response.data.length, // This might need to be fetched separately
-              ratingChange: userParticipation.rating_after - userParticipation.rating_before,
-              finalRating: userParticipation.rating_after
-            });
-          }
-        } else {
-          setIsRegistered(false);
-        }
+        setIsRegistered(!!userParticipation);
       }
     } catch (err) {
       console.error('Error fetching participation data:', err);
@@ -117,6 +102,25 @@ const GroupContestPage = () => {
     });
   };
 
+  // Set userContestStatus when both contestData and participationData are loaded and contest is finished
+  useEffect(() => {
+    if (!contestData || !contestData.finished || !user || !participationData.length) {
+      setUserContestStatus(null);
+      return;
+    }
+    const userParticipation = participationData.find(p => p.user_id === user.user_id);
+    if (userParticipation) {
+      setUserContestStatus({
+        rank: userParticipation.rank,
+        participantCount: participationData.length,
+        ratingChange: userParticipation.rating_after - userParticipation.rating_before,
+        finalRating: userParticipation.rating_after
+      });
+    } else {
+      setUserContestStatus(null);
+    }
+  }, [contestData, participationData, user]);
+
   // Prepare data for the registration list table (for upcoming contests)
   const registrationColumns = [
     "Username",
@@ -126,7 +130,13 @@ const GroupContestPage = () => {
 
   const registrationRows = !loading.participations && !error.participations && participationData.length > 0
     ? participationData.map(user => [
-        <Link to={`/user/${user.user_id}`} className="tableCellLink">{user.user_id}</Link>,
+        <Link 
+          to={`/user/${user.user_id}`}
+          className="tableCellLink"
+          style={{ color: getRatingColor(user.rating_before || 0), fontWeight: 'bold' }}
+        >
+          {user.user_id}
+        </Link>,
         <span style={{ color: getRatingColor(user.rating_before || 0) }}>{user.rating_before || 'Unrated'}</span>,
         formatDateTime(user.timestamp)
       ])
@@ -194,8 +204,10 @@ const GroupContestPage = () => {
             <div>
               {/* Contest name with group name */}
               <h2 className="profileName" style={{ margin: '2.5px 0 5px 0' }}>
-                {contestData.contest_name} (<Link to={`/group/${groupId}`}>{groupId}</Link>)
-              </h2>
+  <Link to={`/contest/${contestId}`} className="contestLink" style={{ textDecoration: 'none', color: 'inherit' }}>
+    {contestData.contest_name}
+  </Link> (<Link to={`/group/${groupId}`}>{groupId}</Link>)
+</h2>
               
               {/* Information elements list */}
               <div className={`${styles.statsList}`}>
@@ -218,6 +230,12 @@ const GroupContestPage = () => {
                 <div className={`${styles.statItem} standardTextFont`}>
                   Platform: <span>{contestData.platform.charAt(0).toUpperCase() + contestData.platform.slice(1)}</span>
                 </div>
+                {/* Registered stat for upcoming contests */}
+                {!contestData.finished && (
+                  <div className={`${styles.statItem} standardTextFont`}>
+                    Registered: <span style={{ fontWeight: 'bold' }}>{participationData.length}</span>
+                  </div>
+                )}
                 
                 {/* For completed contests, show user performance */}
                 {contestData.finished && userContestStatus && (
@@ -245,6 +263,11 @@ const GroupContestPage = () => {
                       </span>
                     </div>
                   </>
+                )}
+                {contestData.finished && !userContestStatus && participationData.length > 0 && (
+                  <div className={`${styles.statItem} standardTextFont`}>
+                    Participants: <span style={{ fontWeight: 'bold' }}>{participationData.length}</span>
+                  </div>
                 )}
               </div>
               

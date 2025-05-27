@@ -253,6 +253,7 @@ export default function Home() {
             columns={groupColumns}
             data={groupData}
             backgroundColor="rgb(230, 240, 255)"
+            className="topGroupsTable"
           />
 
           {/* Conditionally render contests */}
@@ -276,6 +277,7 @@ export default function Home() {
               columns={contestColumns}
               data={contestData} 
               backgroundColor="rgb(230, 255, 230)"
+              className="homeContestsTable"
             />
           ) : (
             <ContentBoxWithTitle 
@@ -293,7 +295,7 @@ export default function Home() {
           columns={announcementColumns}
           data={announcementData}
           backgroundColor="rgb(255, 230, 230)"
-          className={styles['main-content']}
+          className={`${styles['main-content']} announcementsTable`}
           itemsPerPage={15}
         />
       </div>

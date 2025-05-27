@@ -5,14 +5,14 @@
 }
 
 .left-sidebar {
-  width: 40%;
+  width: 45%;
   display: flex;
   flex-direction: column;
   gap: 0px;
 }
 
 .main-content {
-  width: 60%;
+  width: 55%;
   flex-grow: 1;
 }
 
@@ -67,3 +67,58 @@ h3 {
   font-weight: normal;
   margin-bottom: 15px;
 } 
+
+/* Table column width styles for all tables in Home.jsx */
+
+/* Make tables use fixed layout for consistent column widths */
+:global(.topGroupsTable) :global(table),
+:global(.homeContestsTable) :global(table),
+:global(.announcementsTable) :global(table) {
+  table-layout: fixed;
+  width: 100%;
+}
+
+/* Top Groups table column styles */
+/* Group column - 70% width */
+:global(.topGroupsTable) :global(th:nth-child(1)),
+:global(.topGroupsTable) :global(td:nth-child(1)) {
+  width: 60%;
+  text-align: left;
+}
+
+/* Members column - 30% width */
+:global(.topGroupsTable) :global(th:nth-child(2)),
+:global(.topGroupsTable) :global(td:nth-child(2)) {
+  width: 40%;
+  text-align: right;
+}
+
+/* Contests table column styles */
+/* Contest column - 70% width */
+:global(.homeContestsTable) :global(th:nth-child(1)),
+:global(.homeContestsTable) :global(td:nth-child(1)) {
+  width: 60%;
+  text-align: left;
+}
+
+/* Date column - 30% width */
+:global(.homeContestsTable) :global(th:nth-child(2)),
+:global(.homeContestsTable) :global(td:nth-child(2)) {
+  width: 40%;
+  text-align: right;
+}
+
+/* Announcements table column styles */
+/* Announcement column - 70% width */
+:global(.announcementsTable) :global(th:nth-child(1)),
+:global(.announcementsTable) :global(td:nth-child(1)) {
+  width: 60%;
+  text-align: left;
+}
+
+/* Date column - 30% width */
+:global(.announcementsTable) :global(th:nth-child(2)),
+:global(.announcementsTable) :global(td:nth-child(2)) {
+  width: 40%;
+  text-align: right;
+}
