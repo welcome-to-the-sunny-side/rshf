@@ -10,3 +10,4 @@ vomitignore.txt
 .ipynb*
 __pycache__/
 *venv*
+changes.md

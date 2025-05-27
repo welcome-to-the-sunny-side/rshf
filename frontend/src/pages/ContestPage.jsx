@@ -7,7 +7,7 @@ import styles from './ContestPage.module.css';
 
 const ContestPage = () => {
   // Set this to false to switch to completed contest view
-  const isUpcoming = true;
+  const isUpcoming = false;
   
   // Dummy contest data
   const contestData = {

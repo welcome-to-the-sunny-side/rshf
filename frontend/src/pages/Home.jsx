@@ -171,7 +171,7 @@ export default function Home() {
         // Transform announcements data to match our UI format
         const transformedAnnouncements = data.map(announcement => ({
           date: new Date(announcement.timestamp).toISOString().split('T')[0],
-          link: `/post/${announcement.announcement_id}`,
+          link: announcement.content.startsWith('http') ? announcement.content : `https://${announcement.content}`,
           title: announcement.title
         }))
         // Sort announcements by date (newest first)
@@ -215,7 +215,7 @@ export default function Home() {
       : announcements.length === 0
         ? [[API_MESSAGES.NO_DATA, ""]]
         : announcements.map(announcement => [
-            <Link to={announcement.link} className="tableCellLink">{announcement.title}</Link>,
+            <a href={announcement.link} className="tableCellLink" target="_blank" rel="noopener noreferrer">{announcement.title}</a>,
             new Date(announcement.date).toLocaleDateString('en-US', { 
               year: 'numeric',
               month: 'short',

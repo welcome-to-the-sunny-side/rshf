@@ -213,7 +213,7 @@ export default function Group() {
           title: announcement.title,
           content: announcement.content,
           date: announcement.timestamp,
-          link: `/group/${groupId}/announcement/${announcement.announcement_id}`
+          link: announcement.content.startsWith('http') ? announcement.content : `https://${announcement.content}` // Ensure URL is absolute
         }));
         
         // Sort by date in descending order (newest first)
@@ -341,7 +341,7 @@ export default function Group() {
   } else {
     // Transform the API data for display
     announcementData = announcementsList.map(announcement => [
-      <Link to={announcement.link} className="tableCellLink">{announcement.title}</Link>,
+      <a href={announcement.link} className="tableCellLink" target="_blank" rel="noopener noreferrer">{announcement.title}</a>,
       new Date(announcement.date).toLocaleDateString('en-US', { 
         year: 'numeric',
         month: 'short',

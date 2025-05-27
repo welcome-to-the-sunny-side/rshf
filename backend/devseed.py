@@ -260,7 +260,7 @@ def build_reports(parts: List[ContestParticipation], memberships: List[GroupMemb
 def build_announcements() -> List[Announcement]:
     banner("building announcements")
     anns = [
-        Announcement(announcement_id=f"anmt{i}", group_id="main", title=faker.sentence(nb_words=6), content=faker.sentence(nb_words=100))
+        Announcement(announcement_id=f"anmt{i}", group_id="main", title=faker.sentence(nb_words=6), content="x.com")
         for i in range(NUM_ANNOUNCEMENTS)
     ]
     print("   total announcements:", len(anns))

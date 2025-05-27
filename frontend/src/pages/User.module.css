@@ -16,7 +16,7 @@
   font-size: 1.5rem;
   font-weight: 600;
   margin-bottom: 0.5rem;
-  color: rgb(255, 140, 0); /* Will be dynamic in the future */
+  /* color: rgb(255, 140, 0); Will be dynamic in the future */
 }
 
 .groupRatingRow {

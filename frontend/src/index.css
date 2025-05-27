@@ -144,7 +144,6 @@ h1 {
 }
 
 .floatingButtonBox button:first-child, .floatingButtonBox a:first-child {
-  background-color: #e0e0e0;
   border-top-left-radius: 8px;
   border-bottom-left-radius: 8px;
   margin-left: 0;

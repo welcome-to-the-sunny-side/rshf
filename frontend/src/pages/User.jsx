@@ -9,6 +9,7 @@ import RatingGraph from '../components/RatingGraph';
 import UserNavBar from '../components/UserNavBar';
 import { API_MESSAGES } from '../constants/apiMessages';
 import '../styles/apiFeedbackStyles.css';
+import { getRatingColor, getRankName } from '../utils/ratingUtils';
 
 // Import platform icon images
 import codeforcesIconPath from '../assets/codeforces-icon-180x180.png';
@@ -102,15 +103,9 @@ export default function User() {
         // [group_name, group_rating, group_rank, group_rank_color, max_group_rating, max_group_rank, max_group_rank_color, member_since, role, rated_contests, report_accuracy_accepted, report_accuracy_total]
         if (response.data.group_memberships && response.data.group_memberships.length > 0) {
           const formattedGroups = response.data.group_memberships.map(membership => {
-            // Get rank name and color based on rating (this would typically come from a utility function)
+            // Get rank name and color based on rating using the utility functions
             const getRankInfo = (rating) => {
-              if (rating >= 2100) return ['Master', 'rgb(255, 140, 0)'];
-              if (rating >= 1900) return ['Candidate Master', 'rgb(170, 0, 170)'];
-              if (rating >= 1600) return ['Expert', 'rgb(0, 0, 255)'];
-              if (rating >= 1400) return ['Specialist', 'rgb(30, 150, 255)'];
-              if (rating >= 1200) return ['Apprentice', 'rgb(170, 170, 170)'];
-              if (rating >= 900) return ['Pupil', 'rgb(0, 180, 0)'];
-              return ['Newbie', 'rgb(120, 120, 120)'];
+              return [getRankName(rating), getRatingColor(rating)];
             };
             
             const currentRank = getRankInfo(membership.user_group_rating);
@@ -300,16 +295,18 @@ export default function User() {
                   className={styles.usernameLink}
                 >
                   <span 
-                    className={styles.username} 
                     style={{ 
-                      color: selectedGroup ? selectedGroup[3] : 'inherit', 
-                      marginBottom: '0.76rem', 
-                      display: 'inline-block' 
+                      fontSize: '1.5rem', 
+                      fontWeight: 'bold',
+                      display: 'inline-block',
+                      color: getRatingColor(userData.group_memberships?.[0]?.user_group_rating || 0)
                     }}
                   >
                     {userData.user_id}
                   </span>
                 </a>
+                {/* Add margin between username and stats list */}
+                <div style={{ marginBottom: '7px' }}></div>
                 {/* Stats List */}
                 <div className={`${styles.statsList}`}>
                   {selectedGroup && (

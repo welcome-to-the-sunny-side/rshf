@@ -9,6 +9,8 @@ import UserNavBar from '../components/UserNavBar';
 
 // Import styles if needed
 import styles from './UserGroups.module.css';
+import { API_MESSAGES } from '../constants/apiMessages';
+import '../styles/apiFeedbackStyles.css';
 
 export default function UserGroups() {
   const navigate = useNavigate();
@@ -46,7 +48,7 @@ export default function UserGroups() {
         setUserGroupsData(userData.group_memberships || []);
       } catch (e) {
         console.error("Failed to fetch user groups:", e);
-        setError(e.message);
+        setError(API_MESSAGES.ERROR);
       } finally {
         setLoading(false);
       }
@@ -76,11 +78,24 @@ export default function UserGroups() {
   ]);
 
   if (loading) {
-    return <div className="page-container"><UserNavBar username={username} isOwnProfile={isOwnProfile} /><p>Loading user groups...</p></div>;
+    return <div className="page-container">
+      <UserNavBar username={username} isOwnProfile={isOwnProfile} />
+      <div className="api-feedback-container loading-message">{API_MESSAGES.LOADING}</div>
+    </div>;
   }
 
   if (error) {
-    return <div className="page-container"><UserNavBar username={username} isOwnProfile={isOwnProfile} /><p>Error loading user groups: {error}</p></div>;
+    return <div className="page-container">
+      <UserNavBar username={username} isOwnProfile={isOwnProfile} />
+      <div className="api-feedback-container error-message">{API_MESSAGES.ERROR}</div>
+    </div>;
+  }
+  
+  if (userGroupsData.length === 0) {
+    return <div className="page-container">
+      <UserNavBar username={username} isOwnProfile={isOwnProfile} />
+      <div className="api-feedback-container no-data-message">{API_MESSAGES.NO_DATA}</div>
+    </div>;
   }
 
   return (
