@@ -84,26 +84,39 @@ export default function Report() {
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
-  const handleAction = (accepted) => {
+  const handleAction = async (accepted) => {
     if (!user) {
         alert('You must be logged in to perform this action.');
         return;
     }
-    // This is a dummy action as the backend endpoint is not ready.
-    // It updates local state to simulate report resolution.
-    alert(`Report ${accepted ? 'accepted' : 'rejected'}! (Client-side simulation)`);
-    setReportData(prev => ({
-      ...prev,
-      resolved: true,
-      // Store resolution details locally for UI update
-      locally_resolved_accepted: accepted, 
-      locally_resolved_by_username: user.user_id, // Use current user's ID
-      locally_resolved_by_rating: null, // Rating not available directly, could fetch if needed
-      locally_resolved_review_date: new Date().toISOString().split('T')[0],
-      locally_resolved_reviewer_note: actionReviewerNote,
-      locally_resolved_reporter_status_change: actionReporterStatus,
-      locally_resolved_respondent_status_change: actionRespondentStatus,
-    }));
+    
+    try {
+      setLoading(true);
+      // Make API call to resolve the report
+      await axios.put('/api/report/resolve', {
+        report_id: reportId,
+        resolved_by: user.user_id,
+        resolve_message: actionReviewerNote
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Fetch the updated report data
+      const response = await axios.get(`/api/report`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { report_id: reportId },
+      });
+      
+      if (response.data && response.data.length > 0) {
+        setReportData(response.data[0]);
+        alert(`Report successfully ${accepted ? 'accepted' : 'rejected'}!`);
+      }
+    } catch (err) {
+      console.error('Failed to resolve report:', err);
+      alert(`Failed to ${accepted ? 'accept' : 'reject'} report. Please try again later.`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) {
@@ -121,7 +134,8 @@ export default function Report() {
   // Determine if the report is active (not resolved)
   const isActive = !reportData.resolved;
   // For locally resolved reports, use the locally stored 'accepted' status
-  const isAccepted = reportData.resolved ? (reportData.locally_resolved_accepted !== undefined ? reportData.locally_resolved_accepted : null) : null;
+  // Determine if the report was accepted based on API data
+  const isAccepted = reportData.resolved ? true : null; // If resolved, consider it accepted
 
   return (
     <div className="page-container">
@@ -160,7 +174,6 @@ export default function Report() {
             >
               {reportData.reporter_user_id}
             </Link>
-            {reportData.reporter_rating_at_report_time !== null && ` (Rating: ${reportData.reporter_rating_at_report_time})`}
           </div>
           
           <div style={{ marginBottom: '15px' }}>
@@ -172,7 +185,6 @@ export default function Report() {
             >
               {reportData.respondent_user_id}
             </Link>
-            {reportData.respondent_rating_at_report_time !== null && ` (Rating: ${reportData.respondent_rating_at_report_time})`}
           </div>
           
           <div style={{ marginBottom: '15px' }}>
@@ -274,59 +286,49 @@ export default function Report() {
       {reportData.resolved && (
         <ContentBoxWithTitle 
           title="Review Outcome" 
-          backgroundColor={isAccepted === true ? "rgb(230, 255, 240)" : (isAccepted === false ? "rgb(255, 230, 230)" : "rgb(240, 240, 240)")}
+          backgroundColor={isAccepted === true ? "rgb(230, 255, 240)" : "rgb(240, 240, 240)"}
         >
           <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto', padding: '15px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {(reportData.resolved_by || reportData.locally_resolved_by_username) && (
+              {reportData.resolved_by && (
                 <div>
                   <strong>Reviewed By:</strong>{' '}
                   <Link 
-                    to={`/user/${reportData.locally_resolved_by_username || reportData.resolved_by}`} 
+                    to={`/user/${reportData.resolved_by}`} 
                     className="tableCellLink" 
-                    style={{ color: getRatingColor(reportData.locally_resolved_by_rating || reportData.resolver_rating_at_resolve_time), fontWeight: 'bold' }}
+                    style={{ color: getRatingColor(reportData.resolver_rating_at_resolve_time), fontWeight: 'bold' }}
                   >
-                    {reportData.locally_resolved_by_username || reportData.resolved_by}
+                    {reportData.resolved_by}
                   </Link>
-                  {(reportData.locally_resolved_by_rating || reportData.resolver_rating_at_resolve_time) !== null && 
-                    ` (Rating: ${reportData.locally_resolved_by_rating || reportData.resolver_rating_at_resolve_time})`
-                  }
                 </div>
               )}
               
-              {reportData.locally_resolved_review_date && (
-                 <div>
-                   <strong>Review Date:</strong> {formatDate(reportData.locally_resolved_review_date)}
-                 </div>
+              {reportData.resolve_timestamp && (
+                <div>
+                  <strong>Review Date:</strong> {formatDate(reportData.resolve_timestamp)}
+                </div>
               )}
+              
+              {/* {reportData.resolve_time_stamp && ( */}
+                <div>
+                  <strong>Resolve Date:</strong> {formatDate(new Date(reportData.resolve_time_stamp * 1000))}
+                </div>
+            {/* //   )} */}
               
               <div>
                 <strong>Status:</strong>{' '}
                 <span style={{ 
-                  color: isAccepted === true ? 'rgb(0, 150, 0)' : (isAccepted === false ? 'rgb(200, 0, 0)' : 'rgb(100,100,100)'),
+                  color: isAccepted === true ? 'rgb(0, 150, 0)' : 'rgb(100,100,100)',
                   fontWeight: 'bold'
                 }}>
-                  {isAccepted === true ? 'Accepted' : (isAccepted === false ? 'Rejected' : 'Resolved (Status Unknown)')}
+                  {isAccepted === true ? 'Accepted' : 'Resolved'}
                 </span>
               </div>
               
-              {/* Display status changes only if resolved locally, as API doesn't provide this for pre-resolved reports */}
-              {reportData.locally_resolved_reporter_status_change && (
-                <div>
-                  <strong>Reporter Status Set To:</strong> {reportData.locally_resolved_reporter_status_change}
-                </div>
-              )}
-              
-              {reportData.locally_resolved_respondent_status_change && (
-                <div>
-                  <strong>Respondent Status Set To:</strong> {reportData.locally_resolved_respondent_status_change}
-                </div>
-              )}
-              
-              {(reportData.resolve_message || reportData.locally_resolved_reviewer_note) && (
+              {reportData.resolve_message && (
                 <div className={styles.aboutBox} style={{ marginTop: '10px' }}>
                   <h4 style={{ margin: '0 0 8px 0' }}>Reviewer's Note:</h4>
-                  <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{reportData.locally_resolved_reviewer_note || reportData.resolve_message}</p>
+                  <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{reportData.resolve_message}</p>
                 </div>
               )}
             </div>

@@ -13,19 +13,6 @@ import { useAuth } from '../context/AuthContext';
 import { API_MESSAGES } from '../constants/apiMessages';
 import '../styles/apiFeedbackStyles.css';
 
-// Calculate participation percentage based on members and participants
-const calculateParticipation = (totalMembers, participants) => {
-  if (!totalMembers || totalMembers === 0) return 0;
-  return Math.round((participants / totalMembers) * 100);
-};
-
-// Calculate group strength (average rating of participants)
-const calculateStrength = (ratings) => {
-  if (!ratings || ratings.length === 0) return 0;
-  const sum = ratings.reduce((a, b) => a + b, 0);
-  return Math.round(sum / ratings.length);
-};
-
 export default function Group() {
   const { groupId } = useParams();
   const { user, token } = useAuth();

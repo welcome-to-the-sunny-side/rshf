@@ -182,7 +182,7 @@ export default function RatingGraph({ ratingHistory }) {
           
           {/* Black border line (underneath) */}
           <Line
-            type="monotone"
+            type="linear"
             dataKey="rating"
             stroke="#000"
             strokeWidth={0}
@@ -192,7 +192,7 @@ export default function RatingGraph({ ratingHistory }) {
           />
           {/* Yellow line (on top) */}
           <Line
-            type="monotone"
+            type="linear"
             dataKey="rating"
             stroke="#FFD700"
             strokeWidth={2}

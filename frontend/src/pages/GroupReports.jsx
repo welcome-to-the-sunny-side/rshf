@@ -176,7 +176,6 @@ export default function GroupReports() {
         <Link to={`/user/${report.reporter_user_id}`} className="tableCellLink" style={{ color: getRatingColor(report.reporter_rating_at_report_time), fontWeight: 'bold' }}>
           {report.reporter_user_id}
         </Link>,
-        <span>-</span>, // Report accuracy placeholder
         <Link to={`/user/${report.respondent_user_id}`} className="tableCellLink" style={{ color: getRatingColor(report.respondent_rating_at_report_time), fontWeight: 'bold' }}>
           {report.respondent_user_id}
         </Link>,
@@ -191,24 +190,15 @@ export default function GroupReports() {
           </Link>
         );
         
-        // Add resolve message if available
-        rowData.push(report.resolve_message || "-");
+        // Add resolve date if available
+        rowData.push(report.resolve_timestamp ? formatDate(report.resolve_timestamp) : formatDate(report.timestamp));
       }
       
       // Add action button
       rowData.push(
         <Link 
           to={`/group/${groupId}/report/${report.report_id}`}
-          style={{
-            display: 'inline-block',
-            padding: '4px 12px',
-            backgroundColor: '#3498db',
-            borderRadius: '4px',
-            textDecoration: 'none',
-            color: 'white',
-            fontWeight: '500',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-          }}
+          className="global-button blue small"
         >
           View →
         </Link>
@@ -219,8 +209,8 @@ export default function GroupReports() {
   };
 
   // Define columns for the tables
-  const activeColumns = ["Report ID", "Contest ID", "Reporter", "Report Accuracy", "Respondent", "Report Date", "Action"];
-  const processedColumns = [...activeColumns.slice(0, -1), "Resolved By", "Resolution", "Action"];
+  const activeColumns = ["Report ID", "Contest ID", "Reporter", "Respondent", "Report Date", "Action"];
+  const processedColumns = [...activeColumns.slice(0, -1), "Resolved By", "Resolve Date", "Action"];
   
   // Transform the data for the table components
   const activeTableRows = transformReportsData(activeReports);
@@ -342,7 +332,7 @@ export default function GroupReports() {
               itemsPerPage={10}
               initialSortColumnIndex={0} // Report ID column
               initialSortDirection="desc" // Descending order
-              className="reportsTable"
+              className="activeReportsTable"
             />
             
             {/* Processed Reports Table */}
@@ -354,7 +344,7 @@ export default function GroupReports() {
               itemsPerPage={10}
               initialSortColumnIndex={0} // Report ID column
               initialSortDirection="desc" // Descending order
-              className="reportsTable"
+              className="processedReportsTable"
             />
           </div>
         </>

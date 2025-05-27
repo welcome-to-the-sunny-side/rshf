@@ -186,7 +186,9 @@ export default function User() {
       
       // If we already have data for this group, use it
       if (ratingHistoryData[groupId]) {
-        setCurrentRatingHistory(ratingHistoryData[groupId]);
+        // Filter cached data as well to ensure only completed contests are shown
+        const cachedCompletedContests = ratingHistoryData[groupId].filter(item => item.finished === true);
+        setCurrentRatingHistory(cachedCompletedContests);
         return;
       }
       
@@ -199,6 +201,7 @@ export default function User() {
             'Authorization': `Bearer ${token}`
           }
         });
+        console.log(response.data);
         
         // Let's try different date formats for debugging
         const formattedRatingData = response.data.map(participation => {
@@ -218,23 +221,23 @@ export default function User() {
             rating: participation.rating_after || participation.rating_before || 0,
             contest_id: participation.contest_id,
             group_id: groupId, // Add the group_id from selectedGroup[0]
-            contest_name: participation.contest.contest_name || 'Unknown Contest'
+            contest_name: participation.contest.contest_name || 'Unknown Contest',
+            finished: participation.contest.finished || false // Ensure 'finished' status is carried over
           };
         }).filter(item => item !== null); // Filter out any null items
-        
+        console.log(formattedRatingData); 
         // Sort by date (using raw timestamps now, so just compare them directly)
         formattedRatingData.sort((a, b) => a.date - b.date);
         
-            
-        // Cache the data for this group
-        setRatingHistoryData(prev => ({
-          ...prev,
+        // Filter for completed contests
+        const completedContestsHistory = formattedRatingData.filter(item => item.finished === true);
+        // Store the formatted and sorted (but unfiltered) data in the cache
+        setRatingHistoryData(prevData => ({
+          ...prevData,
           [groupId]: formattedRatingData
         }));
-        
-        // Set current rating history
-        setCurrentRatingHistory(formattedRatingData);
-        
+        // Set the filtered data (completed contests only) for the graph
+        setCurrentRatingHistory(completedContestsHistory);
       } catch (err) {
         setRatingError('Failed to load rating data. Please try again later.');
         setCurrentRatingHistory([]);

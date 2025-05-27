@@ -194,6 +194,7 @@ class ReportOut(BaseModel):
     reporter_rating_at_report_time: Optional[int] = None
     respondent_rating_at_report_time: Optional[int] = None
     resolver_rating_at_resolve_time: Optional[int] = None
+    resolve_time_stamp: Optional[int] = None
 
     class Config:
         orm_mode = True

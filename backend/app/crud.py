@@ -525,6 +525,7 @@ def resolve_report(db: Session, payload: schemas.ReportResolve) -> Optional[mode
     rpt.resolve_message = payload.resolve_message
     rpt.resolver_rating_at_resolve_time = resolver_rating_at_resolve_time
     rpt.resolve_timestamp = datetime.utcnow()
+    rpt.resolve_time_stamp = int(datetime.utcnow().timestamp())
     db.commit()
     db.refresh(rpt)
     return rpt
@@ -587,10 +588,14 @@ def get_group_custom_membership_data(db: Session, group_id: str) -> List[schemas
     if not memberships:
         return []
     
-    # Get all contest participations for this group in one query to avoid N+1 problem
+    # Get all contest participations for this group in finished contests to avoid N+1 problem
     participations = (
         db.query(models.ContestParticipation)
-        .filter(models.ContestParticipation.group_id == group_id)
+        .join(models.Contest, models.ContestParticipation.contest_id == models.Contest.contest_id)
+        .filter(
+            models.ContestParticipation.group_id == group_id,
+            models.Contest.finished == True
+        )
         .all()
     )
     

@@ -124,8 +124,7 @@ const GroupContestPage = () => {
   // Prepare data for the registration list table (for upcoming contests)
   const registrationColumns = [
     "Username",
-    "Rating",
-    "Registered On"
+    "Rating"
   ];
 
   const registrationRows = !loading.participations && !error.participations && participationData.length > 0
@@ -137,10 +136,10 @@ const GroupContestPage = () => {
         >
           {user.user_id}
         </Link>,
-        <span style={{ color: getRatingColor(user.rating_before || 0) }}>{user.rating_before || 'Unrated'}</span>,
-        formatDateTime(user.timestamp)
+        <span style={{ color: getRatingColor(user.rating_before || 0) }}>{user.rating_before || 'Unrated'}</span>
       ])
     : [];
+
 
   // Prepare data for the rank list table (for completed contests)
   const rankColumns = [

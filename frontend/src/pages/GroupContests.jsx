@@ -118,19 +118,27 @@ export default function GroupContests() {
   };
 
   // Define columns for the table
-  let columns = ["Contest", "Platform", "Date/Time", "Participants"];
+  let columns = ["Contest", "Platform", "Date/Time", "Participants/ Members"];
   if (isLoggedInUserMember) {
     columns = [...columns, "Rank", "Rating Change", "Final Rating"];
   }
   
   // Transform the data for the table component
   const tableRows = contests.map(contest => {
+    // Get participants/members ratio from group_views if available
+    let participantsMembers = "-";
+    if (contest.group_views && contest.group_views[groupId]) {
+      const totalParticipants = contest.group_views[groupId].total_participants || 0;
+      const totalMembers = contest.group_views[groupId].total_members || 0;
+      participantsMembers = `${totalParticipants}/${totalMembers}`;
+    }
+    
     // Base data for all users (logged in or not)
     const baseData = [
       <Link to={`/group/${groupId}/contest/${contest.contest_id}`} className="tableCellLink">{contest.contest_name}</Link>,
       contest.platform,
       formatDateTime(new Date(contest.start_time_posix * 1000).toISOString()),
-      "-" // Placeholder for participants count
+      participantsMembers
     ];
     
     // Add participation data for members

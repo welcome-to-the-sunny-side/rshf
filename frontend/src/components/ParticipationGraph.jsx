@@ -1,12 +1,13 @@
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceArea, ResponsiveContainer, Legend } from 'recharts';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import styles from './ParticipationGraph.module.css';
 
 // Color scheme
-const PARTICIPATION_LINE_COLOR = '#FF6B6B'; // Red color for participation
-const STRENGTH_LINE_COLOR = '#4ECDC4';      // Teal color for group strength
-const BACKGROUND_COLOR = 'rgba(224, 255, 255, 0.6)'; // Cyan background color
+const PARTICIPATION_LINE_COLOR = '#4CAF50'; // Green color for participation
+const STRENGTH_LINE_COLOR = '#2196F3';      // Blue color for group strength
+const BACKGROUND_COLOR = 'rgb(255, 255, 255)'; // White background color
+const HOVER_COLOR = '#ff7300'; // Orange color for hover state (same as RatingGraph)
 
 // Only generate ticks for the first day of each year
 const generateYearlyTicks = (dataMin, dataMax) => {
@@ -45,12 +46,41 @@ const formatTooltipLabel = (timestamp) => {
 
 // Custom clickable dot component for participation (links to contest page)
 const ClickableDot = (props) => {
-  const { cx, cy, stroke, strokeWidth, r, fill, payload } = props;
-  const { contest_id, groupName } = payload;
-  const link = contest_id ? `/group/${groupName}/contest/${contest_id}` : '#';
+  const { 
+    cx, cy, payload, index,
+    r: defaultR = 3,
+    fill: defaultFill = '#4CAF50',
+    stroke: defaultStroke = '#000',
+    strokeWidth: defaultStrokeWidth = 1,
+  } = props;
+  
+  // Early return if we don't have valid coordinates
+  if (typeof cx !== 'number' || typeof cy !== 'number') return null;
+
+  // Get contest and group info from payload
+  const groupId = payload?.group_id;
+  const contestId = payload?.contest_id;
+  const url = groupId && contestId ? `/group/${groupId}/contest/${contestId}` : null;
+  
+  // Handle click event
+  const handleClick = (e) => {
+    e.stopPropagation();
+    if (url) {
+      window.open(url, '_blank', 'noopener');
+    }
+  };
+
+  // Determine if this is an active dot
+  const isActive = props.type === 'active';
+  
+  // Set properties based on active state
+  const r = isActive ? 7 : defaultR;
+  const fill = isActive ? '#ff7300' : defaultFill;
+  const stroke = defaultStroke;
+  const strokeWidth = isActive ? 2 : defaultStrokeWidth;
 
   return (
-    <Link to={link}>
+    <g key={`dot-${index}`}>
       <circle
         cx={cx}
         cy={cy}
@@ -58,19 +88,53 @@ const ClickableDot = (props) => {
         fill={fill}
         stroke={stroke}
         strokeWidth={strokeWidth}
+        style={{ cursor: url ? 'pointer' : 'default' }}
+        onClick={url ? handleClick : undefined}
+        tabIndex={url ? 0 : -1}
+        onKeyDown={url ? (e) => { if (e.key === 'Enter') handleClick(e); } : undefined}
       />
-    </Link>
+    </g>
   );
 };
 
-// Custom active dot component for participation (larger circle for hover, also linked)
-const ClickableActiveDot = (props) => {
-  const { cx, cy, stroke, strokeWidth, r, fill, payload } = props;
-  const { contest_id, groupName } = payload;
-  const link = contest_id ? `/group/${groupName}/contest/${contest_id}` : '#';
+// Use the same ClickableDot component for active dots
+
+// Strength dot component with similar styling to the rating graph dots - also clickable
+const StrengthDot = (props) => {
+  const { 
+    cx, cy, payload, index,
+    r: defaultR = 3,
+    fill: defaultFill = '#2196F3',
+    stroke: defaultStroke = '#000',
+    strokeWidth: defaultStrokeWidth = 1,
+  } = props;
+  
+  if (typeof cx !== 'number' || typeof cy !== 'number') return null;
+
+  // Get contest and group info from payload
+  const groupId = payload?.group_id;
+  const contestId = payload?.contest_id;
+  const url = groupId && contestId ? `/group/${groupId}/contest/${contestId}` : null;
+  
+  // Handle click event
+  const handleClick = (e) => {
+    e.stopPropagation();
+    if (url) {
+      window.open(url, '_blank', 'noopener');
+    }
+  };
+
+  // Determine if this is an active dot
+  const isActive = props.type === 'active';
+  
+  // Set properties based on active state
+  const r = isActive ? 7 : defaultR;
+  const fill = isActive ? '#ff7300' : defaultFill;
+  const stroke = defaultStroke;
+  const strokeWidth = isActive ? 2 : defaultStrokeWidth;
 
   return (
-    <Link to={link}>
+    <g key={`strength-dot-${index}`}>
       <circle
         cx={cx}
         cy={cy}
@@ -78,23 +142,12 @@ const ClickableActiveDot = (props) => {
         fill={fill}
         stroke={stroke}
         strokeWidth={strokeWidth}
+        style={{ cursor: url ? 'pointer' : 'default' }}
+        onClick={url ? handleClick : undefined}
+        tabIndex={url ? 0 : -1}
+        onKeyDown={url ? (e) => { if (e.key === 'Enter') handleClick(e); } : undefined}
       />
-    </Link>
-  );
-};
-
-// Regular non-clickable dot for strength line
-const RegularDot = (props) => {
-  const { cx, cy, stroke, strokeWidth, r, fill } = props;
-  return (
-    <circle
-      cx={cx}
-      cy={cy}
-      r={r}
-      fill={fill}
-      stroke={stroke}
-      strokeWidth={strokeWidth}
-    />
+    </g>
   );
 };
 
@@ -104,30 +157,23 @@ const CustomTooltip = ({ active, payload, label }) => {
     const data = payload[0].payload;
     
     return (
-      <div className="custom-tooltip" style={{ 
-        backgroundColor: 'rgba(255, 255, 255, 0.8)', 
-        border: '1px solid #ccc',
-        padding: '8px'
-      }}>
-        <p style={{ margin: 0, fontWeight: 'bold' }}>{formatTooltipLabel(label)}</p>
+      <div className={styles.tooltip}>
+        <p style={{ fontWeight: 'bold', marginBottom: '4px' }}>{formatTooltipLabel(label)}</p>
         
         {/* Add contest name if available */}
         {data.contest_id && (
-          <p style={{ 
-            margin: '4px 0', 
-            color: '#333',
-            fontSize: '0.95rem'
-          }}>
-            Contest: <span style={{ fontStyle: 'italic' }}>Contest #{data.contest_id}</span>
-          </p>
+          <>
+            <p style={{ fontSize: '0.9em', color: '#666' }}>Contest #{data.contest_id}</p>
+            <p style={{ fontSize: '0.9em', color: '#666' }}>{data.group_id ? `Group: ${data.group_id}` : ''}</p>
+          </>
         )}
         
         {/* Display the data values */}
         {payload.map((entry, index) => (
           <p key={`tooltip-${index}`} style={{ 
-            margin: '2px 0', 
+            fontWeight: 'bold',
             color: entry.color,
-            fontWeight: 'bold'
+            marginTop: '4px'
           }}>
             {`${entry.name}: ${entry.value}`}
           </p>
@@ -148,7 +194,7 @@ export default function ParticipationGraph({ participationData, groupName }) {
   const chartData = participationData.map(p => ({
     ...p,
     timestamp: Date.parse(p.date),
-    groupName: groupName, // Add group name for links
+    group_id: groupName, // Add group ID for links
   })).sort((a, b) => a.timestamp - b.timestamp); // Ensure data is sorted by time
 
   // Find max values for Y-axis
@@ -200,64 +246,38 @@ export default function ParticipationGraph({ participationData, groupName }) {
             strokeOpacity={0}
           />
 
+          <defs>
+            <filter id="lineShadow" x="-10" y="-10" width="200" height="200">
+              <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#000" floodOpacity="0.3" />
+            </filter>
+          </defs>
+          
           {/* Participation line (clickable) */}
           <Line
             type="linear"
             dataKey="participation"
             name="Participation"
             stroke={PARTICIPATION_LINE_COLOR}
-            strokeWidth={1.5}
-            dot={(
-              <ClickableDot
-                stroke='#000000'
-                strokeWidth={1}
-                r={3}
-                fill={PARTICIPATION_LINE_COLOR}
-              />
-            )}
-            activeDot={(
-              <ClickableActiveDot
-                stroke='#000000'
-                strokeWidth={1.5}
-                r={5}
-                fill={PARTICIPATION_LINE_COLOR}
-              />
-            )}
+            strokeWidth={2}
+            dot={ClickableDot}
+            activeDot={ClickableDot}
             isAnimationActive={false}
-            strokeLinecap="square"
-            strokeLinejoin="miter"
-            style={{
-              filter: 'drop-shadow(0 0 1px black)'
-            }}
+            connectNulls={true}
+            style={{ filter: 'drop-shadow(0px 1px 2px rgba(0,0,0,0.5))' }}
           />
 
-          {/* Strength line (non-clickable) */}
+          {/* Strength line (clickable) */}
           <Line
             type="linear"
             dataKey="strength"
             name="Group Strength"
             stroke={STRENGTH_LINE_COLOR}
-            strokeWidth={1.5}
-            dot={(
-              <RegularDot
-                stroke='#000000'
-                strokeWidth={1}
-                r={3}
-                fill={STRENGTH_LINE_COLOR}
-              />
-            )}
-            activeDot={{
-              stroke: '#000000',
-              strokeWidth: 1.5,
-              r: 5,
-              fill: STRENGTH_LINE_COLOR
-            }}
+            strokeWidth={2}
+            dot={StrengthDot}
+            activeDot={StrengthDot}
             isAnimationActive={false}
-            strokeLinecap="square"
-            strokeLinejoin="miter"
-            style={{
-              filter: 'drop-shadow(0 0 1px black)'
-            }}
+            connectNulls={true}
+            style={{ filter: 'drop-shadow(0px 1px 2px rgba(0,0,0,0.5))' }}
           />
         </LineChart>
       </ResponsiveContainer>

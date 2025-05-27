@@ -122,7 +122,7 @@ export default function GroupMembers() {
         {Math.round((member.reportAccuracy.accepted / member.reportAccuracy.total) * 100)}% ({member.reportAccuracy.accepted}/{member.reportAccuracy.total})
       </span>
     ) : (
-      <span>No reports</span>
+      <span>hmmm...</span>
     ),
     formatDate(member.dateJoined)
   ]);

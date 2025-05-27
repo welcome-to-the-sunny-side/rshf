@@ -20,21 +20,16 @@ const ContestPage = () => {
   const [currentUserParticipations, setCurrentUserParticipations] = useState([]);
   // State for all groups the current user is a member of
   const [userGroupMemberships, setUserGroupMemberships] = useState([]);
-  // State for contest registration counts for each of the user's groups
-  const [groupContestCounts, setGroupContestCounts] = useState({});
-  
   // Loading and error states
   const [loading, setLoading] = useState({
     contest: true,
     currentUserParticipations: true,
     userGroupMemberships: true,
-    groupContestCounts: false, // Initially false, true when fetching counts
   });
   const [error, setError] = useState({
     contest: null,
     currentUserParticipations: null,
     userGroupMemberships: null,
-    groupContestCounts: null,
   });
 
   useEffect(() => {
@@ -46,12 +41,6 @@ const ContestPage = () => {
     fetchCurrentUserParticipations();
     fetchUserGroupMemberships();
   }, [contest_id, token, navigate, user]); // Added user dependency for user.user_id
-
-  useEffect(() => {
-    if (contestData && !contestData.finished && userGroupMemberships.length > 0) {
-      fetchGroupContestCountsForAllGroups();
-    }
-  }, [contestData, userGroupMemberships, contest_id, token]);
 
   // Function to fetch contest data
   const fetchContestData = async () => {
@@ -108,35 +97,6 @@ const ContestPage = () => {
     }
   };
 
-  // Function to fetch contest group counts for all user's groups
-  const fetchGroupContestCountsForAllGroups = async () => {
-    setLoading(prev => ({ ...prev, groupContestCounts: true }));
-    setError(prev => ({ ...prev, groupContestCounts: null }));
-    const counts = {};
-    try {
-      for (const membership of userGroupMemberships) {
-        const groupId = membership.group_id;
-        try {
-          const response = await axios.get('/api/contest_group_counts', {
-            headers: { Authorization: `Bearer ${token}` },
-            params: { contest_id: contest_id, group_id: groupId }
-          });
-          counts[groupId] = response.data || { total_participation: 0, total_members: 'N/A' }; // Handle null response from API
-        } catch (err) {
-          console.error(`Error fetching contest counts for group ${groupId}:`, err);
-          counts[groupId] = { total_participation: 'Error', total_members: 'Error' }; 
-        }
-      }
-      setGroupContestCounts(counts);
-    } catch (err) {
-      // This catch is for errors in the loop logic itself, individual fetch errors are handled inside
-      console.error('Error in fetchGroupContestCountsForAllGroups loop:', err);
-      setError(prev => ({ ...prev, groupContestCounts: 'Error fetching some group counts' }));
-    } finally {
-      setLoading(prev => ({ ...prev, groupContestCounts: false }));
-    }
-  };
-
   // Format date for display
   const formatDateTime = (timestamp) => {
     if (!timestamp) return 'TBD';
@@ -164,14 +124,18 @@ const ContestPage = () => {
 
     if (!contestData.finished) {
       // Upcoming contests: Iterate through user's groups
-      if (loading.userGroupMemberships || loading.groupContestCounts || loading.currentUserParticipations) {
-        // Return a placeholder or an empty array if critical data is still loading
-        return []; // Or a single row indicating loading for these parts
+      // Data for group views now comes from contestData.group_views
+      // The main page loading (isPageLoading) handles if contestData itself is not yet available.
+      // userGroupMemberships loading is still relevant.
+      if (loading.userGroupMemberships || loading.currentUserParticipations) {
+        return []; 
       }
       return userGroupMemberships.map(membership => {
         const groupId = membership.group_id;
-        const counts = groupContestCounts[groupId] || { total_participation: '...', total_members: '...' };
-        const registeredText = `${counts.total_participation || 0} / ${counts.total_members || 'N/A'}`;
+        const groupView = contestData.group_views && contestData.group_views[groupId];
+        const totalParticipants = groupView ? groupView.total_participants : '...';
+        const totalMembersInGroup = groupView ? groupView.total_members : '...';
+        const registeredText = `${totalParticipants === '...' ? '...' : (totalParticipants || 0)} / ${totalMembersInGroup === '...' ? '...' : (totalMembersInGroup || 'N/A')}`;
         
         const isCurrentUserRegistered = currentUserParticipations.some(p => p.group_id === groupId);
 
@@ -184,7 +148,6 @@ const ContestPage = () => {
             key={`${groupId}-action`}
             className={`global-button ${isCurrentUserRegistered ? 'red' : 'green'}`}
             onClick={() => handleRegistrationClick(groupId, isCurrentUserRegistered)}
-            // disabled={true} // Enable for interaction, actual API call is TODO
           >
             {isCurrentUserRegistered ? 'Unregister' : 'Register'}
           </button>
@@ -202,9 +165,9 @@ const ContestPage = () => {
         const ratingChangeText = ratingChange === null ? 'N/A' : (ratingChange > 0 ? `+${ratingChange}` : ratingChange.toString());
         const ratingChangeColor = ratingChange === null ? 'gray' : (ratingChange > 0 ? 'green' : 'red');
         
-        // Get total participants and members for this group in this contest from group_views
         const groupViewData = contestData.group_views && contestData.group_views[participation.group_id];
-        const participantCount = groupViewData ? groupViewData.total_participation : 0;
+        // Ensure using total_participants as per GroupViewDetail schema
+        const participantCount = groupViewData ? groupViewData.total_participants : 0; 
         const totalMembers = groupViewData ? groupViewData.total_members : 0;
 
         return [
@@ -228,7 +191,7 @@ const ContestPage = () => {
   
   // Determine overall loading state for the main content sections
   const isPageLoading = loading.contest || (contestData && !contestData.finished && (loading.userGroupMemberships || loading.currentUserParticipations));
-  const pageError = error.contest || (contestData && !contestData.finished && (error.userGroupMemberships || error.currentUserParticipations || error.groupContestCounts));
+  const pageError = error.contest || (contestData && !contestData.finished && (error.userGroupMemberships || error.currentUserParticipations));
 
   return (
     <div className="page-container">
@@ -276,15 +239,12 @@ const ContestPage = () => {
           
           {/* Group View Box */}
           {/* Specific loading/error for table section if needed, or rely on overall pageError */}
-          { (loading.groupContestCounts && !contestData.finished) ? (
-              <div className="api-feedback-container loading-message" style={{ marginTop: '20px' }}>
-                Loading group registration data...
-              </div>
-            ) : error.groupContestCounts && !contestData.finished ? (
-              <div className="api-feedback-container error-message" style={{ marginTop: '20px' }}>
-                {error.groupContestCounts}
-              </div>
-            ) : (
+          {/* Group View Box data now comes from contestData.
+              The main page loading/error (isPageLoading, pageError) handles cases where contestData 
+              might still be loading or has errored. The TableBox itself will show an 
+              emptyMessage if getTableData() returns an empty array. 
+          */}
+          { (
             <div style={{ marginTop: '20px' }}>
               <TableBox 
                 title="Group View"

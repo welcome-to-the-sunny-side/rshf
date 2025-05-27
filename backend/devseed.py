@@ -212,7 +212,7 @@ def build_contest_participations(groups: List[Group], memberships: List[GroupMem
             continue
         for m in random.sample(members, len(members) // 2):
             rating_prev = m.user_group_rating
-            for contest in contests[:3]:
+            for contest in contests:
                 rating_after = rating_prev + (1 if random.random() < 0.5 else -1) * random.randint(0, 80)
                 parts.append(
                     ContestParticipation(
@@ -238,24 +238,69 @@ def build_reports(parts: List[ContestParticipation], memberships: List[GroupMemb
     for m in memberships:
         mem_by_group.setdefault(m.group_id, []).append(m)
 
+    # Create a lookup for memberships by user_id and group_id for easier access to ratings
+    mem_lookup = {}
+    for m in memberships:
+        mem_lookup[(m.user_id, m.group_id)] = m
+
     reports: list[Report] = []
+    # Determine how many reports should be resolved (processed) - about 30%
+    num_resolved_reports = NUM_REPORTS // 3
+    
     while len(reports) < NUM_REPORTS:
         p = random.choice(parts)
         candidates = mem_by_group.get(p.group_id, [])
         if not candidates:
             continue
+            
         reporter = random.choice(candidates)
-        reports.append(
-            Report(
-                report_id=f"report{len(reports)}",
-                group_id=p.group_id,
-                contest_id=p.contest_id,
-                reporter_user_id=reporter.user_id,
-                respondent_user_id=p.user_id,
-                report_description=faker.sentence(),
-            )
+        # Get reporter and respondent ratings from their group memberships
+        reporter_membership = mem_lookup.get((reporter.user_id, p.group_id))
+        respondent_membership = mem_lookup.get((p.user_id, p.group_id))
+        
+        if not reporter_membership or not respondent_membership:
+            continue
+            
+        reporter_rating = reporter_membership.user_group_rating
+        respondent_rating = respondent_membership.user_group_rating
+        
+        # Determine if this report should be resolved
+        is_resolved = len(reports) < num_resolved_reports
+        
+        report = Report(
+            report_id=f"r{len(reports)}",
+            group_id=p.group_id,
+            contest_id=p.contest_id,
+            reporter_user_id=reporter.user_id,
+            respondent_user_id=p.user_id,
+            report_description=faker.sentence(),
+            reporter_rating_at_report_time=reporter_rating,
+            respondent_rating_at_report_time=respondent_rating,
+            resolved=is_resolved
         )
+        
+        # For resolved reports, add resolver information
+        if is_resolved:
+            # Choose a resolver (different from reporter and respondent)
+            resolver_candidates = [m for m in candidates if m.user_id != reporter.user_id and m.user_id != p.user_id]
+            if not resolver_candidates:
+                resolver_candidates = [m for m in candidates if m.user_id != reporter.user_id]
+            
+            if resolver_candidates:
+                resolver = random.choice(resolver_candidates)
+                resolver_membership = mem_lookup.get((resolver.user_id, p.group_id))
+                
+                if resolver_membership:
+                    resolver_rating = resolver_membership.user_group_rating
+                    report.resolved_by = resolver.user_id
+                    report.resolve_message = faker.sentence()
+                    report.resolver_rating_at_resolve_time = resolver_rating
+                    report.resolve_timestamp = faker.date_time_between(start_date="-30d", end_date="now")
+        
+        reports.append(report)
+    
     print("   total reports:", len(reports))
+    print(f"   resolved reports: {num_resolved_reports}")
     return reports
 
 
@@ -316,15 +361,14 @@ def seed():
 
     updated_contests_count = 0
     for contest_obj in contests:  # contests list holds SQLAlchemy model instances from build_contests()
-        if contest_obj.finished:
-            current_contest_group_views = {}
-            # Check if this contest had any participations
-            if contest_obj.contest_id in contest_participations_map:
-                participating_groups_data = contest_participations_map[contest_obj.contest_id]
-                for group_id_val, participating_users in participating_groups_data.items():
-                    group_object = groups_by_id.get(group_id_val)
-                    if group_object:
-                        # Ensure memberships are loaded for count. 
+        current_contest_group_views = {}
+        # Check if this contest had any participations
+        if contest_obj.contest_id in contest_participations_map:
+            participating_groups_data = contest_participations_map[contest_obj.contest_id]
+            for group_id_val, participating_users in participating_groups_data.items():
+                group_object = groups_by_id.get(group_id_val)
+                if group_object:
+                    # Ensure memberships are loaded for count. 
                         # The 'groups' list from build_groups should have them if 'lazy="dynamic"' is handled by accessing the attribute.
                         # If not, a DB query might be needed here per group, or ensure groups are pre-loaded with member counts.
                         # For devseed, direct access should be fine if objects are still in session and relationships are eager/noload or handled.

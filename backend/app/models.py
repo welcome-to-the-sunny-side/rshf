@@ -144,6 +144,7 @@ class Report(ModelBase):
     resolved_by = Column(String, ForeignKey("users.user_id"), nullable=True, index=True)
     resolve_message = Column(String, nullable=True)
     resolve_timestamp = Column(DateTime, server_default=func.timezone('UTC', func.now()), nullable=True, index=True)
+    resolve_time_stamp = Column(Integer, nullable=True)
 
 
 class Announcement(ModelBase):
