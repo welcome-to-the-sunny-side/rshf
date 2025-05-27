@@ -168,16 +168,23 @@ const CustomTooltip = ({ active, payload, label }) => {
           </>
         )}
         
-        {/* Display the data values */}
-        {payload.map((entry, index) => (
-          <p key={`tooltip-${index}`} style={{ 
-            fontWeight: 'bold',
-            color: entry.color,
-            marginTop: '4px'
-          }}>
-            {`${entry.name}: ${entry.value}`}
-          </p>
-        ))}
+        {/* Display the data values with Member Count above Participation */}
+        {payload
+          .slice() // copy to avoid mutating original
+          .sort((a, b) => {
+            if (a.name === 'Member Count') return -1;
+            if (b.name === 'Member Count') return 1;
+            return 0;
+          })
+          .map((entry, index) => (
+            <p key={`tooltip-${index}`} style={{ 
+              fontWeight: 'bold',
+              color: entry.color,
+              marginTop: '4px'
+            }}>
+              {`${entry.name}: ${entry.value}`}
+            </p>
+          ))}
       </div>
     );
   }
@@ -270,7 +277,7 @@ export default function ParticipationGraph({ participationData, groupName }) {
           <Line
             type="linear"
             dataKey="strength"
-            name="Group Strength"
+            name="Member Count"
             stroke={STRENGTH_LINE_COLOR}
             strokeWidth={2}
             dot={StrengthDot}
