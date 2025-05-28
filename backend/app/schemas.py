@@ -10,6 +10,19 @@ class Role(str, Enum):
     user = "user"
 
 
+class GroupMemberSortByField(str, Enum):
+    CF_HANDLE = "cf_handle"
+    ROLE = "role"
+    USER_GROUP_RATING = "user_group_rating"
+    USER_GROUP_MAX_RATING = "user_group_max_rating"
+    DATE_JOINED = "date_joined"
+
+
+class SortOrder(str, Enum):
+    ASC = "asc"
+    DESC = "desc"
+
+
 class UserRegister(BaseModel):
     user_id: str
     cf_handle: str
@@ -38,7 +51,7 @@ class UserOut(BaseModel):
     role: Role
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class GroupRegister(BaseModel):
@@ -55,6 +68,7 @@ class GroupUpdate(BaseModel):
 class GroupMembershipAdd(BaseModel):
     user_id: str
     group_id: str
+    cf_handle: Optional[str] = None # Added cf_handle
     role: Role = Role.user
     user_group_rating: int = 0
 
@@ -70,10 +84,11 @@ class GroupMembershipOut(BaseModel):
     role: Role
     user_group_rating: int
     user_group_max_rating: int
+    cf_handle: Optional[str] = None # Added cf_handle
     timestamp: datetime 
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class GroupOutFull(BaseModel):
     group_id: str
@@ -84,7 +99,7 @@ class GroupOutFull(BaseModel):
     memberships: List[GroupMembershipOut] = []
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class GroupOut(BaseModel):
     group_id: str
@@ -95,13 +110,14 @@ class GroupOut(BaseModel):
     member_count: int = 0
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class ContestRegistration(BaseModel):
     contest_id: str
     group_id: str
     user_id: str
+    cf_handle: Optional[str] = None
 
     rating_before: Optional[int] = None
     rating_after: Optional[int] = None
@@ -111,6 +127,10 @@ class TokenOut(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
+
+class CountResponse(BaseModel):
+    count: int
+
 class ContestParticipationOut(BaseModel):
     user_id: str
     group_id: str
@@ -118,10 +138,12 @@ class ContestParticipationOut(BaseModel):
     rating_before: Optional[int] = None
     rating_after: Optional[int] = None
     rank: Optional[int] = None
+    rating_change: Optional[int] = None 
+    cf_handle: Optional[str] = None
     contest: Optional['ContestOut'] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Specific model for the structure within group_views
@@ -143,7 +165,7 @@ class ContestOut(BaseModel):
     group_views: Optional[Dict[str, GroupViewDetail]] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class UserOut(BaseModel):
@@ -160,7 +182,7 @@ class UserOut(BaseModel):
     twitter_handle: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # ==== reports ====
@@ -170,6 +192,9 @@ class ReportCreate(BaseModel):
     contest_id: str
     reporter_user_id: str
     respondent_user_id: str
+    # cf_handles will be populated by the backend based on user_ids
+    reporter_cf_handle: Optional[str] = None
+    respondent_cf_handle: Optional[str] = None
     report_description: str
 
 
@@ -190,6 +215,9 @@ class ReportOut(BaseModel):
     resolved: bool
     resolved_by: Optional[str] = None
     resolve_message: Optional[str] = None
+    reporter_cf_handle: Optional[str] = None
+    respondent_cf_handle: Optional[str] = None
+    resolver_cf_handle: Optional[str] = None
 
     reporter_rating_at_report_time: Optional[int] = None
     respondent_rating_at_report_time: Optional[int] = None
@@ -197,7 +225,24 @@ class ReportOut(BaseModel):
     resolve_time_stamp: Optional[int] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+
+class ReportSortByField(str, Enum):
+    REPORT_ID = "report_id"
+    CONTEST_ID = "contest_id"
+    REPORTER_CF_HANDLE = "reporter_cf_handle"
+    RESPONDENT_CF_HANDLE = "respondent_cf_handle"
+    REPORT_DATE = "timestamp"  # Corresponds to models.Report.timestamp
+    RESOLVER_CF_HANDLE = "resolver_cf_handle"
+    RESOLVE_DATE = "resolve_time_stamp" # Corresponds to models.Report.resolve_time_stamp (Integer POSIX)
+
+class ReportRangeFetchResponse(BaseModel):
+    items: List[ReportOut]
+    total: int
+
+    class Config:
+        from_attributes = True
 
 
 # ==== announcements ====
@@ -222,10 +267,24 @@ class AnnouncementOut(BaseModel):
     content: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+class ContestParticipationSortByField(str, Enum):
+    CF_HANDLE = "cf_handle"
+    RATING_BEFORE = "rating_before"
+    RATING_AFTER = "rating_after"
+    RATING_CHANGE = "rating_change"
+    RANK = "rank"
+
+class ContestParticipationRangeFetchResponse(BaseModel):
+    items: List[ContestParticipationOut]
+    total: int
+
+    class Config:
+        from_attributes = True
 
 
-# GroupSingle schema for single group endpoint
+# --- Group Membership Custom Data ---for single group endpoint
 class GroupSingle(BaseModel):
     group_id: str
     group_name: str
@@ -235,7 +294,7 @@ class GroupSingle(BaseModel):
     memberships: List[GroupMembershipOut] = []
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Extension query schemas
 class ExtensionQuery1Request(BaseModel):
@@ -253,10 +312,10 @@ class CustomMembershipData(BaseModel):
     user_group_rating: int
     user_group_max_rating: int
     date_joined: datetime
-    number_of_rated_contests: int
+    # number_of_rated_contests: int # Field removed as per user request
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # rebuild forward refs
 GroupOut.model_rebuild()

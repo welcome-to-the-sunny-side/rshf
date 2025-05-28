@@ -73,6 +73,7 @@ class GroupMembership(ModelBase):
     user_group_max_rating = Column(Integer, nullable=False, default=1500)
     
     status = Column(Enum(Status), nullable=False, default=Status.active)
+    cf_handle = Column(String, nullable=True, index=True) # Added cf_handle
 
     __table_args__ = (PrimaryKeyConstraint('user_id', 'group_id'),)
 
@@ -80,7 +81,7 @@ class GroupMembership(ModelBase):
     group = relationship("Group", back_populates="memberships")
 
     def __repr__(self):
-        return f"<GroupMembership(user_id={self.user_id}, group_id={self.group_id}, role={self.role}, rating={self.user_group_rating})>"
+        return f"<GroupMembership(user_id={self.user_id}, group_id={self.group_id}, cf_handle={self.cf_handle}, role={self.role}, rating={self.user_group_rating})>"
 
 
 class Contest(ModelBase):
@@ -113,13 +114,15 @@ class ContestParticipation(ModelBase):
     delta = Column(Integer, nullable=True)
     rating_before = Column(Integer, nullable=True)
     rating_after = Column(Integer, nullable=True)
+    rating_change = Column(Integer, nullable=True, index=True)
+    cf_handle = Column(String, nullable=True, index=True)
 
     user = relationship("User")    
     group = relationship("Group")
     contest = relationship("Contest", back_populates="participations")
 
     def __repr__(self):
-        return f"<ContestParticipation(user_id={self.user_id}, group_id={self.group_id}, contest_id={self.contest_id})>"
+        return f"<ContestParticipation(user_id={self.user_id}, group_id={self.group_id}, contest_id={self.contest_id}, cf_handle={self.cf_handle})>"
 
 
 
@@ -133,6 +136,9 @@ class Report(ModelBase):
     reporter_user_id = Column(String, ForeignKey("users.user_id"), nullable=False, index=True)
     respondent_user_id = Column(String, ForeignKey("users.user_id"), nullable=False, index=True)
 
+    reporter_cf_handle = Column(String, nullable=True, index=True)
+    respondent_cf_handle = Column(String, nullable=True, index=True)
+
     # rating snapshots
     reporter_rating_at_report_time = Column(Integer, nullable=True)
     respondent_rating_at_report_time = Column(Integer, nullable=True)
@@ -142,6 +148,7 @@ class Report(ModelBase):
     report_description = Column(String, nullable=False)
     resolved = Column(Boolean, nullable=False, default=False, index=True)
     resolved_by = Column(String, ForeignKey("users.user_id"), nullable=True, index=True)
+    resolver_cf_handle = Column(String, nullable=True, index=True)
     resolve_message = Column(String, nullable=True)
     resolve_timestamp = Column(DateTime, server_default=func.timezone('UTC', func.now()), nullable=True, index=True)
     resolve_time_stamp = Column(Integer, nullable=True)

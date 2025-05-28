@@ -261,8 +261,67 @@ def get_contest_participations(
     db: Session = Depends(database.get_db),
 ):
     if gid is None and uid is None and cid is None:
-        raise HTTPException(400, "provide at least one of gid, uid, or cid")
-    return crud.filter_contest_participations(db, gid, uid, cid)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="provide at least one of gid, uid, or cid")
+    return crud.filter_contest_participations(db, gid=gid, uid=uid, cid=cid)
+
+
+@router.get("/contest_participations_size", response_model=schemas.CountResponse)
+def get_contest_participations_size(
+    gid: Optional[str] = Query(None, description="Filter by group ID"),
+    uid: Optional[str] = Query(None, description="Filter by user ID"),
+    cid: Optional[str] = Query(None, description="Filter by contest ID"),
+    db: Session = Depends(get_db),
+    # current_user: models.User = Depends(get_current_user), # Add if auth is needed
+):
+    """
+    Get the count of contest participations based on optional filters.
+    At least one filter (gid, uid, or cid) must be provided.
+    """
+    if gid is None and uid is None and cid is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Provide at least one of gid, uid, or cid"
+        )
+    
+    count = crud.count_contest_participations(db, group_id=gid, user_id=uid, contest_id=cid)
+    return schemas.CountResponse(count=count)
+
+
+@router.get("/contest_participations_range_fetch", response_model=schemas.ContestParticipationRangeFetchResponse)
+def get_contest_participations_range_fetch(
+    gid: Optional[str] = Query(None, description="Filter by group ID"),
+    uid: Optional[str] = Query(None, description="Filter by user ID"),
+    cid: Optional[str] = Query(None, description="Filter by contest ID"),
+    sort_by: schemas.ContestParticipationSortByField = Query(
+        schemas.ContestParticipationSortByField.RATING_AFTER, 
+        description="Field to sort by"
+    ),
+    sort_dir: schemas.SortOrder = Query(
+        schemas.SortOrder.DESC, 
+        description="Sort direction (asc or desc)"
+    ),
+    offset: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(25, ge=1, le=100, description="Maximum number of records to return"), # Max limit 100
+    db: Session = Depends(database.get_db),
+):
+    if gid is None and uid is None and cid is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Provide at least one of gid, uid, or cid as a filter."
+        )
+    
+    result = crud.get_contest_participations_range_fetch(
+        db=db,
+        gid=gid,
+        uid=uid,
+        cid=cid,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
+        offset=offset,
+        limit=limit,
+    )
+    return schemas.ContestParticipationRangeFetchResponse(items=result['items'], total=result['total'])
+
 
 @router.get("/contests", response_model=List[schemas.ContestOut])
 def list_contests(
@@ -362,6 +421,39 @@ def get_reports(
     return reports
 
 
+@router.get("/report_size", response_model=schemas.CountResponse)
+def get_report_size(
+    report_id: Optional[str] = Query(None, description="Filter by report ID"),
+    group_id: Optional[str] = Query(None, description="Filter by group ID"),
+    contest_id: Optional[str] = Query(None, description="Filter by contest ID"),
+    reporter_user_id: Optional[str] = Query(None, description="Filter by reporter user ID"),
+    respondent_user_id: Optional[str] = Query(None, description="Filter by respondent user ID"),
+    resolved: Optional[bool] = Query(None, description="Filter by resolved status"),
+    resolved_by: Optional[str] = Query(None, description="Filter by user ID of resolver"),
+    db: Session = Depends(database.get_db),
+    # current_user: models.User = Depends(get_current_user), # Add if auth is needed
+) -> schemas.CountResponse:
+    """
+    Get the count of reports based on optional filters.
+    """
+    # No specific privilege check for just getting a count, 
+    # as no sensitive data is returned.
+    # If specific groups' report counts were sensitive, 
+    # auth and checks would be needed.
+
+    count = crud.count_reports(
+        db=db,
+        report_id=report_id,
+        group_id=group_id,
+        contest_id=contest_id,
+        reporter_user_id=reporter_user_id,
+        respondent_user_id=respondent_user_id,
+        resolved=resolved,
+        resolved_by=resolved_by,
+    )
+    return schemas.CountResponse(count=count)
+
+
 @router.put("/report/resolve", response_model=schemas.ReportOut)
 def resolve_report(
     payload: schemas.ReportResolve,
@@ -373,6 +465,60 @@ def resolve_report(
         raise HTTPException(404, "report not found")
     ensure_group_mod(db, current.user_id, rpt.group_id)
     return crud.resolve_report(db, payload)
+
+
+@router.get("/report_range_fetch", response_model=schemas.ReportRangeFetchResponse)
+def get_reports_range_fetch_endpoint(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+    group_id: Optional[str] = Query(None, description="Filter by group ID"),
+    contest_id: Optional[str] = Query(None, description="Filter by contest ID"),
+    reporter_cf_handle: Optional[str] = Query(None, description="Filter by reporter's CF handle"),
+    respondent_cf_handle: Optional[str] = Query(None, description="Filter by respondent's CF handle"),
+    resolved: Optional[bool] = Query(None, description="Filter by resolved status"),
+    resolver_cf_handle: Optional[str] = Query(None, description="Filter by resolver's CF handle"),
+    sort_by: Optional[schemas.ReportSortByField] = Query(schemas.ReportSortByField.REPORT_DATE, description="Field to sort by"),
+    sort_order: Optional[schemas.SortOrder] = Query(schemas.SortOrder.DESC, description="Sort order (asc or desc)"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(25, ge=1, le=100, description="Maximum number of records to return (max 100)"),
+):
+    # Permission check: If group_id is provided, ensure user is a member or admin/mod.
+    if group_id:
+        membership = crud.get_membership(db, current_user.user_id, group_id)
+        # Global admins can always access.
+        # Group moderators/admins can access their group's reports.
+        # Regular users cannot access if group_id is specified unless they are members (implicitly handled by frontend usually)
+        # but for direct API access, we ensure they are at least a member if group_id is given.
+        if current_user.role != models.Role.admin: # Global admin bypasses group membership check
+            if not membership: # Not a member
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Not authorized to access reports for this group. User not a member.",
+                )
+            # If they are a member, check if they are at least a moderator to view all reports of a group
+            # Regular users should only see reports they are involved in (handled by frontend filters or specific endpoints)
+            # This endpoint is for a broader view, typically for mods/admins.
+            if role_rank.get(membership.role, 0) < role_rank.get("moderator", 0):
+                 raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Not authorized to access all reports for this group. Requires moderator or admin role.",
+                )
+
+    result = crud.get_reports_range_fetch(
+        db=db,
+        group_id=group_id,
+        contest_id=contest_id,
+        reporter_cf_handle=reporter_cf_handle,
+        respondent_cf_handle=respondent_cf_handle,
+        resolved=resolved,
+        resolver_cf_handle=resolver_cf_handle,
+        sort_by=sort_by,
+        sort_order=sort_order,
+        skip=skip,
+        limit=limit,
+    )
+    return schemas.ReportRangeFetchResponse(items=result["items"], total=result["total"])
+
 
 # ========== announcement routes ==========
 
@@ -448,6 +594,73 @@ def get_group_members_custom_data(
     
     # Get the custom membership data
     return crud.get_group_custom_membership_data(db, group_id)
+
+
+@router.get("/group_members_custom_data_size", response_model=schemas.CountResponse)
+def get_group_members_custom_data_size(
+    group_id: str = Query(..., description="Group ID to retrieve member count for"),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """
+    Get the number of members in a group for whom custom data would be returned.
+    This count is based on active memberships linked to existing users.
+    
+    Args:
+        group_id: ID of the group
+        db: Database session
+        current_user: Current authenticated user
+        
+    Returns:
+        CountResponse object containing the number of members
+    
+    Raises:
+        HTTPException: If group not found or user has insufficient privileges
+    """
+    # Check if the group exists
+    group = crud.get_group(db, group_id)
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+    
+    # Check if the user has access to the group (member or admin)
+    if current_user.role != models.Role.admin and not crud.get_membership(db, current_user.user_id, group_id):
+        raise HTTPException(status_code=403, detail="Not authorized to access this group's data")
+    
+    # Get the count of members with custom data
+    count = crud.count_group_members_with_custom_data(db, group_id)
+    return schemas.CountResponse(count=count)
+
+
+@router.get("/group_members_custom_data_range_fetch", response_model=List[schemas.CustomMembershipData])
+def get_group_members_custom_data_range_fetch(
+    group_id: str = Query(..., description="Group ID to retrieve data for"),
+    sort_by: schemas.GroupMemberSortByField = Query(schemas.GroupMemberSortByField.DATE_JOINED, description="Field to sort by"),
+    sort_order: schemas.SortOrder = Query(schemas.SortOrder.DESC, description="Sort order (asc or desc)"),
+    offset: int = Query(0, ge=0, description="Offset for pagination"),
+    limit: int = Query(15, ge=1, le=100, description="Number of items per page (max 100)"),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """
+    Get paginated and sorted custom membership data for a group.
+    The 'number_of_rated_contests' field has been removed from the response.
+    """
+    # Authorization checks
+    group = crud.get_group(db, group_id)
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+    
+    if current_user.role != models.Role.admin and not crud.get_membership(db, current_user.user_id, group_id):
+        raise HTTPException(status_code=403, detail="Not authorized to access this group's data")
+
+    return crud.get_group_custom_membership_data_paginated(
+        db=db,
+        group_id=group_id,
+        sort_by=sort_by,
+        sort_order=sort_order,
+        offset=offset,
+        limit=limit
+    )
 
 # ========== extension query endpoints ==========
 

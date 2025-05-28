@@ -2,7 +2,7 @@
 from typing import List, Optional, Dict, Any
 
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import func
+from sqlalchemy import func, asc, desc
 from app import models
 from app.utils import hash_password, verify_password
 from app import schemas
@@ -149,9 +149,17 @@ def update_group(db: Session, payload: schemas.GroupUpdate) -> Optional[models.G
 
 # ───────────── membership ─────────────
 def add_membership(db: Session, payload: schemas.GroupMembershipAdd) -> models.GroupMembership:
+    user_cf_handle = payload.cf_handle
+    if user_cf_handle is None:
+        # If cf_handle is not provided in payload, try to get it from the User model
+        user = db.query(models.User).filter(models.User.user_id == payload.user_id).first()
+        if user and user.cf_handle:
+            user_cf_handle = user.cf_handle
+
     membership = models.GroupMembership(
         user_id=payload.user_id,
         group_id=payload.group_id,
+        cf_handle=user_cf_handle,  # Populate the new cf_handle field
         role=payload.role,
         user_group_rating=payload.user_group_rating,
     )
@@ -176,16 +184,21 @@ def remove_membership(db: Session, user_id: str, group_id: str) -> bool:
     db.commit()
     return True
 
-
-
 # ───────────── contest participation ─────────────
 def register_contest_participation(
     db: Session, payload: schemas.ContestRegistration
 ) -> models.ContestParticipation:
+    user_cf_handle = payload.cf_handle
+    if user_cf_handle is None:
+        user = db.query(models.User).filter(models.User.user_id == payload.user_id).first()
+        if user and user.cf_handle:
+            user_cf_handle = user.cf_handle
+
     participation = models.ContestParticipation(
         user_id=payload.user_id,
         group_id=payload.group_id,
         contest_id=payload.contest_id,
+        cf_handle=user_cf_handle, # Added cf_handle
         rating_before=payload.rating_before,
         rating_after=payload.rating_after,
     )
@@ -209,6 +222,89 @@ def filter_contest_participations(
     if cid is not None:
         q = q.filter(models.ContestParticipation.contest_id == cid)
     return q.all()
+
+def count_contest_participations(
+    db: Session,
+    group_id: Optional[str] = None,
+    user_id: Optional[str] = None,
+    contest_id: Optional[str] = None,
+) -> int:
+    """
+    Counts contest participations based on optional filters for group_id, user_id, and contest_id.
+    """
+    query = db.query(models.ContestParticipation.user_id) # Querying a single column for count is often slightly more efficient
+    
+    if group_id is not None:
+        query = query.filter(models.ContestParticipation.group_id == group_id)
+    if user_id is not None:
+        query = query.filter(models.ContestParticipation.user_id == user_id)
+    if contest_id is not None:
+        query = query.filter(models.ContestParticipation.contest_id == contest_id)
+        
+    return query.count()
+
+
+def get_contest_participations_range_fetch(
+    db: Session,
+    gid: Optional[str] = None,
+    uid: Optional[str] = None,
+    cid: Optional[str] = None,
+    sort_by: Optional[schemas.ContestParticipationSortByField] = None,
+    sort_dir: Optional[schemas.SortOrder] = schemas.SortOrder.DESC, # Corrected to SortOrder
+    offset: int = 0,
+    limit: int = 25,
+) -> Dict[str, Any]:
+    query = db.query(models.ContestParticipation).options(
+        joinedload(models.ContestParticipation.user),
+        joinedload(models.ContestParticipation.contest) # Eager load contest for potential display
+    )
+
+    # No longer explicitly joining with User table for sorting by cf_handle,
+    # as ContestParticipation now has its own cf_handle field.
+    # The joinedload(models.ContestParticipation.user) handles fetching user data if needed for the output.
+
+    # Apply filters
+    if gid is not None:
+        query = query.filter(models.ContestParticipation.group_id == gid)
+    if uid is not None:
+        query = query.filter(models.ContestParticipation.user_id == uid)
+    if cid is not None:
+        query = query.filter(models.ContestParticipation.contest_id == cid)
+
+    # Get total count before pagination
+    total = query.count()
+
+    # Apply sorting
+    if sort_by:
+        sort_column = None
+        if sort_by == schemas.ContestParticipationSortByField.CF_HANDLE:
+            sort_column = models.ContestParticipation.cf_handle # Sort by the local cf_handle
+        elif sort_by == schemas.ContestParticipationSortByField.RATING_BEFORE:
+            sort_column = models.ContestParticipation.rating_before
+        elif sort_by == schemas.ContestParticipationSortByField.RATING_AFTER:
+            sort_column = models.ContestParticipation.rating_after
+        elif sort_by == schemas.ContestParticipationSortByField.RATING_CHANGE:
+            sort_column = models.ContestParticipation.rating_change
+        elif sort_by == schemas.ContestParticipationSortByField.RANK:
+            sort_column = models.ContestParticipation.rank
+        # Example for timestamp if added to ContestParticipationSortByField and model
+        # elif sort_by == schemas.ContestParticipationSortByField.TIMESTAMP:
+        #     sort_column = models.ContestParticipation.timestamp
+
+        if sort_column is not None:
+            if sort_dir == schemas.SortOrder.ASC: # Corrected to SortOrder
+                query = query.order_by(sort_column.asc())
+            else:
+                query = query.order_by(sort_column.desc())
+    else: # Default sort if none provided
+        # Defaulting to rating_after descending. Change if another default is preferred.
+        query = query.order_by(models.ContestParticipation.rating_after.desc())
+
+    # Apply pagination
+    items = query.offset(offset).limit(limit).all()
+
+    return {"items": items, "total": total}
+
 
 # ------------------------- contest -------------------------
 
@@ -469,10 +565,19 @@ def create_report(db: Session, payload: schemas.ReportCreate) -> models.Report:
 
     reporter_rating_at_report_time = reporter_membership.user_group_rating
     respondent_rating_at_report_time = respondent_membership.user_group_rating
-    
+
+    reporter_cf_handle = reporter_membership.cf_handle
+    respondent_cf_handle = respondent_membership.cf_handle
     
 
-    rpt = models.Report(report_id=report_id, reporter_rating_at_report_time=reporter_rating_at_report_time, respondent_rating_at_report_time=respondent_rating_at_report_time, **payload.model_dump())
+    rpt = models.Report(
+        report_id=report_id, 
+        reporter_rating_at_report_time=reporter_rating_at_report_time, 
+        respondent_rating_at_report_time=respondent_rating_at_report_time,
+        reporter_cf_handle=reporter_cf_handle,
+        respondent_cf_handle=respondent_cf_handle,
+        **payload.model_dump(exclude={'reporter_cf_handle', 'respondent_cf_handle'}) # Exclude from payload as we are setting them directly
+    )
     db.add(rpt)
     db.commit()
     db.refresh(rpt)
@@ -509,6 +614,36 @@ def list_reports(
     return q.all()
 
 
+def count_reports(
+    db: Session,
+    report_id: Optional[str] = None,
+    group_id: Optional[str] = None,
+    contest_id: Optional[str] = None,
+    reporter_user_id: Optional[str] = None,
+    respondent_user_id: Optional[str] = None,
+    resolved: Optional[bool] = None,
+    resolved_by: Optional[str] = None,
+) -> int:
+    q = db.query(models.Report)
+    
+    if report_id:
+        q = q.filter(models.Report.report_id == report_id)
+    if group_id:
+        q = q.filter(models.Report.group_id == group_id)
+    if contest_id:
+        q = q.filter(models.Report.contest_id == contest_id)
+    if reporter_user_id:
+        q = q.filter(models.Report.reporter_user_id == reporter_user_id)
+    if respondent_user_id:
+        q = q.filter(models.Report.respondent_user_id == respondent_user_id)
+    if resolved is not None:
+        q = q.filter(models.Report.resolved.is_(resolved))
+    if resolved_by:
+        q = q.filter(models.Report.resolved_by == resolved_by)
+        
+    return q.count()
+
+
 def resolve_report(db: Session, payload: schemas.ReportResolve) -> Optional[models.Report]:
     rpt = db.query(models.Report).filter(models.Report.report_id == payload.report_id).first()
     if not rpt:
@@ -519,16 +654,76 @@ def resolve_report(db: Session, payload: schemas.ReportResolve) -> Optional[mode
         models.GroupMembership.group_id == rpt.group_id,
     ).first()
     resolver_rating_at_resolve_time = resolver_membership.user_group_rating
-    
+    resolver_cf_handle = resolver_membership.cf_handle
+
     rpt.resolved = True
+    rpt.resolver_cf_handle = resolver_cf_handle
     rpt.resolved_by = payload.resolved_by
     rpt.resolve_message = payload.resolve_message
     rpt.resolver_rating_at_resolve_time = resolver_rating_at_resolve_time
-    rpt.resolve_timestamp = datetime.utcnow()
+    rpt.resolve_timestamp = datetime.utcnow() # type: ignore
     rpt.resolve_time_stamp = int(datetime.utcnow().timestamp())
     db.commit()
     db.refresh(rpt)
     return rpt
+
+def get_reports_range_fetch(
+    db: Session,
+    group_id: Optional[str] = None,
+    contest_id: Optional[str] = None,
+    reporter_cf_handle: Optional[str] = None,
+    respondent_cf_handle: Optional[str] = None,
+    resolved: Optional[bool] = None,
+    resolver_cf_handle: Optional[str] = None,
+    sort_by: Optional[schemas.ReportSortByField] = schemas.ReportSortByField.REPORT_DATE,
+    sort_order: Optional[schemas.SortOrder] = schemas.SortOrder.DESC,
+    skip: int = 0,
+    limit: int = 25,
+) -> Dict[str, Any]:
+    """
+    Fetches a range of reports with filtering, sorting, and pagination.
+    """
+    query = db.query(models.Report)
+
+    # Apply filters
+    if group_id:
+        query = query.filter(models.Report.group_id == group_id)
+    if contest_id:
+        query = query.filter(models.Report.contest_id == contest_id)
+    if reporter_cf_handle:
+        query = query.filter(models.Report.reporter_cf_handle == reporter_cf_handle)
+    if respondent_cf_handle:
+        query = query.filter(models.Report.respondent_cf_handle == respondent_cf_handle)
+    if resolved is not None:
+        query = query.filter(models.Report.resolved == resolved)
+    if resolver_cf_handle:
+        query = query.filter(models.Report.resolver_cf_handle == resolver_cf_handle)
+
+    # Get total count before pagination for the filtered query
+    total = query.count()
+
+    # Apply sorting
+    sort_column_map = {
+        schemas.ReportSortByField.REPORT_ID: models.Report.report_id,
+        schemas.ReportSortByField.CONTEST_ID: models.Report.contest_id,
+        schemas.ReportSortByField.REPORTER_CF_HANDLE: models.Report.reporter_cf_handle,
+        schemas.ReportSortByField.RESPONDENT_CF_HANDLE: models.Report.respondent_cf_handle,
+        schemas.ReportSortByField.REPORT_DATE: models.Report.timestamp,
+        schemas.ReportSortByField.RESOLVER_CF_HANDLE: models.Report.resolver_cf_handle,
+        schemas.ReportSortByField.RESOLVE_DATE: models.Report.resolve_time_stamp,
+    }
+
+    sort_expression = sort_column_map.get(sort_by, models.Report.timestamp)
+
+    if sort_order == schemas.SortOrder.DESC:
+        query = query.order_by(desc(sort_expression))
+    else:
+        query = query.order_by(asc(sort_expression))
+
+    # Apply pagination
+    items = query.offset(skip).limit(limit).all()
+
+    return {"items": items, "total": total}
 
 
 # ───────────── announcements ─────────────
@@ -567,16 +762,38 @@ def update_announcement(db: Session, payload: schemas.AnnouncementUpdate) -> Opt
 
 # ───────────── custom group data queries ───────────────
 
-def get_group_custom_membership_data(db: Session, group_id: str) -> List[schemas.CustomMembershipData]:
+def count_group_members_with_custom_data(db: Session, group_id: str) -> int:
     """
-    Get custom membership data for all members in a group including number of rated contests.
+    Counts the number of members in a group that have custom data.
+    This is determined by counting GroupMembership entries that have a valid corresponding User.
     
     Args:
         db: Database session
         group_id: ID of the group
         
     Returns:
-        List of CustomMembershipData objects with enriched contest participation info
+        Integer count of members with custom data.
+    """
+    count = (
+        db.query(models.GroupMembership.user_id)
+        .join(models.User, models.GroupMembership.user_id == models.User.user_id)
+        .filter(models.GroupMembership.group_id == group_id)
+        .count()
+    )
+    return count
+
+
+def get_group_custom_membership_data(db: Session, group_id: str) -> List[schemas.CustomMembershipData]:
+    """
+    Get custom membership data for all members in a group.
+    (Note: number_of_rated_contests was removed from this response as per user request)
+    
+    Args:
+        db: Database session
+        group_id: ID of the group
+        
+    Returns:
+        List of CustomMembershipData objects
     """
     # Get all memberships for the group
     memberships = (
@@ -587,25 +804,6 @@ def get_group_custom_membership_data(db: Session, group_id: str) -> List[schemas
     
     if not memberships:
         return []
-    
-    # Get all contest participations for this group in finished contests to avoid N+1 problem
-    participations = (
-        db.query(models.ContestParticipation)
-        .join(models.Contest, models.ContestParticipation.contest_id == models.Contest.contest_id)
-        .filter(
-            models.ContestParticipation.group_id == group_id,
-            models.Contest.finished == True
-        )
-        .all()
-    )
-    
-    # Create a dictionary to count participations by user_id
-    participation_counts = {}
-    for p in participations:
-        if p.user_id in participation_counts:
-            participation_counts[p.user_id] += 1
-        else:
-            participation_counts[p.user_id] = 1
     
     # Create the custom data objects
     result = []
@@ -622,11 +820,60 @@ def get_group_custom_membership_data(db: Session, group_id: str) -> List[schemas
             user_group_rating=membership.user_group_rating,
             user_group_max_rating=membership.user_group_max_rating,
             date_joined=membership.timestamp,
-            number_of_rated_contests=participation_counts.get(membership.user_id, 0)
+            # number_of_rated_contests removed
         )
         result.append(custom_data)
     
     return result
+
+def get_group_custom_membership_data_paginated(
+    db: Session, 
+    group_id: str,
+    sort_by: schemas.GroupMemberSortByField,
+    sort_order: schemas.SortOrder,
+    offset: int,
+    limit: int
+) -> List[schemas.CustomMembershipData]:
+    """
+    Get paginated and sorted custom membership data for a group.
+    """
+    
+    query = (
+        db.query(models.GroupMembership, models.User)
+        .join(models.User, models.GroupMembership.user_id == models.User.user_id)
+        .filter(models.GroupMembership.group_id == group_id)
+    )
+
+    # Map schema sort fields to model columns
+    sort_column_map = {
+        schemas.GroupMemberSortByField.CF_HANDLE: models.User.cf_handle,
+        schemas.GroupMemberSortByField.ROLE: models.GroupMembership.role,
+        schemas.GroupMemberSortByField.USER_GROUP_RATING: models.GroupMembership.user_group_rating,
+        schemas.GroupMemberSortByField.USER_GROUP_MAX_RATING: models.GroupMembership.user_group_max_rating,
+        schemas.GroupMemberSortByField.DATE_JOINED: models.GroupMembership.timestamp,
+    }
+    
+    sort_expression = sort_column_map[sort_by]
+
+    if sort_order == schemas.SortOrder.DESC:
+        query = query.order_by(desc(sort_expression))
+    else:
+        query = query.order_by(asc(sort_expression))
+    
+    paginated_results = query.offset(offset).limit(limit).all()
+    
+    result_data = []
+    for membership, user in paginated_results:
+        custom_data = schemas.CustomMembershipData(
+            cf_handle=user.cf_handle,
+            role=membership.role,
+            user_group_rating=membership.user_group_rating,
+            user_group_max_rating=membership.user_group_max_rating,
+            date_joined=membership.timestamp,
+        )
+        result_data.append(custom_data)
+        
+    return result_data
 
 # ───────────── extension queries ───────────────
 

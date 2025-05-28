@@ -83,7 +83,7 @@ def build_users(cfhandles: List[str]) -> List[User]:
         User(user_id="roomTemperatureIQ", role=Role.admin, cf_handle="roomTemperatureIQ", email_id="ani@example.com", trusted_score=88, hashed_password=hash_password(DEFAULT_PASS)),
     ]
     for h in cfhandles:
-        uid = h
+        uid = "uid_" + h
         users.append(
             User(
                 user_id=uid,
@@ -134,12 +134,15 @@ def build_groups() -> List[Group]:
 def build_memberships(users: List[User], groups: List[Group]) -> List[GroupMembership]:
     banner("building memberships")
     memberships: list[GroupMembership] = []
+    user_id_to_cf_handle_map = {user.user_id: user.cf_handle for user in users}
+
     # everyone in main
     for u in users:
         memberships.append(
             GroupMembership(
                 user_id=u.user_id,
                 group_id="main",
+                cf_handle=u.cf_handle,
                 role=Role.admin if u.user_id in {"negative-xp", "roomTemperatureIQ"} else Role.user,
                 user_group_rating=random.randint(1200, 2000),
                 user_group_max_rating=random.randint(1400, 2400),
@@ -158,6 +161,7 @@ def build_memberships(users: List[User], groups: List[Group]) -> List[GroupMembe
                 GroupMembership(
                     user_id=uid,
                     group_id=grp.group_id,
+                    cf_handle=user_id_to_cf_handle_map[uid], # Added cf_handle from map
                     role=Role.admin if j == 0 else Role.user,
                     user_group_rating=1500,
                     user_group_max_rating=1500,
@@ -220,8 +224,10 @@ def build_contest_participations(groups: List[Group], memberships: List[GroupMem
                         group_id=grp.group_id,
                         contest_id=contest.contest_id,
                         rank=random.randint(1, 2000),
-                        rating_before=rating_prev,
-                        rating_after=rating_after,
+                        rating_before=rating_prev, # use current group rating as rating before
+                        rating_after=rating_after, # apply change
+                        rating_change=rating_after - rating_prev,
+                        cf_handle=m.cf_handle, # Added cf_handle
                     )
                 )
                 rating_prev = rating_after
@@ -268,12 +274,15 @@ def build_reports(parts: List[ContestParticipation], memberships: List[GroupMemb
         is_resolved = len(reports) < num_resolved_reports
         
         report = Report(
-            report_id=f"r{len(reports)}",
+            report_id=f"r{len(reports) + 1}",
             group_id=p.group_id,
             contest_id=p.contest_id,
             reporter_user_id=reporter.user_id,
             respondent_user_id=p.user_id,
-            report_description=faker.sentence(),
+            reporter_cf_handle=reporter_membership.cf_handle,
+            respondent_cf_handle=respondent_membership.cf_handle,
+            report_description=faker.paragraph(nb_sentences=3),
+            timestamp=faker.date_time_between(start_date="-60d", end_date="-30d"),
             reporter_rating_at_report_time=reporter_rating,
             respondent_rating_at_report_time=respondent_rating,
             resolved=is_resolved
@@ -293,6 +302,7 @@ def build_reports(parts: List[ContestParticipation], memberships: List[GroupMemb
                 if resolver_membership:
                     resolver_rating = resolver_membership.user_group_rating
                     report.resolved_by = resolver.user_id
+                    report.resolver_cf_handle = resolver.cf_handle
                     report.resolve_message = faker.sentence()
                     report.resolver_rating_at_resolve_time = resolver_rating
                     report.resolve_timestamp = faker.date_time_between(start_date="-30d", end_date="now")
