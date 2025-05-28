@@ -117,7 +117,7 @@ export default function GroupReports() {
       
       const payload = {
         group_id: groupId,
-        contest_id: contestIds.trim() || null,
+        contest_id: contestIds.trim(),
         reporter_user_id: user.user_id,
         respondent_user_id: respondent.trim(),
         report_description: reportText.trim()
@@ -272,7 +272,7 @@ export default function GroupReports() {
                 
                 <div style={{ marginBottom: '15px' }}>
                   <label htmlFor="contest-ids" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
-                    Contest ID (optional):
+                    Contest ID:
                   </label>
                   <input
                     id="contest-ids"

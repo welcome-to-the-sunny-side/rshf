@@ -149,7 +149,7 @@ export default function RatingGraph({ ratingHistory }) {
       y1,
       y2,
       fill: band.color,
-      opacity: 0.9,
+      opacity: 0.75,
     };
   });
   

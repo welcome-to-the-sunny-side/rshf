@@ -12,6 +12,7 @@ const userDetails = document.getElementById('user-details');
 const groupInput = document.getElementById('group-input');
 const setGroupButton = document.getElementById('set-group-button');
 const nonMemberDisplay = document.getElementById('non-member-display');
+const inGroupDisplay = document.getElementById('in-group-display');
 const registerLink = document.getElementById('register-link');
 
 // Constants
@@ -30,6 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
   logoutButton.addEventListener('click', handleLogout);
   setGroupButton.addEventListener('click', handleGroupChange);
   nonMemberDisplay.addEventListener('change', handleDisplayChange);
+  inGroupDisplay.addEventListener('change', handleDisplayChange);
 });
 
 // Authentication status check
@@ -165,9 +167,14 @@ function handleGroupChange() {
 }
 
 // Display preference change handler
+// Display preference change handler
 function handleDisplayChange() {
-  const displayMode = nonMemberDisplay.value;
-  chrome.storage.local.set({ nonMemberDisplay: displayMode });
+  const nonMemberDisplayMode = nonMemberDisplay.value;
+  const inGroupDisplayMode = inGroupDisplay.value;
+  chrome.storage.local.set({
+    nonMemberDisplay: nonMemberDisplayMode,
+    inGroupDisplay: inGroupDisplayMode
+  });
 }
 
 // Load previously selected group if any
@@ -181,10 +188,12 @@ function loadGroups() {
 
 // Load display preferences
 function loadDisplayPreferences() {
-  chrome.storage.local.get(['nonMemberDisplay'], (result) => {
+  chrome.storage.local.get(['nonMemberDisplay', 'inGroupDisplay'], (result) => {
     if (result.nonMemberDisplay) {
       nonMemberDisplay.value = result.nonMemberDisplay;
     }
+    // Set default for inGroupDisplay if not already set
+    inGroupDisplay.value = result.inGroupDisplay || 'rshf'; 
   });
 }
 

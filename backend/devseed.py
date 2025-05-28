@@ -37,7 +37,7 @@ Faker.seed(SEED)
 faker = Faker()
 
 NUM_USERS = 5_000
-NUM_GROUPS = 30
+NUM_GROUPS = 10
 NUM_CONTESTS = 7  # grand total (includes the three real ones)
 NUM_REPORTS = 100
 NUM_ANNOUNCEMENTS = 40

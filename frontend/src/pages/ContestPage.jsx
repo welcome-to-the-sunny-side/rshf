@@ -146,7 +146,7 @@ const ContestPage = () => {
           registeredText,
           <button 
             key={`${groupId}-action`}
-            className={`global-button ${isCurrentUserRegistered ? 'red' : 'green'}`}
+            className={`global-button small ${isCurrentUserRegistered ? 'red' : 'green'}`}
             onClick={() => handleRegistrationClick(groupId, isCurrentUserRegistered)}
           >
             {isCurrentUserRegistered ? 'Unregister' : 'Register'}
