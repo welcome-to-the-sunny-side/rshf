@@ -144,6 +144,11 @@ class Report(ModelBase):
     respondent_rating_at_report_time = Column(Integer, nullable=True)
     resolver_rating_at_resolve_time = Column(Integer, nullable=True)
     
+    # roles before and after report resolution
+    reporter_role_before = Column(Enum(Role), nullable=True)
+    reporter_role_after = Column(Enum(Role), nullable=True)
+    respondent_role_before = Column(Enum(Role), nullable=True)
+    respondent_role_after = Column(Enum(Role), nullable=True)
 
     report_description = Column(String, nullable=False)
     resolved = Column(Boolean, nullable=False, default=False, index=True)

@@ -188,24 +188,78 @@ def remove_membership(db: Session, user_id: str, group_id: str) -> bool:
 def register_contest_participation(
     db: Session, payload: schemas.ContestRegistration
 ) -> models.ContestParticipation:
-    user_cf_handle = payload.cf_handle
-    if user_cf_handle is None:
-        user = db.query(models.User).filter(models.User.user_id == payload.user_id).first()
-        if user and user.cf_handle:
-            user_cf_handle = user.cf_handle
+
+    user = db.query(models.User).filter(models.User.user_id == payload.user_id).first()
+    user_cf_handle = user.cf_handle
+    membership = db.query(models.GroupMembership).filter(
+        models.GroupMembership.user_id == payload.user_id,
+        models.GroupMembership.group_id == payload.group_id,
+    ).first()
+    rating_before = membership.user_group_rating
 
     participation = models.ContestParticipation(
         user_id=payload.user_id,
         group_id=payload.group_id,
         contest_id=payload.contest_id,
-        cf_handle=user_cf_handle, # Added cf_handle
-        rating_before=payload.rating_before,
-        rating_after=payload.rating_after,
+        cf_handle=user_cf_handle,
+        rating_before=rating_before,
     )
     db.add(participation)
+
+    group = db.query(models.Group).filter(models.Group.group_id == payload.group_id).first()
+    contest = db.query(models.Contest).filter(models.Contest.contest_id == payload.contest_id).first()
+    if payload.group_id not in contest.group_view:
+        contest.group_view[payload.group_id] = {
+            'total_members': group.memberships.count(),
+            'total_participants': 1,
+        }
+    else:
+        contest.group_view[payload.group_id]['total_participants'] += 1
+
     db.commit()
     db.refresh(participation)
     return participation
+
+
+def deregister_contest_participation(
+    db: Session, 
+    user_id: str, 
+    group_id: str,
+    contest_id: str
+) -> bool:
+    """
+    Delete a contest participation and update the contest's group_views.
+    
+    Args:
+        db: Database session
+        user_id: ID of the user to deregister
+        group_id: ID of the group to deregister from
+        contest_id: ID of the contest to deregister from
+        
+    Returns:
+        Boolean indicating whether the deregistration was successful
+    """
+    # Find the participation
+    participation = db.query(models.ContestParticipation).filter(
+        models.ContestParticipation.user_id == user_id,
+        models.ContestParticipation.group_id == group_id,
+        models.ContestParticipation.contest_id == contest_id
+    ).first()
+    
+    if not participation:
+        return False
+    
+    # Update the contest's group_views to decrement the participant count
+    contest = db.query(models.Contest).filter(models.Contest.contest_id == contest_id).first()
+    if contest and contest.group_views and group_id in contest.group_views:
+        if contest.group_views[group_id]['total_participants'] > 0:
+            contest.group_views[group_id]['total_participants'] -= 1
+    
+    # Delete the participation
+    db.delete(participation)
+    db.commit()
+    
+    return True
 
 def filter_contest_participations(
     db: Session,
@@ -569,6 +623,9 @@ def create_report(db: Session, payload: schemas.ReportCreate) -> models.Report:
     reporter_cf_handle = reporter_membership.cf_handle
     respondent_cf_handle = respondent_membership.cf_handle
     
+    # Get reporter and respondent roles
+    reporter_role_before = reporter_membership.role
+    respondent_role_before = respondent_membership.role
 
     rpt = models.Report(
         report_id=report_id, 
@@ -576,7 +633,15 @@ def create_report(db: Session, payload: schemas.ReportCreate) -> models.Report:
         respondent_rating_at_report_time=respondent_rating_at_report_time,
         reporter_cf_handle=reporter_cf_handle,
         respondent_cf_handle=respondent_cf_handle,
-        **payload.model_dump(exclude={'reporter_cf_handle', 'respondent_cf_handle'}) # Exclude from payload as we are setting them directly
+        reporter_role_before=reporter_role_before,
+        reporter_role_after=reporter_role_after,
+        respondent_role_before=respondent_role_before,
+        respondent_role_after=respondent_role_after,
+        **payload.model_dump(exclude={
+            'reporter_cf_handle', 'respondent_cf_handle',
+            'reporter_role_before', 'reporter_role_after',
+            'respondent_role_before', 'respondent_role_after'
+        }) # Exclude from payload as we are setting them directly
     )
     db.add(rpt)
     db.commit()
@@ -655,6 +720,24 @@ def resolve_report(db: Session, payload: schemas.ReportResolve) -> Optional[mode
     ).first()
     resolver_rating_at_resolve_time = resolver_membership.user_group_rating
     resolver_cf_handle = resolver_membership.cf_handle
+    
+    # Get the current roles of reporter and respondent at resolution time
+    reporter_membership = db.query(models.GroupMembership).filter(
+        models.GroupMembership.user_id == rpt.reporter_user_id,
+        models.GroupMembership.group_id == rpt.group_id,
+    ).first()
+    
+    respondent_membership = db.query(models.GroupMembership).filter(
+        models.GroupMembership.user_id == rpt.respondent_user_id,
+        models.GroupMembership.group_id == rpt.group_id,
+    ).first()
+    
+    # Update the 'after' roles to reflect current roles at resolution time
+    if reporter_membership:
+        rpt.reporter_role_after = reporter_membership.role
+    
+    if respondent_membership:
+        rpt.respondent_role_after = respondent_membership.role
 
     rpt.resolved = True
     rpt.resolver_cf_handle = resolver_cf_handle

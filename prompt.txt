@@ -1,2 +1,24 @@
 the next one will be /report_range_fetch 
 it will have the same filters as report, but it will also support sortability and pagination (just like how /contest_participations_range_fetch works for /contest_participations). It will be sortable along: report id, contest id, reporter cf handle, respondent cf handle, report date, 
+
+
+
+
+Let's make a new endpoint at @endpoints.py:
+
+
+type: POST
+url: "/contest_participation_register"
+inputs: 
+- user_id
+- group_id
+- contest_id
+
+what it does:
+- creates a contest participation object with the given parameters -> and also populates cf_handle for that contest_participation object from the given user's cf_handle.
+
+constraints:
+- user_id, group_id and contest_id must exist within their respective tables
+- the current logged in usr must be same as user_id
+- there must exist a group membership with (user_id, group_id) 
+- 

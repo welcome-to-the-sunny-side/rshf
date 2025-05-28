@@ -117,10 +117,6 @@ class ContestRegistration(BaseModel):
     contest_id: str
     group_id: str
     user_id: str
-    cf_handle: Optional[str] = None
-
-    rating_before: Optional[int] = None
-    rating_after: Optional[int] = None
 
 
 class TokenOut(BaseModel):
@@ -196,6 +192,11 @@ class ReportCreate(BaseModel):
     reporter_cf_handle: Optional[str] = None
     respondent_cf_handle: Optional[str] = None
     report_description: str
+    # Roles will be populated by the backend based on user memberships
+    reporter_role_before: Optional[Role] = None
+    reporter_role_after: Optional[Role] = None
+    respondent_role_before: Optional[Role] = None
+    respondent_role_after: Optional[Role] = None
 
 
 class ReportResolve(BaseModel):
@@ -223,6 +224,12 @@ class ReportOut(BaseModel):
     respondent_rating_at_report_time: Optional[int] = None
     resolver_rating_at_resolve_time: Optional[int] = None
     resolve_time_stamp: Optional[int] = None
+    
+    # Roles before and after report resolution
+    reporter_role_before: Optional[Role] = None
+    reporter_role_after: Optional[Role] = None
+    respondent_role_before: Optional[Role] = None
+    respondent_role_after: Optional[Role] = None
 
     class Config:
         from_attributes = True

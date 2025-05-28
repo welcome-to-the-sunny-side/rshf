@@ -1,0 +1,3 @@
+I have a Group table and a User table in sqlalchemy orm. there's also a table for User-group memberships, which back-populates both user and group tables. 
+
+I have a group object, which implicitly has a number of back-populated membership objects. I want to query the count of it's memberships FAST, in O(1). WHat's the syntax for that?

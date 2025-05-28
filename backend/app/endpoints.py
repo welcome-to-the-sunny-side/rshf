@@ -811,6 +811,130 @@ def run_seed():
 
 # ------------------------- custom routes --------------------
 
+@router.post("/contest/register", response_model=schemas.ContestParticipationOut)
+def register_contest_participation_endpoint(
+    payload: schemas.ContestRegistration,
+    db: Session = Depends(get_db),
+    current: models.User = Depends(get_current_user),
+):
+    """
+    Register a user for a contest within a group.
+    
+    Args:
+        payload: ContestRegistration object containing user_id, group_id, and contest_id
+        db: Database session
+        current: Current authenticated user
+        
+    Returns:
+        Created ContestParticipation object
+        
+    Raises:
+        HTTPException: If validation fails or there's a duplicate entry
+    """
+    # Verify the current user is the same as the one being registered
+    if current.user_id != payload.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only register yourself for contests"
+        )
+    
+    # Check if user exists
+    user = crud.get_user(db, payload.user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Check if group exists
+    group = crud.get_group(db, payload.group_id)
+    if not group:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Group not found"
+        )
+    
+    # Check if contest exists
+    contest = crud.get_contest(db, payload.contest_id)
+    if not contest:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Contest not found"
+        )
+
+    if contest.finished:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Contest is finished"
+        )
+    
+    # Check if group membership exists
+    membership = crud.get_membership(db, payload.user_id, payload.group_id)
+    if not membership:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You must be a member of the group to register for a contest"
+        )
+    
+    # Check for duplicates
+    existing_participation = db.query(models.ContestParticipation).filter(
+        models.ContestParticipation.user_id == payload.user_id,
+        models.ContestParticipation.group_id == payload.group_id,
+        models.ContestParticipation.contest_id == payload.contest_id
+    ).first()
+    
+    if existing_participation:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="You are already registered for this contest in this group"
+        )
+    
+    # Create the contest participation
+    return crud.register_contest_participation(db, payload)
+
+@router.post("/contest/deregister", status_code=status.HTTP_200_OK)
+def deregister_contest_participation_endpoint(
+    payload: schemas.ContestRegistration,
+    db: Session = Depends(get_db),
+    current: models.User = Depends(get_current_user),
+):
+    """
+    Deregister a user from a contest within a group.
+    
+    Args:
+        payload: ContestRegistration object containing user_id, group_id, and contest_id
+        db: Database session
+        current: Current authenticated user
+        
+    Returns:
+        Success message
+        
+    Raises:
+        HTTPException: If validation fails or the contest participation doesn't exist
+    """
+    # Verify the current user is the same as the one being deregistered
+    if current.user_id != payload.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only deregister yourself from contests"
+        )
+    
+    # Attempt to delete the contest participation
+    success = crud.deregister_contest_participation(
+        db=db,
+        user_id=payload.user_id,
+        group_id=payload.group_id,
+        contest_id=payload.contest_id
+    )
+    
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Contest participation not found"
+        )
+    
+    return {"message": "Successfully deregistered from contest"}
+
 @router.get("/contest_group_counts")
 def contest_group_counts(
     contest_id: str = Query(..., description="Contest ID"),
