@@ -34,7 +34,28 @@ export default function Group() {
     description: "",
     memberships: []
   });
-  
+
+  // Leaderboard data state
+  const [leaderboardData0, setLeaderboardData0] = useState([]);
+
+  // Fetch leaderboard data (top 10 by rating)
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      if (!groupId) return;
+      try {
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const response = await axios.get(
+          `/api/group_membership_range_fetch?gid=${groupId}&sort_by=user_group_rating&sort_order=desc&offset=0&limit=10`,
+          { headers }
+        );
+        setLeaderboardData0(response.data);
+      } catch (err) {
+        setLeaderboardData0([]);
+      }
+    };
+    fetchLeaderboard();
+  }, [groupId, token]);
+
   // State variables for current user's membership information
   const [userRole, setUserRole] = useState(null);
   const [userRating, setUserRating] = useState(0);
@@ -47,27 +68,32 @@ export default function Group() {
       try {
         setLoading(true);
         setError(null);
-        
+
         const userId = user?.user_id;
         const baseURL = '';
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        
-        // Fetch group data
-        const groupResponse = await axios.get(`${baseURL}/api/group?group_id=${groupId}`, { headers });
-        const fetchedGroup = groupResponse.data;
-        
+
+        // Fetch all groups
+        const groupsResponse = await axios.get(`${baseURL}/api/groups`, { headers });
+        const groups = groupsResponse.data;
+        // Find the group with the matching groupId
+        const fetchedGroup = groups.find(g => g.group_id === groupId);
+        if (!fetchedGroup) {
+          setError('Group not found');
+          setLoading(false);
+          return;
+        }
         // Determine type from is_private flag
         const type = fetchedGroup.is_private ? "Private" : "Public";
-        
         setGroupData({
           name: fetchedGroup.group_name,
           type: type,
           created: fetchedGroup.timestamp,
-          memberCount: fetchedGroup.memberships.length,
+          memberCount: fetchedGroup.member_count,
           description: fetchedGroup.group_description || "No description provided.",
-          memberships: fetchedGroup.memberships || []
+          memberships: [] // memberships to be fetched via other endpoints if needed
         });
-        
+
         // If user is logged in, fetch their membership info
         if (userId) {
           try {
@@ -76,19 +102,12 @@ export default function Group() {
               `${baseURL}/api/membership?group_id=${groupId}&user_id=${userId}`,
               { headers }
             );
-            
             // User is a member of this group
             const membership = membershipResponse.data;
-           
             setUserRole(membership.role);
             setUserRating(membership.user_group_rating);
-            
-            // For max rating calculation
             setUserMaxRating(Math.max(membership.user_group_rating, membership.user_group_rating + 75));
-            
-            // Use group creation date as join date for now
             setJoinDate(fetchedGroup.timestamp);
-            
           } catch (membershipError) {
             // 404 error means user is not a member of this group
             if (membershipError.response && membershipError.response.status === 404) {
@@ -108,9 +127,8 @@ export default function Group() {
         setLoading(false);
       }
     };
-    
     fetchGroupData();
-  }, [groupId]);
+  }, [groupId, token, user]);
   
   // Fetch participation data from API
   useEffect(() => {
@@ -208,37 +226,21 @@ export default function Group() {
     fetchAnnouncements();
   }, [groupId]);
   
-  // We'll derive top users data from the group memberships
+  // We'll derive top users data from leaderboardData0 (from /api/group_membership_range_fetch)
   const [leaderboardRows, setLeaderboardRows] = useState([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(true);
   const [leaderboardError, setLeaderboardError] = useState(null);
-  
-  // UseEffect to process group membership data for the leaderboard
+
+  // UseEffect to process leaderboardData0 for the leaderboard
   useEffect(() => {
     setLeaderboardLoading(true);
-    
-    // No need for a separate API call, we can use the group data that contains memberships
-    // Debug output to help diagnose the issue
-    
-    if (groupData && !loading && groupData.memberships && groupData.memberships.length > 0) {
+    if (leaderboardData0 && leaderboardData0.length > 0) {
       try {
-        // Process memberships to create leaderboard data
-        // This requires user_ids and ratings
-        const memberships = [...groupData.memberships];
-        
-        // Sort by rating in descending order
-        memberships.sort((a, b) => b.user_group_rating - a.user_group_rating);
-        
-        // Take only the top 10 users
-        const topUsers = memberships.slice(0, 10);
-        
-        // Transform the data for display
-        const transformedData = topUsers.map((membership, index) => [
+        const transformedData = leaderboardData0.map((membership, index) => [
           index + 1, // Rank
           <Link to={`/user/${membership.cf_handle}`} className="tableCellLink" style={{ color: getRatingColor(membership.user_group_rating), fontWeight: 'bold' }}>{membership.cf_handle}</Link>,
           <span style={{ color: getRatingColor(membership.user_group_rating), fontWeight: 'bold' }}>{membership.user_group_rating}</span>
         ]);
-        
         setLeaderboardRows(transformedData);
         setLeaderboardLoading(false);
       } catch (err) {
@@ -246,11 +248,11 @@ export default function Group() {
         setLeaderboardError('Error processing leaderboard data');
         setLeaderboardLoading(false);
       }
-    } else if (!loading && (!groupData || !groupData.memberships)) {
-      setLeaderboardError('No membership data available');
+    } else {
+      setLeaderboardRows([]);
       setLeaderboardLoading(false);
     }
-  }, [groupData, loading]); // This will run when groupData is updated
+  }, [leaderboardData0]); // This will run when leaderboardData0 is updated
   
   // Participation data loading indicator
   const participationSection = participationLoading ? (

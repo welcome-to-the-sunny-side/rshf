@@ -107,13 +107,37 @@ const ContestPage = () => {
     });
   };
   
+  // Per-group loading and error state for registration actions
+  const [actionLoading, setActionLoading] = useState({});
+  const [actionError, setActionError] = useState({});
+
   // Handle registration/unregistration button click
-  const handleRegistrationClick = (groupId, currentStatus) => {
-    // TODO: Implement actual registration/unregistration API call
-    console.log(`${currentStatus ? 'Unregistering from' : 'Registering for'} contest ${contest_id} in group ${groupId}`);
-    // After successful API call, you would typically refetch relevant data:
-    // fetchCurrentUserParticipations();
-    // fetchGroupContestCountsForAllGroups(); 
+  const handleRegistrationClick = async (groupId, isCurrentlyRegistered) => {
+    if (!user || !user.user_id) return;
+    setActionLoading(prev => ({ ...prev, [groupId]: true }));
+    setActionError(prev => ({ ...prev, [groupId]: null }));
+    try {
+      const payload = {
+        contest_id: contest_id,
+        group_id: groupId,
+        user_id: user.user_id,
+      };
+      const url = isCurrentlyRegistered ? '/api/contest/deregister' : '/api/contest/register';
+      await axios.post(url, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      // Refresh participations and contest data (for group_views/registered column)
+      await fetchCurrentUserParticipations();
+      await fetchContestData();
+    } catch (err) {
+      let msg = API_MESSAGES.ERROR;
+      if (err.response && err.response.data && err.response.data.detail) {
+        msg = err.response.data.detail;
+      }
+      setActionError(prev => ({ ...prev, [groupId]: msg }));
+    } finally {
+      setActionLoading(prev => ({ ...prev, [groupId]: false }));
+    }
   };
   
   const upcomingColumns = ["Group", "Registered", "Action"];
@@ -138,19 +162,29 @@ const ContestPage = () => {
         const registeredText = `${totalParticipants === '...' ? '...' : (totalParticipants || 0)} / ${totalMembersInGroup === '...' ? '...' : (totalMembersInGroup || 'N/A')}`;
         
         const isCurrentUserRegistered = currentUserParticipations.some(p => p.group_id === groupId);
+        const isBtnLoading = !!actionLoading[groupId];
+        const btnError = actionError[groupId];
+        const isDisabled = isBtnLoading || contestData.finished;
 
         return [
           <Link key={`${groupId}-link`} to={`/group/${groupId}/contest/${contest_id}`} className="tableCellLink">
             {groupId} {/* Ideally, this would be group_name */}
           </Link>,
           registeredText,
-          <button 
-            key={`${groupId}-action`}
-            className={`global-button small ${isCurrentUserRegistered ? 'red' : 'green'}`}
-            onClick={() => handleRegistrationClick(groupId, isCurrentUserRegistered)}
-          >
-            {isCurrentUserRegistered ? 'Unregister' : 'Register'}
-          </button>
+          <div key={`${groupId}-action-wrap`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', width: '100%' }}>
+            <button
+              key={`${groupId}-action`}
+              className={`global-button small ${isCurrentUserRegistered ? 'red' : 'green'}`}
+              onClick={() => handleRegistrationClick(groupId, isCurrentUserRegistered)}
+              disabled={isDisabled}
+              style={{ minWidth: 90 }}
+            >
+              {isBtnLoading ? (isCurrentUserRegistered ? 'Unregistering...' : 'Registering...') : (isCurrentUserRegistered ? 'Unregister' : 'Register')}
+            </button>
+            {btnError && (
+              <span className="api-feedback-container error-message" style={{ fontSize: '0.8em', marginTop: 2, textAlign: 'right', maxWidth: 180 }}>{btnError}</span>
+            )}
+          </div>
         ];
       });
     } else {

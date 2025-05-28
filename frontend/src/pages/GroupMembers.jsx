@@ -1,31 +1,43 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import SortablePagedTableBox from '../components/SortablePagedTableBox';
 import { getRatingColor } from '../utils/ratingUtils';
 import GroupNavBar from '../components/GroupNavBar';
-import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import styles from './GroupMembers.module.css';
+import LazyLoadingSortablePagedTableBox from '../components/LazyLoadingSortablePagedTableBox';
+import styles from './GroupMembers.module.css'; // Keep for page-level styles if any
 import { API_MESSAGES } from '../constants/apiMessages';
 import '../styles/apiFeedbackStyles.css';
+
+// Define column keys for sorting and display
+const COLUMN_KEYS = {
+  CF_HANDLE: 'cf_handle',
+  ROLE: 'role',
+  USER_GROUP_RATING: 'user_group_rating',
+  USER_GROUP_MAX_RATING: 'user_group_max_rating',
+  DATE_JOINED: 'date_joined',
+};
+
+const API_BASE_URL = '/api';
 
 export default function GroupMembers() {
   const { groupId } = useParams();
   const { user, token } = useAuth();
   
-  // User role and permission state
+  // User role and permission state (remains for GroupNavBar)
   const [userRole, setUserRole] = useState(null);
   const [showModViewButton, setShowModViewButton] = useState(false);
-  
-  // State for members data
+
+  // State for new paginated members data
   const [membersData, setMembersData] = useState([]);
+  const [totalMembers, setTotalMembers] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15; // Fixed
+  const [sortConfig, setSortConfig] = useState({
+    key: COLUMN_KEYS.DATE_JOINED, // Default sort key
+    direction: 'desc',          // Default sort direction
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
-  // Create placeholder for report accuracy data since it's not in the API
-  const generateReportAccuracy = () => {
-    return { accepted: 0, total: 0 };
-  };
   
   // Check user's membership in the group to determine role
   useEffect(() => {
@@ -61,44 +73,77 @@ export default function GroupMembers() {
     }
   }, [groupId, user, token]);
 
-  // Fetch members data from API
-  useEffect(() => {
-    const fetchMembersData = async () => {
-      try {
-        setLoading(true);
-        
-        const response = await axios.get(`/api/group_members_custom_data`, {
-          headers: { Authorization: `Bearer ${token}` },
-          params: { group_id: groupId }
-        });
-        
-        const data = response.data;
-        
-        // Transform API data to match expected format
-        const transformedData = data.map(member => ({
-          username: member.cf_handle,
-          role: member.role,
-          rating: member.user_group_rating,
-          maxRating: member.user_group_max_rating,
-          reportAccuracy: generateReportAccuracy(), // Placeholder for report accuracy
-          dateJoined: member.date_joined
-        }));
-        
-        setMembersData(transformedData);
-        setError(null);
-      } catch (err) {
-        console.error('Failed to fetch members data:', err);
-        setError(API_MESSAGES.ERROR);
-        setMembersData([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    if (groupId) {
-      fetchMembersData();
+  // Fetch paginated members data
+  const fetchGroupMembersData = useCallback(async () => {
+    if (!groupId || !token) {
+      setLoading(false);
+      return;
     }
-  }, [groupId, token]);
+
+    setLoading(true);
+    setError(null);
+
+    const offset = (currentPage - 1) * itemsPerPage;
+    const headers = {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    };
+
+    try {
+      // Fetch total count
+      const countResponse = await fetch(
+        `/api/group_membership_size?gid=${groupId}`,
+        { headers }
+      );
+      if (!countResponse.ok) {
+        const errorData = await countResponse.json().catch(() => ({}));
+        throw new Error(errorData.detail || API_MESSAGES.ERROR);
+      }
+      const countData = await countResponse.json();
+      setTotalMembers(countData.count);
+
+      // Fetch paginated data
+      // Only fetch if totalMembers > 0 or if it's the first load (totalMembers might be 0 initially)
+      if (countData.count > 0 || totalMembers === 0) { // ensure we fetch if count is positive
+        const dataResponse = await fetch(
+          `${API_BASE_URL}/group_membership_range_fetch?gid=${groupId}&offset=${offset}&limit=${itemsPerPage}&sort_by=${sortConfig.key}&sort_order=${sortConfig.direction}`,
+          { headers }
+        );
+        if (!dataResponse.ok) {
+          const errorData = await dataResponse.json().catch(() => ({}));
+          throw new Error(errorData.detail || API_MESSAGES.ERROR);
+        }
+        const members = await dataResponse.json();
+        setMembersData(members); // API returns data directly in the desired format
+      } else {
+        setMembersData([]); // No members to fetch
+      }
+
+    } catch (err) {
+      console.error('Failed to fetch members data:', err);
+      setError(err.message);
+      setMembersData([]); 
+      setTotalMembers(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [groupId, token, currentPage, itemsPerPage, sortConfig, totalMembers]); // Added totalMembers to dep array
+
+  useEffect(() => {
+    fetchGroupMembersData();
+  }, [fetchGroupMembersData]);
+
+  const handlePageChange = (newPageNumber) => {
+    setCurrentPage(newPageNumber);
+  };
+
+  const handleSort = (columnKey) => {
+    setCurrentPage(1); // Reset to first page on sort
+    setSortConfig((prevConfig) => ({
+      key: columnKey,
+      direction: prevConfig.key === columnKey && prevConfig.direction === 'asc' ? 'desc' : 'asc',
+    }));
+  };
   
   // Function to format date
   const formatDate = (dateString) => {
@@ -106,24 +151,55 @@ export default function GroupMembers() {
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
-  // Define columns for the table
-  const columns = ["User", "Role", "Rating", "Max Rating", "Report Accuracy", "Date Joined"];
-  
-  // Transform the data for the table component
-  const tableRows = membersData.map(member => [
-    <Link to={`/user/${member.username}`} className="tableCellLink" style={{ color: getRatingColor(member.rating), fontWeight: 'bold' }}>{member.username}</Link>,
-    <span style={{ textTransform: 'capitalize' }}>{member.role}</span>,
-    <span style={{ color: getRatingColor(member.rating), fontWeight: 'bold' }}>{member.rating}</span>,
-    <span style={{ color: getRatingColor(member.maxRating), fontWeight: 'bold' }}>{member.maxRating}</span>,
-    member.reportAccuracy.total > 0 ? (
-      <span title={`${member.reportAccuracy.accepted} accepted out of ${member.reportAccuracy.total} reports`}>
-        {Math.round((member.reportAccuracy.accepted / member.reportAccuracy.total) * 100)}% ({member.reportAccuracy.accepted}/{member.reportAccuracy.total})
-      </span>
-    ) : (
-      <span>hmmm...</span>
-    ),
-    formatDate(member.dateJoined)
-  ]);
+  // Define columns for LazyLoadingSortablePagedTableBox
+  const tableColumns = [
+    {
+      key: COLUMN_KEYS.CF_HANDLE,
+      label: 'User',
+      sortable: true,
+      render: (member) => (
+        <Link 
+          to={`/user/${member.cf_handle}`} 
+          className="tableCellLink" // Ensure this class is globally available or defined in a shared CSS
+          style={{ color: getRatingColor(member.user_group_rating), fontWeight: 'bold' }}
+        >
+          {member.cf_handle}
+        </Link>
+      ),
+    },
+    {
+      key: COLUMN_KEYS.ROLE,
+      label: 'Role',
+      sortable: true,
+      render: (member) => <span style={{ textTransform: 'capitalize' }}>{member.role}</span>,
+    },
+    {
+      key: COLUMN_KEYS.USER_GROUP_RATING,
+      label: 'Rating',
+      sortable: true,
+      render: (member) => (
+        <span style={{ color: getRatingColor(member.user_group_rating), fontWeight: 'bold' }}>
+          {member.user_group_rating}
+        </span>
+      ),
+    },
+    {
+      key: COLUMN_KEYS.USER_GROUP_MAX_RATING,
+      label: 'Max Rating',
+      sortable: true,
+      render: (member) => (
+        <span style={{ color: getRatingColor(member.user_group_max_rating), fontWeight: 'bold' }}>
+          {member.user_group_max_rating}
+        </span>
+      ),
+    },
+    {
+      key: COLUMN_KEYS.DATE_JOINED,
+      label: 'Date Joined',
+      sortable: true,
+      render: (member) => formatDate(member.timestamp),
+    },
+  ];
 
   return (
     <div className="page-container">
@@ -149,14 +225,21 @@ export default function GroupMembers() {
       ) : (
         /* Members table */
         <div className={styles.membersTableWrapper}>
-          <SortablePagedTableBox 
-            columns={columns}
-            data={tableRows}
-            backgroundColor="rgb(230, 240, 255)"
-            itemsPerPage={15}
-            initialSortColumnIndex={2} // Rating column
-            initialSortDirection="desc" // Descending order
-            className="membersTable"
+          <LazyLoadingSortablePagedTableBox
+            columns={tableColumns}
+            items={membersData}
+            totalItems={totalMembers}
+            itemsPerPage={itemsPerPage}
+            currentPage={currentPage}
+            onPageChange={handlePageChange}
+            sortConfig={sortConfig}
+            onSortChange={handleSort} // handleSort expects columnKey, which onSortChange provides
+            isLoading={loading}
+            error={error}
+            noDataMessage={API_MESSAGES.NO_DATA}
+            // You can add a title prop if desired, e.g., title="Group Members"
+            // className and tableBoxClassName can be used for further styling if needed
+            // backgroundColor="rgb(230, 240, 255)" // If you want to restore this
           />
         </div>
       )}

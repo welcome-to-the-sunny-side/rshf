@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import TableBox from './TableBox';
 import BasicTableBox from './BasicTableBox';
 import styles from './PagedTableBox.module.css';
 
 const PagedTableBox = ({ title, columns, data, backgroundColor, itemsPerPage = 15, className }) => {
   const [currentPage, setCurrentPage] = useState(1);
+  const [jumpPageInput, setJumpPageInput] = useState('');
   const totalPages = Math.ceil(data.length / itemsPerPage);
   
   // Calculate the current page's data
@@ -45,6 +46,22 @@ const PagedTableBox = ({ title, columns, data, backgroundColor, itemsPerPage = 1
   const goToNextPage = () => {
     if (currentPage < totalPages) {
       setCurrentPage(currentPage + 1);
+    }
+  };
+
+  // Handle jump to page
+  const handleJumpToPage = () => {
+    const pageNumber = parseInt(jumpPageInput, 10);
+    if (!isNaN(pageNumber) && pageNumber >= 1 && pageNumber <= totalPages) {
+      setCurrentPage(pageNumber);
+      setJumpPageInput(''); // Clear input after jumping
+    }
+  };
+
+  // Handle enter key in jump to page input
+  const handleJumpInputKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleJumpToPage();
     }
   };
   
@@ -125,6 +142,26 @@ const PagedTableBox = ({ title, columns, data, backgroundColor, itemsPerPage = 1
             disabled={currentPage === totalPages}
           >
             →
+          </button>
+        </div>
+      )}
+      
+      {totalPages > 1 && (
+        <div className={styles.jumpToPageContainer}>
+          <input
+            type="text"
+            value={jumpPageInput}
+            onChange={(e) => setJumpPageInput(e.target.value)}
+            onKeyPress={handleJumpInputKeyPress}
+            className={styles.jumpToPageInput}
+            placeholder={`1-${totalPages}`}
+            aria-label="Jump to page"
+          />
+          <button
+            className={styles.pageButton}
+            onClick={handleJumpToPage}
+          >
+            Jump
           </button>
         </div>
       )}

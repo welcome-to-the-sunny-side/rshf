@@ -49,6 +49,43 @@
   font-size: 12px;
 }
 
+/* Jump to page styles */
+.jumpToPageContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 10px;
+  gap: 3px; /* Match pagination gap */
+}
+
+.jumpToPageInput {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 40px;      /* Narrow width similar to button */
+  min-width: 40px;  /* Ensure it doesn't grow too much */
+  max-width: 40px;  /* Ensure it doesn't grow too much */
+  height: 26px;    /* Match page button height */
+  padding: 0 4px;  /* Slightly reduced padding */
+  background-color: #fff;
+  border: 1px solid #ddd; /* Match page button border */
+  border-radius: 3px;    /* Match page button border-radius */
+  color: #333;          /* Match page button color */
+  font-size: 12px;      /* Match page button font-size */
+  transition: all 0.2s ease; /* Match page button transition */
+  outline: none;
+  text-align: center;  /* Center text in input */
+}
+
+.jumpToPageInput:hover:not(:disabled) {
+  border-color: #ccc;  /* Match page button hover border */
+}
+
+.jumpToPageInput:disabled {
+  opacity: 0.5;       /* Match page button disabled opacity */
+  cursor: not-allowed; /* Match page button disabled cursor */
+}
+
 /* Spacer cell for empty rows */
 .spacerCell {
   opacity: 0;

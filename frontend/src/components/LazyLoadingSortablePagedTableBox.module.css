@@ -1,0 +1,173 @@
+/* LazyLoadingSortablePagedTableBox.module.css */
+
+.container {
+  width: 100%;
+}
+
+/* === Styles from BasicTableBox.module.css (for th elements) === */
+/* This class is needed for the entire th element's hover effect */
+.sortableColumn {
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.sortableColumn:hover {
+  background-color: rgb(230, 230, 230); /* From BasicTableBox.module.css */
+}
+
+/* === Styles from SortablePagedTableBox.module.css (for sorting headers) === */
+.sortableHeader { /* This class is applied to the clickable div inside the header cell */
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* Exactly match SortablePagedTableBox.module.css */
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  padding-right: 16px; /* Space for the sort icon - exactly match SortablePagedTableBox.module.css */
+}
+
+.sortableHeader:hover {
+  background-color: rgba(0, 0, 0, 0.05); /* From SortablePagedTableBox.module.css */
+}
+
+.sortIcon { /* This is the span for ▲/▼ */
+  position: absolute; /* Positioned relative to .sortableHeader */
+  right: 4px;         /* From SortablePagedTableBox.module.css */
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.7rem;  /* From SortablePagedTableBox.module.css */
+  color: #000;       /* From SortablePagedTableBox.module.css */
+  opacity: 1;       /* From SortablePagedTableBox.module.css */
+  font-weight: bold;  /* From SortablePagedTableBox.module.css */
+  /* margin-left: 5px; /* Removed as absolute positioning handles spacing */
+}
+
+/* .headerCellContent was a previous name, .sortableHeader should be the primary one now for the interactive part */
+
+
+/* Jump to page styles */
+.jumpToPageContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 10px;
+  gap: 3px; /* Match pagination gap */
+}
+
+.jumpToPageInput {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 40px;      /* Narrow width similar to button */
+  min-width: 40px;  /* Ensure it doesn't grow too much */
+  max-width: 40px;  /* Ensure it doesn't grow too much */
+  height: 26px;    /* Match page button height */
+  padding: 0 4px;  /* Slightly reduced padding */
+  background-color: #fff;
+  border: 1px solid #ddd; /* Match page button border */
+  border-radius: 3px;    /* Match page button border-radius */
+  color: #333;          /* Match page button color */
+  font-size: 12px;      /* Match page button font-size */
+  transition: all 0.2s ease; /* Match page button transition */
+  outline: none;
+  text-align: center;  /* Center text in input */
+}
+
+.jumpToPageInput:hover:not(:disabled) {
+  border-color: #ccc;  /* Match page button hover border */
+}
+
+.jumpToPageInput:disabled {
+  opacity: 0.5;       /* Match page button disabled opacity */
+  cursor: not-allowed; /* Match page button disabled cursor */
+}
+
+/* === Styles from PagedTableBox.module.css (for pagination) === */
+.paginationContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  gap: 3px; /* From PagedTableBox.module.css */
+}
+
+.pageButton {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 26px;   /* From PagedTableBox.module.css */
+  height: 26px;      /* From PagedTableBox.module.css */
+  padding: 0 6px;    /* From PagedTableBox.module.css */
+  background-color: #fff;
+  border: 1px solid #ddd; /* From PagedTableBox.module.css */
+  border-radius: 3px;   /* From PagedTableBox.module.css */
+  color: #333;        /* From PagedTableBox.module.css */
+  font-size: 12px;     /* From PagedTableBox.module.css */
+  cursor: pointer;
+  transition: all 0.2s ease; /* From PagedTableBox.module.css */
+}
+
+.pageButton:hover:not(:disabled) {
+  background-color: #f5f5f5; /* From PagedTableBox.module.css */
+  border-color: #ccc;       /* From PagedTableBox.module.css */
+}
+
+.pageButton:disabled {
+  opacity: 0.5;            /* From PagedTableBox.module.css */
+  cursor: not-allowed;
+  /* PagedTableBox.module.css does not specify a disabled background-color, so we'll omit it too for exactness */
+}
+
+.activePage {
+  background-color: #f0f0f0; /* From PagedTableBox.module.css */
+  border-color: #bbb;       /* From PagedTableBox.module.css */
+  font-weight: bold;        /* From PagedTableBox.module.css */
+  color: #333; /* Ensure text color is consistent with non-active buttons or as PagedTableBox implies */
+}
+
+.ellipsis {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 26px;  /* From PagedTableBox.module.css */
+  height: 26px;     /* From PagedTableBox.module.css */
+  color: #666;       /* From PagedTableBox.module.css */
+  font-size: 12px;    /* From PagedTableBox.module.css */
+}
+
+/* === Styles for Loading/Error/NoData messages (can be kept or adjusted) === */
+.loadingMessage,
+.errorMessage,
+.noDataMessage,
+.loadingMoreMessage {
+  padding: 20px;
+  text-align: center;
+  font-size: 1.1em;
+  border: 1px solid #eee;
+  margin: 10px 0;
+  border-radius: 4px;
+}
+
+.loadingMessage {
+  color: #555;
+  background-color: #f9f9f9;
+}
+
+.loadingMoreMessage {
+  color: #555;
+  background-color: #f9f9f9a0; 
+  font-size: 0.9em;
+  padding: 10px;
+}
+
+.errorMessage {
+  color: #D8000C; 
+  background-color: #FFD2D2;
+}
+
+.noDataMessage {
+  color: #4F8A10; 
+  background-color: #DFF2BF;
+}

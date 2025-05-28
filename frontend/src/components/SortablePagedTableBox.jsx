@@ -64,6 +64,7 @@ const SortablePagedTableBox = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [sortColumnIndex, setSortColumnIndex] = useState(initialSortColumnIndex);
   const [sortDirection, setSortDirection] = useState(initialSortDirection);
+  const [jumpPageInput, setJumpPageInput] = useState('');
 
   // Memoize the sorting logic to produce stable sortedData
   const sortedData = useMemo(() => {
@@ -138,6 +139,22 @@ const SortablePagedTableBox = ({
   const goToNextPage = () => {
     if (currentPage < totalPages) {
       setCurrentPage(currentPage + 1);
+    }
+  };
+
+  // Handle jump to page
+  const handleJumpToPage = () => {
+    const pageNumber = parseInt(jumpPageInput, 10);
+    if (!isNaN(pageNumber) && pageNumber >= 1 && pageNumber <= totalPages) {
+      setCurrentPage(pageNumber);
+      setJumpPageInput(''); // Clear input after jumping
+    }
+  };
+
+  // Handle enter key in jump to page input
+  const handleJumpInputKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleJumpToPage();
     }
   };
 
@@ -243,6 +260,27 @@ const SortablePagedTableBox = ({
             aria-label="Next Page" // Add accessibility label
           >
             →
+          </button>
+        </div>
+      )}
+      
+      {totalPages > 1 && (
+        <div className={styles.jumpToPageContainer}>
+          <input
+            type="text"
+            value={jumpPageInput}
+            onChange={(e) => setJumpPageInput(e.target.value)}
+            onKeyPress={handleJumpInputKeyPress}
+            className={styles.jumpToPageInput}
+            placeholder={`1-${totalPages}`}
+            aria-label="Jump to page"
+          />
+          <button
+            className={styles.pageButton}
+            onClick={handleJumpToPage}
+            aria-label="Jump to specified page"
+          >
+            Jump
           </button>
         </div>
       )}
