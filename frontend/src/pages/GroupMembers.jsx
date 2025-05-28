@@ -80,7 +80,6 @@ export default function GroupMembers() {
           role: member.role,
           rating: member.user_group_rating,
           maxRating: member.user_group_max_rating,
-          ratedContests: member.number_of_rated_contests,
           reportAccuracy: generateReportAccuracy(), // Placeholder for report accuracy
           dateJoined: member.date_joined
         }));
@@ -108,7 +107,7 @@ export default function GroupMembers() {
   };
 
   // Define columns for the table
-  const columns = ["User", "Role", "Rating", "Max Rating", "Rated Contests", "Report Accuracy", "Date Joined"];
+  const columns = ["User", "Role", "Rating", "Max Rating", "Report Accuracy", "Date Joined"];
   
   // Transform the data for the table component
   const tableRows = membersData.map(member => [
@@ -116,7 +115,6 @@ export default function GroupMembers() {
     <span style={{ textTransform: 'capitalize' }}>{member.role}</span>,
     <span style={{ color: getRatingColor(member.rating), fontWeight: 'bold' }}>{member.rating}</span>,
     <span style={{ color: getRatingColor(member.maxRating), fontWeight: 'bold' }}>{member.maxRating}</span>,
-    member.ratedContests,
     member.reportAccuracy.total > 0 ? (
       <span title={`${member.reportAccuracy.accepted} accepted out of ${member.reportAccuracy.total} reports`}>
         {Math.round((member.reportAccuracy.accepted / member.reportAccuracy.total) * 100)}% ({member.reportAccuracy.accepted}/{member.reportAccuracy.total})

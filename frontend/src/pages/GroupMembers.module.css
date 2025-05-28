@@ -30,23 +30,16 @@
   text-align: center;
 }
 
-/* Rated Contests column - 10% width */
+/* Report Accuracy column - 10% width */
 :global(.membersTable) :global(table th:nth-child(5)),
 :global(.membersTable) :global(table td:nth-child(5)) {
   width: 10%;
   text-align: center;
 }
 
-/* Report Accuracy column - 10% width */
+/* Date Joined column - 10% width */
 :global(.membersTable) :global(table th:nth-child(6)),
 :global(.membersTable) :global(table td:nth-child(6)) {
-  width: 10%;
-  text-align: center;
-}
-
-/* Date Joined column - 10% width */
-:global(.membersTable) :global(table th:nth-child(7)),
-:global(.membersTable) :global(table td:nth-child(7)) {
   width: 10%;
   text-align: right;
 }

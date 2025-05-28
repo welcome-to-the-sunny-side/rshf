@@ -1,0 +1,2 @@
+the next one will be /report_range_fetch 
+it will have the same filters as report, but it will also support sortability and pagination (just like how /contest_participations_range_fetch works for /contest_participations). It will be sortable along: report id, contest id, reporter cf handle, respondent cf handle, report date, 

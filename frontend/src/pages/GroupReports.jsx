@@ -173,11 +173,11 @@ export default function GroupReports() {
       const rowData = [
         report.report_id,
         contestContent,
-        <Link to={`/user/${report.reporter_user_id}`} className="tableCellLink" style={{ color: getRatingColor(report.reporter_rating_at_report_time), fontWeight: 'bold' }}>
-          {report.reporter_user_id}
+        <Link to={`/user/${report.reporter_cf_handle}`} className="tableCellLink" style={{ color: getRatingColor(report.reporter_rating_at_report_time), fontWeight: 'bold' }}>
+          {report.reporter_cf_handle}
         </Link>,
-        <Link to={`/user/${report.respondent_user_id}`} className="tableCellLink" style={{ color: getRatingColor(report.respondent_rating_at_report_time), fontWeight: 'bold' }}>
-          {report.respondent_user_id}
+        <Link to={`/user/${report.respondent_cf_handle}`} className="tableCellLink" style={{ color: getRatingColor(report.respondent_rating_at_report_time), fontWeight: 'bold' }}>
+          {report.respondent_cf_handle}
         </Link>,
         formatDate(report.timestamp),
       ];
@@ -185,8 +185,8 @@ export default function GroupReports() {
       // Add resolved by and resolution message for processed reports
       if (includeHandledBy && report.resolved) {
         rowData.push(
-          <Link to={`/user/${report.resolved_by}`} className="tableCellLink" style={{ color: getRatingColor(report.resolver_rating_at_resolve_time), fontWeight: 'bold' }}>
-            {report.resolved_by}
+          <Link to={`/user/${report.resolver_cf_handle}`} className="tableCellLink" style={{ color: getRatingColor(report.resolver_rating_at_resolve_time), fontWeight: 'bold' }}>
+            {report.resolver_cf_handle}
           </Link>
         );
         

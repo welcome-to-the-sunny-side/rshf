@@ -235,7 +235,7 @@ export default function Group() {
         // Transform the data for display
         const transformedData = topUsers.map((membership, index) => [
           index + 1, // Rank
-          <Link to={`/user/${membership.user_id}`} className="tableCellLink" style={{ color: getRatingColor(membership.user_group_rating), fontWeight: 'bold' }}>{membership.user_id}</Link>,
+          <Link to={`/user/${membership.cf_handle}`} className="tableCellLink" style={{ color: getRatingColor(membership.user_group_rating), fontWeight: 'bold' }}>{membership.cf_handle}</Link>,
           <span style={{ color: getRatingColor(membership.user_group_rating), fontWeight: 'bold' }}>{membership.user_group_rating}</span>
         ]);
         

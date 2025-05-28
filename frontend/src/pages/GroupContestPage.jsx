@@ -77,7 +77,7 @@ const GroupContestPage = () => {
 
       // Check if the current user is registered
       if (user) {
-        const userParticipation = response.data.find(p => p.user_id === user.user_id);
+        const userParticipation = response.data.find(p => p.cf_handle === user.cf_handle);
         setIsRegistered(!!userParticipation);
       }
     } catch (err) {
@@ -108,7 +108,7 @@ const GroupContestPage = () => {
       setUserContestStatus(null);
       return;
     }
-    const userParticipation = participationData.find(p => p.user_id === user.user_id);
+    const userParticipation = participationData.find(p => p.cf_handle === user.cf_handle);
     if (userParticipation) {
       setUserContestStatus({
         rank: userParticipation.rank,
@@ -130,11 +130,11 @@ const GroupContestPage = () => {
   const registrationRows = !loading.participations && !error.participations && participationData.length > 0
     ? participationData.map(user => [
         <Link 
-          to={`/user/${user.user_id}`}
+          to={`/user/${user.cf_handle}`}
           className="tableCellLink"
           style={{ color: getRatingColor(user.rating_before || 0), fontWeight: 'bold' }}
         >
-          {user.user_id}
+          {user.cf_handle}
         </Link>,
         <span style={{ color: getRatingColor(user.rating_before || 0) }}>{user.rating_before || 'Unrated'}</span>
       ])
@@ -162,7 +162,7 @@ const GroupContestPage = () => {
             
           return [
             user.rank || '-',
-            <Link to={`/user/${user.user_id}`} className="tableCellLink" style={{ color: getRatingColor(finalRating), fontWeight: 'bold' }}>{user.user_id}</Link>,
+            <Link to={`/user/${user.cf_handle}`} className="tableCellLink" style={{ color: getRatingColor(finalRating), fontWeight: 'bold' }}>{user.cf_handle}</Link>,
             <span style={{ 
               color: ratingChange > 0 ? 'green' : (ratingChange < 0 ? 'red' : 'gray'),
               fontWeight: 'bold'
