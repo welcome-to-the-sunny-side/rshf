@@ -3,9 +3,9 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 import os
 
 # Use the environment variable DATABASE_URL if available, otherwise use a default local URL for development
-# SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", 'postgresql://dev:devpass@localhost:5432/clean-rating')
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", 'postgresql://dev:devpass@localhost:5432/clean-rating')
 
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", 'postgresql://evapilotno17@localhost:5432/rshfdb')
+# SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", 'postgresql://evapilotno17@localhost:5432/rshfdb')
 
 # Handle potential 'postgres://' to 'postgresql://' conversion needed for SQLAlchemy
 if SQLALCHEMY_DATABASE_URL and SQLALCHEMY_DATABASE_URL.startswith('postgres://'):

@@ -563,6 +563,54 @@ def update_announcement(
 
 # ========== custom group data endpoints ==========
 
+@router.get("/group_membership_size", response_model=schemas.CountResponse)
+def get_group_membership_size(
+    gid: str = Query(..., description="Group ID to retrieve member count for"),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """
+    Get the number of all memberships in a group (no status/user filtering).
+    """
+    group = crud.get_group(db, gid)
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+    if current_user.role != models.Role.admin and not crud.get_membership(db, current_user.user_id, gid):
+        raise HTTPException(status_code=403, detail="Not authorized to access this group's data")
+    count = crud.count_group_memberships(db, gid)
+    return schemas.CountResponse(count=count)
+
+
+@router.get("/group_membership_range_fetch", response_model=List[schemas.GroupMembershipOut])
+def get_group_membership_range_fetch(
+    gid: str = Query(..., description="Group ID to retrieve data for"),
+    sort_by: schemas.GroupMemberSortByField = Query(schemas.GroupMemberSortByField.DATE_JOINED, description="Field to sort by"),
+    sort_order: schemas.SortOrder = Query(schemas.SortOrder.DESC, description="Sort order (asc or desc)"),
+    offset: int = Query(0, ge=0, description="Offset for pagination"),
+    limit: int = Query(15, ge=1, le=100, description="Number of items per page (max 100)"),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """
+    Get paginated and sorted memberships for a group (no status/user filtering).
+    """
+    group = crud.get_group(db, gid)
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+    if current_user.role != models.Role.admin and not crud.get_membership(db, current_user.user_id, gid):
+        raise HTTPException(status_code=403, detail="Not authorized to access this group's data")
+    memberships = crud.get_group_memberships_paginated(
+        db=db,
+        group_id=gid,
+        sort_by=sort_by,
+        sort_order=sort_order,
+        offset=offset,
+        limit=limit
+    )
+    return memberships
+
+
+
 @router.get("/group_members_custom_data", response_model=List[schemas.CustomMembershipData])
 def get_group_members_custom_data(
     group_id: str = Query(..., description="Group ID to retrieve custom data for"),

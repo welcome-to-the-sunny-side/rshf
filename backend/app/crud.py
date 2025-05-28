@@ -208,14 +208,16 @@ def register_contest_participation(
 
     group = db.query(models.Group).filter(models.Group.group_id == payload.group_id).first()
     contest = db.query(models.Contest).filter(models.Contest.contest_id == payload.contest_id).first()
-    if payload.group_id not in contest.group_view:
-        contest.group_view[payload.group_id] = {
+    if payload.group_id not in contest.group_views:
+        contest.group_views[payload.group_id] = {
             'total_members': group.memberships.count(),
             'total_participants': 1,
         }
     else:
-        contest.group_view[payload.group_id]['total_participants'] += 1
+        contest.group_views[payload.group_id]['total_participants'] += 1
 
+    from sqlalchemy.orm.attributes import flag_modified
+    flag_modified(contest, "group_views")
     db.commit()
     db.refresh(participation)
     return participation
@@ -254,6 +256,8 @@ def deregister_contest_participation(
     if contest and contest.group_views and group_id in contest.group_views:
         if contest.group_views[group_id]['total_participants'] > 0:
             contest.group_views[group_id]['total_participants'] -= 1
+        from sqlalchemy.orm.attributes import flag_modified
+        flag_modified(contest, "group_views")
     
     # Delete the participation
     db.delete(participation)
@@ -959,6 +963,41 @@ def get_group_custom_membership_data_paginated(
     return result_data
 
 # ───────────── extension queries ───────────────
+
+def count_group_memberships(db, group_id: str) -> int:
+    """
+    Count all GroupMemberships for a group (no status/user filtering).
+    """
+    return db.query(models.GroupMembership).filter(models.GroupMembership.group_id == group_id).count()
+
+
+def get_group_memberships_paginated(
+    db,
+    group_id: str,
+    sort_by: schemas.GroupMemberSortByField,
+    sort_order: schemas.SortOrder,
+    offset: int,
+    limit: int
+):
+    """
+    Get paginated and sorted GroupMemberships for a group (no status/user filtering).
+    """
+    sort_column_map = {
+        schemas.GroupMemberSortByField.CF_HANDLE: models.GroupMembership.cf_handle,
+        schemas.GroupMemberSortByField.ROLE: models.GroupMembership.role,
+        schemas.GroupMemberSortByField.USER_GROUP_RATING: models.GroupMembership.user_group_rating,
+        schemas.GroupMemberSortByField.USER_GROUP_MAX_RATING: models.GroupMembership.user_group_max_rating,
+        schemas.GroupMemberSortByField.DATE_JOINED: models.GroupMembership.timestamp,
+    }
+    sort_expression = sort_column_map[sort_by]
+    query = db.query(models.GroupMembership).filter(models.GroupMembership.group_id == group_id)
+    if sort_order == schemas.SortOrder.DESC:
+        query = query.order_by(desc(sort_expression))
+    else:
+        query = query.order_by(asc(sort_expression))
+    memberships = query.offset(offset).limit(limit).all()
+    return memberships
+
 
 def get_ratings_by_cf_handles(db: Session, group_id: str, cf_handles: List[str]) -> List[Optional[int]]:
     """
