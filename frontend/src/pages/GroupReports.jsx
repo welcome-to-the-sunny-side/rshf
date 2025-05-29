@@ -10,6 +10,7 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import styles from './GroupReports.module.css';
 import titleStyles from '../components/ContentBoxWithTitle.module.css';
+import formInputStyles from '../components/FormInput.module.css';
 
 export default function GroupReports() {
   const { groupId } = useParams();
@@ -467,7 +468,7 @@ return (
                   value={respondent}
                   onChange={(e) => setRespondent(e.target.value)}
                   disabled={submitLoading}
-                  style={{ flex: '1', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+                  className={formInputStyles.formInput}
                 />
               </div>
             </div>
@@ -483,7 +484,8 @@ return (
                   value={contestIds}
                   onChange={(e) => setContestIds(e.target.value)}
                   disabled={submitLoading}
-                  style={{ flex: '1', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+                  className={formInputStyles.formInput}
+                  placeholder="e.g. 1234,5678 (optional)"
                 />
               </div>
             </div>
@@ -499,7 +501,7 @@ return (
                   onChange={(e) => setReportText(e.target.value)}
                   disabled={submitLoading}
                   maxLength={500}
-                  style={{ flex: '1', padding: '8px', borderRadius: '4px', border: '1px solid #ccc', minHeight: '100px', resize: 'vertical' }}
+                  className={formInputStyles.formTextarea}
                 />
               </div>
             </div>

@@ -5,6 +5,7 @@ import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 
 import styles from './User.module.css';
+import { DropdownMenu } from '../components';
 import RatingGraph from '../components/RatingGraph';
 import UserNavBar from '../components/UserNavBar';
 import { API_MESSAGES } from '../constants/apiMessages';
@@ -426,16 +427,16 @@ export default function User() {
               {/* Group dropdown moved to top of right box */}
               <div className={`${styles.groupRatingRow}`} style={{ marginBottom: '15px' }}>
                 <h3 className="standardTextFont" style={{ margin: 0, marginRight: '10px' }}>Group: </h3>
-                <select 
-                  className={`${styles.groupDropdown} standardTextFont`} 
-                  value={selectedGroupIdx} 
-                  onChange={handleGroupChange}
-                  disabled={groups.length === 0}
-                >
-                  {groups.map((group, idx) => (
-                    <option key={group[0] + idx} value={idx}>{group[0]}</option>
-                  ))}
-                </select>
+                <DropdownMenu
+  value={selectedGroupIdx}
+  onChange={handleGroupChange}
+  disabled={groups.length === 0}
+  className="standardTextFont"
+>
+  {groups.map((group, idx) => (
+    <option key={group[0] + idx} value={idx}>{group[0]}</option>
+  ))}
+</DropdownMenu>
               </div>
               
               {/* Group information with the same styling as the left box */}

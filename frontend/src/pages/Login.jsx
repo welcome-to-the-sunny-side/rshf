@@ -3,7 +3,8 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ContentBoxWithTitle from '../components/ContentBoxWithTitle';
 import styles from './Login.module.css'; // Import the new CSS module
-import waifuImage from '../assets/rshf_waifu.png'; // Import the waifu image
+import waifuImage from '../assets/rshf_waifu_login_pose.webp'; // Import the waifu image
+import formInputStyles from '../components/FormInput.module.css';
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -52,7 +53,7 @@ export default function Login() {
             <input
               type="text"
               id="username"
-              className={`${styles.formInput} standardTextFont`}
+              className={formInputStyles.formInput}
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
@@ -68,7 +69,7 @@ export default function Login() {
             <input
               type="password"
               id="password"
-              className={`${styles.formInput} standardTextFont`}
+              className={formInputStyles.formInput}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required

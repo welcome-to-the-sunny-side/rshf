@@ -6,7 +6,7 @@
 .titleBox {
   border: 1px solid rgb(185, 185, 185);
   border-radius: 6px;
-  padding: 0.5rem 1rem;
+  padding: 0.3rem 1rem;
   margin-bottom: -1px; /* Connect with the content box */
   display: inline-block;
   font-size: 0.95rem;

@@ -1,0 +1,32 @@
+/* Shared form input styles for consistent UX */
+.formInput {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 100%;
+  font-size: 0.8rem;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.formTextarea {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 100%;
+  font-size: 1rem;
+  font-family: inherit;
+  min-height: 100px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.formSelect {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 100%;
+  font-size: 1rem;
+  font-family: inherit;
+  box-sizing: border-box;
+}

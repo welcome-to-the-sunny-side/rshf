@@ -6,7 +6,7 @@ import UserNavBar from '../components/UserNavBar';
 import ContentBoxWithTitle from '../components/ContentBoxWithTitle';
 
 // Import styles if needed
-import styles from './UserSettings.module.css';
+import formInputStyles from '../components/FormInput.module.css';
 
 export default function UserSettings() {
   const navigate = useNavigate();
@@ -106,13 +106,7 @@ export default function UserSettings() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="standardTextFont"
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  borderRadius: '4px',
-                  border: '1px solid #ccc'
-                }}
+                className={formInputStyles.formInput}
               />
               <button
                 onClick={handleEmailUpdate}
@@ -135,13 +129,7 @@ export default function UserSettings() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter new password"
-                className="standardTextFont"
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  borderRadius: '4px',
-                  border: '1px solid #ccc'
-                }}
+                className={formInputStyles.formInput}
               />
               <button
                 onClick={handlePasswordUpdate}
@@ -163,13 +151,7 @@ export default function UserSettings() {
                 type="text"
                 value={codeforcesHandle}
                 onChange={(e) => setCodeforcesHandle(e.target.value)}
-                className="standardTextFont"
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  borderRadius: '4px',
-                  border: '1px solid #ccc'
-                }}
+                className={formInputStyles.formInput}
               />
               <button
                 onClick={handleCodeforcesUpdate}

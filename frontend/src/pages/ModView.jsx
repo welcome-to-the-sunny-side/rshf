@@ -3,6 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import GroupNavBar from '../components/GroupNavBar';
 import ContentBoxWithTitle from '../components/ContentBoxWithTitle';
 import styles from './Group.module.css';
+import formInputStyles from '../components/FormInput.module.css';
+import { DropdownMenu } from '../components';
 
 export default function ModView() {
   const { groupId } = useParams();
@@ -131,7 +133,7 @@ export default function ModView() {
       
       {/* General Settings box */}
       <ContentBoxWithTitle title="General Settings" backgroundColor="rgb(230, 240, 255)">
-        <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto', padding: '15px' }}>
+        <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto', padding: '5px' }}>
           {/* Group Description */}
           <div style={{ marginBottom: '20px' }}>
             <label htmlFor="group-description" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
@@ -166,20 +168,15 @@ export default function ModView() {
               Group Type:
             </label>
             <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-              <select
+              <DropdownMenu
                 id="group-type"
                 value={groupType}
                 onChange={(e) => setGroupType(e.target.value)}
-                style={{
-                  flex: '1',
-                  padding: '8px',
-                  borderRadius: '4px',
-                  border: '1px solid #ccc'
-                }}
+                className="standardTextFont"
               >
                 <option value="anyone can join">Anyone Can Join</option>
                 <option value="restricted membership">Restricted Membership</option>
-              </select>
+              </DropdownMenu>
               <button
                 onClick={handleGroupTypeUpdate}
                 className="global-button green"
@@ -193,7 +190,7 @@ export default function ModView() {
       
       {/* Create Announcement box */}
       <ContentBoxWithTitle title="Create Announcement" backgroundColor="rgb(240, 240, 255)">
-        <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto', padding: '15px' }}>
+        <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto', padding: '5px' }}>
           <div style={{ marginBottom: '15px' }}>
             <label htmlFor="announcement-title" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
               Announcement Title:
@@ -249,7 +246,7 @@ export default function ModView() {
             style={{ 
               border: 'none', 
               boxShadow: 'none', 
-              padding: '15px',
+              padding: '5px',
               height: boxHeight ? `${boxHeight}px` : 'auto',
               display: 'flex',
               flexDirection: 'column',
@@ -278,7 +275,7 @@ export default function ModView() {
             style={{ 
               border: 'none', 
               boxShadow: 'none', 
-              padding: '15px',
+              padding: '5px',
               height: boxHeight ? `${boxHeight}px` : 'auto',
               display: 'flex',
               flexDirection: 'column'
@@ -294,12 +291,7 @@ export default function ModView() {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    borderRadius: '4px',
-                    border: '1px solid #ccc'
-                  }}
+                  className={formInputStyles.formInput}
                 />
               </div>
               
@@ -307,21 +299,15 @@ export default function ModView() {
                 <label htmlFor="new-status" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
                   New Status:
                 </label>
-                <select
-                  id="new-status"
-                  value={newStatus}
-                  onChange={(e) => setNewStatus(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    borderRadius: '4px',
-                    border: '1px solid #ccc'
-                  }}
-                >
-                  <option value="Moderator">Moderator</option>
-                  <option value="Member">Member</option>
-                  <option value="Outsider">Outsider</option>
-                </select>
+                <DropdownMenu
+  id="new-status"
+  value={newStatus}
+  onChange={(e) => setNewStatus(e.target.value)}
+>
+  <option value="Moderator">Moderator</option>
+  <option value="Member">Member</option>
+  <option value="Outsider">Outsider</option>
+</DropdownMenu>
               </div>
             </div>
             
@@ -344,7 +330,7 @@ export default function ModView() {
             style={{ 
               border: 'none', 
               boxShadow: 'none', 
-              padding: '15px',
+              padding: '5px',
               height: boxHeight ? `${boxHeight}px` : 'auto',
               display: 'flex',
               flexDirection: 'column'
@@ -360,12 +346,7 @@ export default function ModView() {
                   type="text"
                   value={contestId}
                   onChange={(e) => setContestId(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    borderRadius: '4px',
-                    border: '1px solid #ccc'
-                  }}
+                  className={formInputStyles.formInput}
                   placeholder="Enter Contest ID"
                 />
               </div>

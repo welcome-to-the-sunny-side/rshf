@@ -80,7 +80,7 @@
   display: flex;
   align-items: flex-start; /* Align to top instead of center */
   justify-content: center;
-  padding-left: 0.3rem; /* Space between waifu and form */
+  padding-left: 0.1rem; /* Space between waifu and form */
   padding-right: 100px;
   padding-top: 1px; /* Position form higher up to align with pointing */
 }
