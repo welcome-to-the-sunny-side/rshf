@@ -18,7 +18,6 @@ import ModView from './pages/ModView';
 import GroupModViewRequests from './pages/GroupModViewRequests';
 import About from './pages/About';
 import Contests from './pages/Contests';
-import Contact from './pages/Contact';
 import Post from './pages/Post';
 import ContestPage from './pages/ContestPage';
 import GroupContestPage from './pages/GroupContestPage';
