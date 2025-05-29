@@ -40,9 +40,8 @@ def create_user(db: Session, payload: schemas.UserRegister) -> models.User:
     db_user = models.User(
         user_id=payload.user_id,
         cf_handle=payload.cf_handle,
+        email_id=payload.email_id,
         hashed_password=hash_password(payload.password),
-        internal_default_rated=payload.internal_default_rated,
-        trusted_score=payload.trusted_score,
         role=payload.role,
     )
     db.add(db_user)
@@ -76,10 +75,6 @@ def update_user(db: Session, user_id: str, payload: schemas.UserUpdate) -> Optio
         user.cf_handle = payload.cf_handle
     if payload.password is not None:
         user.hashed_password = hash_password(payload.password)
-    if payload.internal_default_rated is not None:
-        user.internal_default_rated = payload.internal_default_rated
-    if payload.trusted_score is not None:
-        user.trusted_score = payload.trusted_score
 
     db.commit()
     db.refresh(user)
@@ -316,10 +311,6 @@ def get_contest_participations_range_fetch(
         joinedload(models.ContestParticipation.user),
         joinedload(models.ContestParticipation.contest) # Eager load contest for potential display
     )
-
-    # No longer explicitly joining with User table for sorting by cf_handle,
-    # as ContestParticipation now has its own cf_handle field.
-    # The joinedload(models.ContestParticipation.user) handles fetching user data if needed for the output.
 
     # Apply filters
     if gid is not None:
@@ -628,7 +619,6 @@ def create_report(db: Session, payload: schemas.ReportCreate) -> models.Report:
     respondent_cf_handle = respondent_membership.cf_handle
     
     # Get reporter and respondent roles
-    reporter_role_before = reporter_membership.role
     respondent_role_before = respondent_membership.role
 
     rpt = models.Report(
@@ -637,14 +627,14 @@ def create_report(db: Session, payload: schemas.ReportCreate) -> models.Report:
         respondent_rating_at_report_time=respondent_rating_at_report_time,
         reporter_cf_handle=reporter_cf_handle,
         respondent_cf_handle=respondent_cf_handle,
-        reporter_role_before=reporter_role_before,
-        reporter_role_after=reporter_role_after,
         respondent_role_before=respondent_role_before,
-        respondent_role_after=respondent_role_after,
+        respondent_role_after=respondent_role_before,
+        accepted=payload.accepted,
         **payload.model_dump(exclude={
             'reporter_cf_handle', 'respondent_cf_handle',
-            'reporter_role_before', 'reporter_role_after',
-            'respondent_role_before', 'respondent_role_after'
+            '', '',
+            'respondent_role_before', 'respondent_role_after',
+            'accepted'
         }) # Exclude from payload as we are setting them directly
     )
     db.add(rpt)
@@ -652,16 +642,17 @@ def create_report(db: Session, payload: schemas.ReportCreate) -> models.Report:
     db.refresh(rpt)
     return rpt
 
-
 def list_reports(
     db: Session,
     report_id: Optional[str] = None,
     group_id: Optional[str] = None,
     contest_id: Optional[str] = None,
-    reporter_user_id: Optional[str] = None,
-    respondent_user_id: Optional[str] = None,
+    reporter_cf_handle: Optional[str] = None,
+    respondent_cf_handle: Optional[str] = None,
+    respondent_role_after: Optional[models.Role] = None,
     resolved: Optional[bool] = None,
-    resolved_by: Optional[str] = None,
+    resolver_cf_handle: Optional[str] = None,
+    accepted: Optional[bool] = None,
 ) -> List[models.Report]:
     q = db.query(models.Report)
     
@@ -671,15 +662,18 @@ def list_reports(
         q = q.filter(models.Report.group_id == group_id)
     if contest_id:
         q = q.filter(models.Report.contest_id == contest_id)
-    if reporter_user_id:
-        q = q.filter(models.Report.reporter_user_id == reporter_user_id)
-    if respondent_user_id:
-        q = q.filter(models.Report.respondent_user_id == respondent_user_id)
+    if reporter_cf_handle:
+        q = q.filter(models.Report.reporter_cf_handle == reporter_cf_handle)
+    if respondent_cf_handle:
+        q = q.filter(models.Report.respondent_cf_handle == respondent_cf_handle)
+    if respondent_role_after is not None:
+        q = q.filter(models.Report.respondent_role_after == respondent_role_after)
     if resolved is not None:
         q = q.filter(models.Report.resolved.is_(resolved))
-    if resolved_by:
-        q = q.filter(models.Report.resolved_by == resolved_by)
-        
+    if resolver_cf_handle:
+        q = q.filter(models.Report.resolver_cf_handle == resolver_cf_handle)
+    if accepted is not None:
+        q = q.filter(models.Report.accepted.is_(accepted))
     return q.all()
 
 
@@ -688,10 +682,12 @@ def count_reports(
     report_id: Optional[str] = None,
     group_id: Optional[str] = None,
     contest_id: Optional[str] = None,
-    reporter_user_id: Optional[str] = None,
-    respondent_user_id: Optional[str] = None,
+    reporter_cf_handle: Optional[str] = None,
+    respondent_cf_handle: Optional[str] = None,
+    respondent_role_after: Optional[models.Role] = None,
     resolved: Optional[bool] = None,
-    resolved_by: Optional[str] = None,
+    resolver_cf_handle: Optional[str] = None,
+    accepted: Optional[bool] = None,
 ) -> int:
     q = db.query(models.Report)
     
@@ -701,15 +697,18 @@ def count_reports(
         q = q.filter(models.Report.group_id == group_id)
     if contest_id:
         q = q.filter(models.Report.contest_id == contest_id)
-    if reporter_user_id:
-        q = q.filter(models.Report.reporter_user_id == reporter_user_id)
-    if respondent_user_id:
-        q = q.filter(models.Report.respondent_user_id == respondent_user_id)
+    if reporter_cf_handle:
+        q = q.filter(models.Report.reporter_cf_handle == reporter_cf_handle)
+    if respondent_cf_handle:
+        q = q.filter(models.Report.respondent_cf_handle == respondent_cf_handle)
+    if respondent_role_after is not None:
+        q = q.filter(models.Report.respondent_role_after == respondent_role_after)
     if resolved is not None:
         q = q.filter(models.Report.resolved.is_(resolved))
-    if resolved_by:
-        q = q.filter(models.Report.resolved_by == resolved_by)
-        
+    if resolver_cf_handle:
+        q = q.filter(models.Report.resolver_cf_handle == resolver_cf_handle)
+    if accepted is not None:
+        q = q.filter(models.Report.accepted.is_(accepted))
     return q.count()
 
 
@@ -719,7 +718,7 @@ def resolve_report(db: Session, payload: schemas.ReportResolve) -> Optional[mode
         return None
 
     resolver_membership = db.query(models.GroupMembership).filter(
-        models.GroupMembership.user_id == payload.resolved_by,
+        models.GroupMembership.user_id == payload.resolver_user_id,
         models.GroupMembership.group_id == rpt.group_id,
     ).first()
     resolver_rating_at_resolve_time = resolver_membership.user_group_rating
@@ -737,15 +736,14 @@ def resolve_report(db: Session, payload: schemas.ReportResolve) -> Optional[mode
     ).first()
     
     # Update the 'after' roles to reflect current roles at resolution time
-    if reporter_membership:
-        rpt.reporter_role_after = reporter_membership.role
     
     if respondent_membership:
         rpt.respondent_role_after = respondent_membership.role
 
     rpt.resolved = True
     rpt.resolver_cf_handle = resolver_cf_handle
-    rpt.resolved_by = payload.resolved_by
+    rpt.resolver_user_id = payload.resolver_user_id
+    rpt.resolver_cf_handle = resolver_cf_handle
     rpt.resolve_message = payload.resolve_message
     rpt.resolver_rating_at_resolve_time = resolver_rating_at_resolve_time
     rpt.resolve_timestamp = datetime.utcnow() # type: ignore
@@ -760,8 +758,10 @@ def get_reports_range_fetch(
     contest_id: Optional[str] = None,
     reporter_cf_handle: Optional[str] = None,
     respondent_cf_handle: Optional[str] = None,
+    respondent_role_after: Optional[models.Role] = None,
     resolved: Optional[bool] = None,
     resolver_cf_handle: Optional[str] = None,
+    accepted: Optional[bool] = None,
     sort_by: Optional[schemas.ReportSortByField] = schemas.ReportSortByField.REPORT_DATE,
     sort_order: Optional[schemas.SortOrder] = schemas.SortOrder.DESC,
     skip: int = 0,
@@ -781,10 +781,14 @@ def get_reports_range_fetch(
         query = query.filter(models.Report.reporter_cf_handle == reporter_cf_handle)
     if respondent_cf_handle:
         query = query.filter(models.Report.respondent_cf_handle == respondent_cf_handle)
+    if respondent_role_after is not None:
+        query = query.filter(models.Report.respondent_role_after == respondent_role_after)
     if resolved is not None:
         query = query.filter(models.Report.resolved == resolved)
     if resolver_cf_handle:
         query = query.filter(models.Report.resolver_cf_handle == resolver_cf_handle)
+    if accepted is not None:
+        query = query.filter(models.Report.accepted.is_(accepted))
 
     # Get total count before pagination for the filtered query
     total = query.count()
@@ -798,6 +802,7 @@ def get_reports_range_fetch(
         schemas.ReportSortByField.REPORT_DATE: models.Report.timestamp,
         schemas.ReportSortByField.RESOLVER_CF_HANDLE: models.Report.resolver_cf_handle,
         schemas.ReportSortByField.RESOLVE_DATE: models.Report.resolve_time_stamp,
+        schemas.ReportSortByField.ACCEPTED: models.Report.accepted,
     }
 
     sort_expression = sort_column_map.get(sort_by, models.Report.timestamp)
@@ -924,7 +929,6 @@ def get_group_custom_membership_data_paginated(
     """
     Get paginated and sorted custom membership data for a group.
     """
-    
     query = (
         db.query(models.GroupMembership, models.User)
         .join(models.User, models.GroupMembership.user_id == models.User.user_id)

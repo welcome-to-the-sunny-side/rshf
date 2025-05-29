@@ -91,9 +91,55 @@ def ensure_group_mod(db: Session, uid: str, gid: str):
 # ---------- user endpoints ----------
 @router.post("/user/register", response_model=schemas.UserOut)
 def register_user(payload: schemas.UserRegister, db: Session = Depends(get_db)):
-    if crud.get_user(db, payload.user_id):
-        raise HTTPException(400, "user already exists")
-    return crud.create_user(db, payload)
+    # Set user_id = cf_handle
+    cf_handle = payload.cf_handle.strip()
+    user_id = cf_handle
+
+    # Check if user with this cf_handle already exists (as user_id or cf_handle)
+    if crud.get_user(db, user_id) or crud.get_user_by_handle(db, cf_handle):
+        raise HTTPException(400, "A user with this Codeforces handle already exists.")
+
+    # Fetch recent submissions from Codeforces API
+    import requests
+    try:
+        resp = requests.get(
+            f"https://codeforces.com/api/user.status?handle={cf_handle}&from=1&count=10"
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        if data['status'] != 'OK':
+            raise Exception("CF API error")
+        submissions = data['result']
+    except Exception as e:
+        raise HTTPException(502, f"Failed to fetch submissions from Codeforces: {str(e)}")
+
+    # Only check the latest submission
+    if not submissions:
+        raise HTTPException(400, "No submissions found for this user.")
+    latest = submissions[0]
+    prob = latest.get('problem', {})
+    if str(prob.get('contestId')) != '1188' or prob.get('index') != 'B':
+        raise HTTPException(400, "Your latest submission is not to problem 1188/B.")
+    if latest.get('verdict') != 'COMPILATION_ERROR':
+        raise HTTPException(400, "Your latest submission to 1188/B is not a COMPILATION_ERROR.")
+    # Check time (must be <5 minutes ago)
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc).timestamp()
+    sub_time = latest.get('creationTimeSeconds')
+    if sub_time is None:
+        raise HTTPException(400, "Could not determine submission time.")
+    if now - sub_time > 5 * 60:
+        raise HTTPException(400, "Your latest submission to 1188/B is older than 5 minutes.")
+
+    # All checks passed, create user
+    user_payload = schemas.UserRegister(
+        user_id=user_id,
+        cf_handle=cf_handle,
+        email_id=payload.email_id,
+        password=payload.password,
+        role=payload.role
+    )
+    return crud.create_user(db, user_payload)
 
 @router.post("/user/login", response_model=schemas.TokenOut)
 def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
@@ -389,10 +435,12 @@ def get_reports(
     report_id: Optional[str] = Query(None, description="Filter by report ID"),
     group_id: Optional[str] = Query(None, description="Filter by group ID"),
     contest_id: Optional[str] = Query(None, description="Filter by contest ID"),
-    reporter_user_id: Optional[str] = Query(None, description="Filter by reporter user ID"),
-    respondent_user_id: Optional[str] = Query(None, description="Filter by respondent user ID"),
+    reporter_cf_handle: Optional[str] = Query(None, description="Filter by reporter's CF handle"),
+    respondent_cf_handle: Optional[str] = Query(None, description="Filter by respondent's CF handle"),
+    respondent_role_after: Optional[schemas.Role] = Query(None, description="Filter by respondent role after resolution"),
     resolved: Optional[bool] = Query(None, description="Filter by resolved status"),
-    resolved_by: Optional[str] = Query(None, description="Filter by resolver user ID"),
+    resolver_cf_handle: Optional[str] = Query(None, description="Filter by resolver user ID"),
+    accepted: Optional[bool] = Query(None, description="Filter by accepted status"),
     db: Session = Depends(get_db),
     current: models.User = Depends(get_current_user),
 ):
@@ -412,10 +460,12 @@ def get_reports(
         report_id=report_id,
         group_id=group_id,
         contest_id=contest_id,
-        reporter_user_id=reporter_user_id,
-        respondent_user_id=respondent_user_id,
+        reporter_cf_handle=reporter_cf_handle,
+        respondent_cf_handle=respondent_cf_handle,
+        respondent_role_after=respondent_role_after,
         resolved=resolved,
-        resolved_by=resolved_by,
+        resolver_cf_handle=resolver_cf_handle,
+        accepted=accepted,
     )
     
     return reports
@@ -426,15 +476,27 @@ def get_report_size(
     report_id: Optional[str] = Query(None, description="Filter by report ID"),
     group_id: Optional[str] = Query(None, description="Filter by group ID"),
     contest_id: Optional[str] = Query(None, description="Filter by contest ID"),
-    reporter_user_id: Optional[str] = Query(None, description="Filter by reporter user ID"),
-    respondent_user_id: Optional[str] = Query(None, description="Filter by respondent user ID"),
+    reporter_cf_handle: Optional[str] = Query(None, description="Filter by reporter's CF handle"),
+    respondent_cf_handle: Optional[str] = Query(None, description="Filter by respondent's CF handle"),
+    respondent_role_after: Optional[schemas.Role] = Query(None, description="Filter by respondent role after resolution"),
     resolved: Optional[bool] = Query(None, description="Filter by resolved status"),
-    resolved_by: Optional[str] = Query(None, description="Filter by user ID of resolver"),
+    resolver_cf_handle: Optional[str] = Query(None, description="Filter by resolver's CF handle"),
+    accepted: Optional[bool] = Query(None, description="Filter by accepted status"),
     db: Session = Depends(database.get_db),
-    # current_user: models.User = Depends(get_current_user), # Add if auth is needed
 ) -> schemas.CountResponse:
     """
-    Get the count of reports based on optional filters.
+    Get the count of reports with optional filters.
+    
+    All filter parameters are optional. If none are provided, all reports will be counted.
+    Filters:
+    - report_id: Filter by report ID
+    - group_id: Filter by group ID
+    - contest_id: Filter by contest ID
+    - reporter_cf_handle: Filter by reporter's CF handle
+    - respondent_cf_handle: Filter by respondent's CF handle
+    - resolved: Filter by resolved status
+    - resolver_cf_handle: Filter by resolver's CF handle
+    - accepted: Filter by accepted status
     """
     # No specific privilege check for just getting a count, 
     # as no sensitive data is returned.
@@ -446,10 +508,12 @@ def get_report_size(
         report_id=report_id,
         group_id=group_id,
         contest_id=contest_id,
-        reporter_user_id=reporter_user_id,
-        respondent_user_id=respondent_user_id,
+        reporter_cf_handle=reporter_cf_handle,
+        respondent_cf_handle=respondent_cf_handle,
+        respondent_role_after=respondent_role_after,
         resolved=resolved,
-        resolved_by=resolved_by,
+        resolver_cf_handle=resolver_cf_handle,
+        accepted=accepted,
     )
     return schemas.CountResponse(count=count)
 
@@ -475,10 +539,12 @@ def get_reports_range_fetch_endpoint(
     contest_id: Optional[str] = Query(None, description="Filter by contest ID"),
     reporter_cf_handle: Optional[str] = Query(None, description="Filter by reporter's CF handle"),
     respondent_cf_handle: Optional[str] = Query(None, description="Filter by respondent's CF handle"),
+    respondent_role_after: Optional[schemas.Role] = Query(None, description="Filter by respondent role after resolution"),
     resolved: Optional[bool] = Query(None, description="Filter by resolved status"),
     resolver_cf_handle: Optional[str] = Query(None, description="Filter by resolver's CF handle"),
-    sort_by: Optional[schemas.ReportSortByField] = Query(schemas.ReportSortByField.REPORT_DATE, description="Field to sort by"),
-    sort_order: Optional[schemas.SortOrder] = Query(schemas.SortOrder.DESC, description="Sort order (asc or desc)"),
+    accepted: Optional[bool] = Query(None, description="Filter by accepted status"),
+    sort_by: Optional[schemas.ReportSortByField] = Query(schemas.ReportSortByField.REPORT_DATE, description="Field to sort by (including 'accepted')"),
+    sort_order: Optional[schemas.SortOrder] = Query(schemas.SortOrder.DESC, description="Sort order"),
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(25, ge=1, le=100, description="Maximum number of records to return (max 100)"),
 ):
@@ -510,8 +576,10 @@ def get_reports_range_fetch_endpoint(
         contest_id=contest_id,
         reporter_cf_handle=reporter_cf_handle,
         respondent_cf_handle=respondent_cf_handle,
+        respondent_role_after=respondent_role_after,
         resolved=resolved,
         resolver_cf_handle=resolver_cf_handle,
+        accepted=accepted,
         sort_by=sort_by,
         sort_order=sort_order,
         skip=skip,

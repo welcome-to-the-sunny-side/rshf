@@ -9,6 +9,7 @@ import ContentBoxWithTitle from '../components/ContentBoxWithTitle';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import styles from './GroupReports.module.css';
+import titleStyles from '../components/ContentBoxWithTitle.module.css';
 
 export default function GroupReports() {
   const { groupId } = useParams();
@@ -366,7 +367,7 @@ const activeTableColumns = [
     label: 'Action',
     sortable: false,
     render: (report) => (
-      <Link to={`/report/${report.report_id}`} className="global-button blue small">
+      <Link to={`/group/${groupId}/report/${report.report_id}`} className="global-button blue small">
         View
       </Link>
     ),
@@ -392,11 +393,26 @@ const processedTableColumns = [
     render: (report) => report.resolve_time_stamp ? formatDate(report.resolve_time_stamp) : 'N/A',
   },
   {
+    key: 'result',
+    label: 'Result',
+    sortable: false,
+    className: styles.resultColumn,
+    render: (report) => {
+  if (report.accepted === true) {
+    return <span style={{ color: 'green', fontWeight: 'bold' }}>Accepted</span>;
+  } else if (report.accepted === false) {
+    return <span style={{ color: 'red', fontWeight: 'bold' }}>Rejected</span>;
+  } else {
+    return <span style={{ color: '#888' }}>-</span>;
+  }
+},
+  },
+  {
     key: 'action_view_report_processed',
     label: 'Action',
     sortable: false,
     render: (report) => (
-      <Link to={`/report/${report.report_id}`} className="global-button blue small">
+      <Link to={`/group/${groupId}/report/${report.report_id}`} className="global-button blue small">
         View
       </Link>
     ),
@@ -426,65 +442,80 @@ return (
     {isLoggedInUserMember && (
       <ContentBoxWithTitle title="Create New Report" className={styles.formWrapper}>
         <div style={{ padding: '20px' }}>
+          {/* Feedback messages */}
           {submitSuccess && (
-            <div className="api-feedback-container success-message" style={{ marginBottom: '15px' }}>
-              Report created successfully!
+            <div className="api-feedback-container api-success" style={{ marginBottom: '15px' }}>
+              Report submitted successfully!
             </div>
           )}
           {submitError && (
-            <div className="api-feedback-container error-message" style={{ marginBottom: '15px' }}>
+            <div className="api-feedback-container api-error" style={{ marginBottom: '15px' }}>
               {submitError}
             </div>
           )}
-          <div style={{ marginBottom: '15px' }}>
-            <label htmlFor="respondent" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
-              Respondent:
-            </label>
-            <input
-              id="respondent"
-              type="text"
-              value={respondent}
-              onChange={(e) => setRespondent(e.target.value)}
-              disabled={submitLoading}
-              style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
-            />
+          {/* Form fields */}
+          <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto', padding: '0' }}>
+            {/* Respondent Username */}
+            <div style={{ marginBottom: '20px' }}>
+              <label htmlFor="respondent" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                Respondent Username:
+              </label>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                <input
+                  id="respondent"
+                  type="text"
+                  value={respondent}
+                  onChange={(e) => setRespondent(e.target.value)}
+                  disabled={submitLoading}
+                  style={{ flex: '1', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+                />
+              </div>
+            </div>
+            {/* Contest ID */}
+            <div style={{ marginBottom: '20px' }}>
+              <label htmlFor="contest-ids" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                Contest ID:
+              </label>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                <input
+                  id="contest-ids"
+                  type="text"
+                  value={contestIds}
+                  onChange={(e) => setContestIds(e.target.value)}
+                  disabled={submitLoading}
+                  style={{ flex: '1', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+                />
+              </div>
+            </div>
+            {/* Report Text */}
+            <div style={{ marginBottom: '20px' }}>
+              <label htmlFor="report-text" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                Report (Max 500 characters):
+              </label>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                <textarea
+                  id="report-text"
+                  value={reportText}
+                  onChange={(e) => setReportText(e.target.value)}
+                  disabled={submitLoading}
+                  maxLength={500}
+                  style={{ flex: '1', padding: '8px', borderRadius: '4px', border: '1px solid #ccc', minHeight: '100px', resize: 'vertical' }}
+                />
+              </div>
+            </div>
+            {/* Submit Button */}
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+              <button onClick={handleCreateReport} disabled={submitLoading} className="global-button blue">
+                {submitLoading ? 'Creating...' : 'Create Report'}
+              </button>
+            </div>
           </div>
-          <div style={{ marginBottom: '15px' }}>
-            <label htmlFor="contest-ids" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
-              Contest ID:
-            </label>
-            <input
-              id="contest-ids"
-              type="text"
-              value={contestIds}
-              onChange={(e) => setContestIds(e.target.value)}
-              disabled={submitLoading}
-              style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
-            />
-          </div>
-          <div style={{ marginBottom: '20px' }}>
-            <label htmlFor="report-text" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
-              Report (Max 500 characters):
-            </label>
-            <textarea
-              id="report-text"
-              value={reportText}
-              onChange={(e) => setReportText(e.target.value)}
-              disabled={submitLoading}
-              maxLength={500}
-              style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc', minHeight: '100px', resize: 'vertical' }}
-            />
-          </div>
-          <button onClick={handleCreateReport} disabled={submitLoading} className="global-button blue">
-            {submitLoading ? 'Creating...' : 'Create Report'}
-          </button>
         </div>
       </ContentBoxWithTitle>
     )}
 
     <div className={styles.reportsTableWrapper}>
       {/* Active Reports Table */}
-      <h2 className={styles.tableTitle}>Active Reports</h2>
       {activeLoading && activeReports.length === 0 && (
         <div className="api-feedback-container loading-message">{API_MESSAGES.LOADING}</div>
       )}
@@ -496,6 +527,7 @@ return (
       )}
       {(activeReports.length > 0 || activeTotal > 0) && !activeError && (
         <LazyLoadingSortablePagedTableBox
+          title={<span className={titleStyles.titleText}>Active Reports</span>}
           columns={activeTableColumns}
           items={activeReports}
           totalItems={activeTotal}
@@ -513,7 +545,6 @@ return (
       )}
 
       {/* Processed Reports Table */}
-      <h2 className={styles.tableTitle} style={{ marginTop: '30px' }}>Processed Reports</h2>
       {processedLoading && processedReports.length === 0 && (
         <div className="api-feedback-container loading-message">{API_MESSAGES.LOADING}</div>
       )}
@@ -525,6 +556,7 @@ return (
       )}
       {(processedReports.length > 0 || processedTotal > 0) && !processedError && (
         <LazyLoadingSortablePagedTableBox
+          title={<span className={titleStyles.titleText}>Processed Reports</span>}
           columns={processedTableColumns}
           items={processedReports}
           totalItems={processedTotal}

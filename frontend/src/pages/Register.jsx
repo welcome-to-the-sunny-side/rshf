@@ -8,6 +8,7 @@ export default function Register() {
   const [formData, setFormData] = useState({
     user_id: '',
     cf_handle: '',
+    email_id: '',
     password: '',
     confirmPassword: ''
   });
@@ -26,12 +27,14 @@ export default function Register() {
   const validateForm = () => {
     const errors = {};
     
-    if (!formData.user_id.trim()) {
-      errors.user_id = 'Username is required';
-    }
-    
     if (!formData.cf_handle.trim()) {
       errors.cf_handle = 'Codeforces handle is required';
+    }
+    
+    if (!formData.email_id.trim()) {
+      errors.email_id = 'Email address is required';
+    } else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(formData.email_id)) {
+      errors.email_id = 'Invalid email address';
     }
     
     if (!formData.password) {
@@ -55,9 +58,11 @@ export default function Register() {
       return;
     }
     
+    // Set user_id to cf_handle
     const userData = {
-      user_id: formData.user_id,
+      user_id: formData.cf_handle,
       cf_handle: formData.cf_handle,
+      email_id: formData.email_id,
       password: formData.password
     };
     
@@ -86,21 +91,11 @@ export default function Register() {
         >
           {error && <div className={styles.errorMessage}>{error}</div>}
           <form onSubmit={handleSubmit}>
-          <div className={styles.formGroup}>
-            <label htmlFor="user_id" className={`${styles.formLabel} standardTextFont`}>Username</label>
-            <input
-              type="text"
-              id="user_id"
-              name="user_id"
-              value={formData.user_id}
-              onChange={handleChange}
-              placeholder="Choose a username"
-              disabled={loading}
-              className={`${styles.formInput} standardTextFont`}
-            />
-            {formErrors.user_id && <div className={styles.fieldError}>{formErrors.user_id}</div>}
+
+          <div className={`${styles.infoNote} standardTextFont`} style={{marginBottom: '1rem', background: '#e6f7ff', border: '1px solid #91d5ff', padding: '0.75rem', borderRadius: '6px', color: '#005480'}}>
+            <strong>Important:</strong> Before registering, please submit a solution that results in a <b>COMPILATION ERROR</b> to <a href="https://codeforces.com/problemset/problem/1188/B" target="_blank" rel="noopener noreferrer">this Codeforces problem</a>. Registration will only work if your latest submission meets this requirement and was made within the last 5 minutes.
           </div>
-          
+
           <div className={styles.formGroup}>
             <label htmlFor="cf_handle" className={`${styles.formLabel} standardTextFont`}>Codeforces Handle</label>
             <input
@@ -115,7 +110,22 @@ export default function Register() {
             />
             {formErrors.cf_handle && <div className={styles.fieldError}>{formErrors.cf_handle}</div>}
           </div>
-          
+
+          <div className={styles.formGroup}>
+            <label htmlFor="email_id" className={`${styles.formLabel} standardTextFont`}>Email Address</label>
+            <input
+              type="email"
+              id="email_id"
+              name="email_id"
+              value={formData.email_id}
+              onChange={handleChange}
+              placeholder="Your email address"
+              disabled={loading}
+              className={`${styles.formInput} standardTextFont`}
+            />
+            {formErrors.email_id && <div className={styles.fieldError}>{formErrors.email_id}</div>}
+          </div>
+
           <div className={styles.formGroup}>
             <label htmlFor="password" className={`${styles.formLabel} standardTextFont`}>Password</label>
             <input

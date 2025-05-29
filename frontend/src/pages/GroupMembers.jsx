@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
 import { useParams, Link } from 'react-router-dom';
 import { getRatingColor } from '../utils/ratingUtils';
 import GroupNavBar from '../components/GroupNavBar';
@@ -74,7 +75,7 @@ export default function GroupMembers() {
   }, [groupId, user, token]);
 
   // Fetch paginated members data
-  const fetchGroupMembersData = useCallback(async () => {
+   const fetchGroupMembersData = useCallback(async () => {
     if (!groupId || !token) {
       setLoading(false);
       return;
@@ -90,44 +91,39 @@ export default function GroupMembers() {
     };
 
     try {
-      // Fetch total count
-      const countResponse = await fetch(
-        `/api/group_membership_size?gid=${groupId}`,
-        { headers }
-      );
-      if (!countResponse.ok) {
-        const errorData = await countResponse.json().catch(() => ({}));
-        throw new Error(errorData.detail || API_MESSAGES.ERROR);
-      }
-      const countData = await countResponse.json();
-      setTotalMembers(countData.count);
+      // Fetch total count using axios
+      const countResponse = await axios.get(`/api/group_membership_size`, {
+        headers,
+        params: { gid: groupId },
+      });
+      setTotalMembers(countResponse.data.count);
 
-      // Fetch paginated data
-      // Only fetch if totalMembers > 0 or if it's the first load (totalMembers might be 0 initially)
-      if (countData.count > 0 || totalMembers === 0) { // ensure we fetch if count is positive
-        const dataResponse = await fetch(
-          `${API_BASE_URL}/group_membership_range_fetch?gid=${groupId}&offset=${offset}&limit=${itemsPerPage}&sort_by=${sortConfig.key}&sort_order=${sortConfig.direction}`,
-          { headers }
-        );
-        if (!dataResponse.ok) {
-          const errorData = await dataResponse.json().catch(() => ({}));
-          throw new Error(errorData.detail || API_MESSAGES.ERROR);
-        }
-        const members = await dataResponse.json();
-        setMembersData(members); // API returns data directly in the desired format
+      // Fetch paginated data if needed
+      if (countResponse.data.count > 0 || totalMembers === 0) {
+        const dataResponse = await axios.get(`${API_BASE_URL}/group_membership_range_fetch`, {
+          headers,
+          params: {
+            gid: groupId,
+            offset,
+            limit: itemsPerPage,
+            sort_by: sortConfig.key,
+            sort_order: sortConfig.direction,
+          },
+        });
+        setMembersData(dataResponse.data);
       } else {
-        setMembersData([]); // No members to fetch
+        setMembersData([]);
       }
 
     } catch (err) {
       console.error('Failed to fetch members data:', err);
-      setError(err.message);
-      setMembersData([]); 
+      setError(err.response?.data?.detail || err.message);
+      setMembersData([]);
       setTotalMembers(0);
     } finally {
       setLoading(false);
     }
-  }, [groupId, token, currentPage, itemsPerPage, sortConfig, totalMembers]); // Added totalMembers to dep array
+  }, [groupId, token, currentPage, itemsPerPage, sortConfig, totalMembers]);
 
   useEffect(() => {
     fetchGroupMembersData();

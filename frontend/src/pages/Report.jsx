@@ -95,7 +95,7 @@ export default function Report() {
       // Make API call to resolve the report
       await axios.put('/api/report/resolve', {
         report_id: reportId,
-        resolved_by: user.user_id,
+        resolver_user_id: user.user_id,
         resolve_message: actionReviewerNote
       }, {
         headers: { Authorization: `Bearer ${token}` }
@@ -131,11 +131,9 @@ export default function Report() {
     return <div className="page-container standardTextFont">Report not found.</div>;
   }
 
-  // Determine if the report is active (not resolved)
-  const isActive = !reportData.resolved;
-  // For locally resolved reports, use the locally stored 'accepted' status
-  // Determine if the report was accepted based on API data
-  const isAccepted = reportData.resolved ? true : null; // If resolved, consider it accepted
+    // Use latest schema fields
+  const isResolved = !!reportData.resolved;
+  const isAccepted = reportData.accepted === true ? true : (reportData.accepted === false ? false : null);
 
   return (
     <div className="page-container">
@@ -146,9 +144,10 @@ export default function Report() {
           <div style={{ marginBottom: '15px', fontWeight: 'bold', fontSize: '1em' }}>
             Report Status<strong>:</strong>{' '}
             <span style={{
-              color: isActive ? 'rgb(230, 126, 34)' : (isAccepted === true ? 'rgb(0, 150, 0)' : (isAccepted === false ? 'rgb(200, 0, 0)' : 'rgb(100, 100, 100)'))
+              color: !isResolved ? 'rgb(230, 126, 34)' : (isAccepted === true ? 'green' : (isAccepted === false ? 'red' : 'gray')),
+              fontWeight: 'bold'
             }}>
-              {isActive ? 'Active' : (isAccepted === true ? 'Accepted' : (isAccepted === false ? 'Rejected' : 'Resolved'))}
+              {!isResolved ? 'Active' : (isAccepted === true ? 'Accepted' : (isAccepted === false ? 'Rejected' : '-'))}
             </span>
           </div>
           
@@ -168,11 +167,11 @@ export default function Report() {
           <div style={{ marginBottom: '15px' }}>
             <strong>Reporter:</strong>{' '}
             <Link 
-              to={`/user/${reportData.reporter_user_id}`} 
+              to={`/user/${reportData.reporter_cf_handle}`} 
               className="tableCellLink" 
               style={{ color: getRatingColor(reportData.reporter_rating_at_report_time), fontWeight: 'bold' }}
             >
-              {reportData.reporter_user_id}
+              {reportData.reporter_cf_handle}
             </Link>
           </div>
           
@@ -198,7 +197,7 @@ export default function Report() {
         </div>
       </ContentBoxWithTitle>
       
-      {isActive && isModerator && (
+      {!isResolved && isModerator && (
         <ContentBoxWithTitle title="Take Action" backgroundColor="rgb(255, 245, 230)">
           <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto', padding: '15px' }}>
             <div style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
@@ -283,48 +282,42 @@ export default function Report() {
         </ContentBoxWithTitle>
       )}
       
-      {reportData.resolved && (
+      {isResolved && (
         <ContentBoxWithTitle 
           title="Review Outcome" 
-          backgroundColor={isAccepted === true ? "rgb(230, 255, 240)" : "rgb(240, 240, 240)"}
+          backgroundColor={isAccepted === true ? "rgb(230, 255, 240)" : (isAccepted === false ? "rgb(255, 230, 230)" : "rgb(240, 240, 240)")}
         >
           <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto', padding: '15px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {reportData.resolved_by && (
+              {reportData.resolver_cf_handle && (
                 <div>
                   <strong>Reviewed By:</strong>{' '}
                   <Link 
-                    to={`/user/${reportData.resolved_by}`} 
+                    to={`/user/${reportData.resolver_cf_handle}`} 
                     className="tableCellLink" 
                     style={{ color: getRatingColor(reportData.resolver_rating_at_resolve_time), fontWeight: 'bold' }}
                   >
-                    {reportData.resolved_by}
+                    {reportData.resolver_cf_handle}
                   </Link>
                 </div>
               )}
-              
-              {reportData.resolve_timestamp && (
+              {reportData.resolve_time_stamp && (
                 <div>
-                  <strong>Review Date:</strong> {formatDate(reportData.resolve_timestamp)}
+                  <strong>Resolve Date:</strong> {formatDate(reportData.resolve_time_stamp)}
                 </div>
               )}
-              
-              {/* {reportData.resolve_time_stamp && ( */}
-                <div>
-                  <strong>Resolve Date:</strong> {formatDate(new Date(reportData.resolve_time_stamp * 1000))}
-                </div>
-            {/* //   )} */}
-              
               <div>
                 <strong>Status:</strong>{' '}
                 <span style={{ 
-                  color: isAccepted === true ? 'rgb(0, 150, 0)' : 'rgb(100,100,100)',
+                  color: isAccepted === true ? 'green' : (isAccepted === false ? 'red' : 'gray'),
                   fontWeight: 'bold'
                 }}>
-                  {isAccepted === true ? 'Accepted' : 'Resolved'}
+                  {isAccepted === true ? 'Accepted' : (isAccepted === false ? 'Rejected' : '-')}
                 </span>
               </div>
-              
+            <div>
+                <strong>Result:</strong> {reportData.respondent_role_before ? reportData.respondent_role_before : '-' } {'->'} {reportData.respondent_role_after ? reportData.respondent_role_after : '-' }
+            </div>
               {reportData.resolve_message && (
                 <div className={styles.aboutBox} style={{ marginTop: '10px' }}>
                   <h4 style={{ margin: '0 0 8px 0' }}>Reviewer's Note:</h4>

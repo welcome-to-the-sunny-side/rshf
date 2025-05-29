@@ -8,6 +8,7 @@ class Role(str, Enum):
     admin = "admin"
     moderator = "moderator"
     user = "user"
+    outsider = "outsider"
 
 
 class GroupMemberSortByField(str, Enum):
@@ -26,10 +27,9 @@ class SortOrder(str, Enum):
 class UserRegister(BaseModel):
     user_id: str
     cf_handle: str
+    email_id: str
     password: str
     role: Role = Role.user
-    internal_default_rated: bool = True
-    trusted_score: int = 0
 
 class UserLogin(BaseModel):
     cf_handle: str
@@ -39,15 +39,11 @@ class UserLogin(BaseModel):
 class UserUpdate(BaseModel):
     cf_handle: Optional[str] = None
     password: Optional[str] = None
-    internal_default_rated: Optional[bool] = None
-    trusted_score: Optional[int] = None
     role: Optional[Role] = None
 
 class UserOut(BaseModel):
     user_id: str
     cf_handle: str
-    internal_default_rated: bool
-    trusted_score: int
     role: Role
 
     class Config:
@@ -167,8 +163,6 @@ class ContestOut(BaseModel):
 class UserOut(BaseModel):
     user_id: str
     cf_handle: str
-    internal_default_rated: bool
-    trusted_score: int
     role: Role
     email_id: Optional[str] = None
     group_memberships: List[GroupMembershipOut] = []
@@ -192,16 +186,16 @@ class ReportCreate(BaseModel):
     reporter_cf_handle: Optional[str] = None
     respondent_cf_handle: Optional[str] = None
     report_description: str
-    # Roles will be populated by the backend based on user memberships
-    reporter_role_before: Optional[Role] = None
-    reporter_role_after: Optional[Role] = None
+
     respondent_role_before: Optional[Role] = None
     respondent_role_after: Optional[Role] = None
+    accepted: Optional[bool] = None
 
 
 class ReportResolve(BaseModel):
     report_id: str
-    resolved_by: str                # must be mod/admin in that group
+    resolver_user_id: str                # must be mod/admin in that group
+    resolver_cf_handle: Optional[str] = None
     resolve_message: Optional[str] = None
 
 
@@ -214,20 +208,19 @@ class ReportOut(BaseModel):
     report_description: str
     timestamp: datetime
     resolved: bool
-    resolved_by: Optional[str] = None
+    resolver_user_id: Optional[str] = None
     resolve_message: Optional[str] = None
     reporter_cf_handle: Optional[str] = None
     respondent_cf_handle: Optional[str] = None
     resolver_cf_handle: Optional[str] = None
+    accepted: Optional[bool] = None
 
     reporter_rating_at_report_time: Optional[int] = None
     respondent_rating_at_report_time: Optional[int] = None
     resolver_rating_at_resolve_time: Optional[int] = None
-    resolve_time_stamp: Optional[int] = None
+    resolve_time_stamp: Optional[datetime] = None
     
-    # Roles before and after report resolution
-    reporter_role_before: Optional[Role] = None
-    reporter_role_after: Optional[Role] = None
+
     respondent_role_before: Optional[Role] = None
     respondent_role_after: Optional[Role] = None
 
@@ -242,7 +235,8 @@ class ReportSortByField(str, Enum):
     RESPONDENT_CF_HANDLE = "respondent_cf_handle"
     REPORT_DATE = "timestamp"  # Corresponds to models.Report.timestamp
     RESOLVER_CF_HANDLE = "resolver_cf_handle"
-    RESOLVE_DATE = "resolve_time_stamp" # Corresponds to models.Report.resolve_time_stamp (Integer POSIX)
+    RESOLVE_DATE = "resolve_time_stamp" # Corresponds to models.Report.resolve_time_stamp (DateTime)
+    ACCEPTED = "accepted" # Sort by accepted field
 
 class ReportRangeFetchResponse(BaseModel):
     items: List[ReportOut]

@@ -9,6 +9,7 @@ class Role(str, enum.Enum):
     admin = "admin"
     moderator = "moderator"
     user = "user"
+    outsider = "outsider"  # Added to match schemas.Role and allow this value in DB
 
 class Status(str, enum.Enum):
     active = "active"
@@ -34,8 +35,6 @@ class User(ModelBase):
     codechef_handle = Column(String, unique=False, index=True, nullable=True)
     twitter_handle = Column(String, unique=False, index=True, nullable=True)
     
-    internal_default_rated = Column(Boolean, nullable=False, default=True)
-    trusted_score = Column(Integer, nullable=False, default=0)
     email_id = Column(String, nullable=False)
 
     # hqas to be hashed
@@ -43,7 +42,7 @@ class User(ModelBase):
 
     memberships = relationship("GroupMembership", back_populates="user", cascade="all, delete", lazy="dynamic")
     def __repr__(self):
-        return f"<User(id={self.user_id}, cf_handle='{self.cf_handle}', trusted_score={self.trusted_score})>"
+        return f"<User(id={self.user_id}, cf_handle='{self.cf_handle}')>"
 
 
 class Group(ModelBase):
@@ -67,10 +66,10 @@ class GroupMembership(ModelBase):
 
     user_id = Column(String, ForeignKey("users.user_id"))
     group_id = Column(String, ForeignKey("groups.group_id"))
-    role = Column(Enum(Role), nullable=False, default=Role.user)
+    role = Column(Enum(Role), nullable=False, default=Role.user, index=True)
 
-    user_group_rating = Column(Integer, nullable=False, default=1500)
-    user_group_max_rating = Column(Integer, nullable=False, default=1500)
+    user_group_rating = Column(Integer, nullable=False, default=1500, index=True)
+    user_group_max_rating = Column(Integer, nullable=False, default=1500, index=True)
     
     status = Column(Enum(Status), nullable=False, default=Status.active)
     cf_handle = Column(String, nullable=True, index=True) # Added cf_handle
@@ -110,10 +109,10 @@ class ContestParticipation(ModelBase):
     group_id = Column(String, ForeignKey("groups.group_id"), primary_key=True)
     contest_id = Column(String, ForeignKey("contests.contest_id"), primary_key=True)
 
-    rank = Column(Integer, nullable=True)
+    rank = Column(Integer, nullable=True, index=True)
     delta = Column(Integer, nullable=True)
-    rating_before = Column(Integer, nullable=True)
-    rating_after = Column(Integer, nullable=True)
+    rating_before = Column(Integer, nullable=True, index=True)
+    rating_after = Column(Integer, nullable=True, index=True)
     rating_change = Column(Integer, nullable=True, index=True)
     cf_handle = Column(String, nullable=True, index=True)
 
@@ -123,8 +122,6 @@ class ContestParticipation(ModelBase):
 
     def __repr__(self):
         return f"<ContestParticipation(user_id={self.user_id}, group_id={self.group_id}, contest_id={self.contest_id}, cf_handle={self.cf_handle})>"
-
-
 
 class Report(ModelBase):
     __tablename__ = "reports"
@@ -145,18 +142,16 @@ class Report(ModelBase):
     resolver_rating_at_resolve_time = Column(Integer, nullable=True)
     
     # roles before and after report resolution
-    reporter_role_before = Column(Enum(Role), nullable=True)
-    reporter_role_after = Column(Enum(Role), nullable=True)
     respondent_role_before = Column(Enum(Role), nullable=True)
-    respondent_role_after = Column(Enum(Role), nullable=True)
+    respondent_role_after = Column(Enum(Role), nullable=True, index=True)
 
     report_description = Column(String, nullable=False)
     resolved = Column(Boolean, nullable=False, default=False, index=True)
-    resolved_by = Column(String, ForeignKey("users.user_id"), nullable=True, index=True)
+    resolver_user_id = Column(String, ForeignKey("users.user_id"), nullable=True, index=True)
     resolver_cf_handle = Column(String, nullable=True, index=True)
     resolve_message = Column(String, nullable=True)
-    resolve_timestamp = Column(DateTime, server_default=func.timezone('UTC', func.now()), nullable=True, index=True)
-    resolve_time_stamp = Column(Integer, nullable=True)
+    accepted = Column(Boolean, nullable=True, index=True)
+    resolve_time_stamp = Column(DateTime, nullable=True, index=True)
 
 
 class Announcement(ModelBase):

@@ -79,11 +79,11 @@ def gather_unique_cf_handles(cids: List[int]) -> List[str]:
 def build_users(cfhandles: List[str]) -> List[User]:
     banner("building users")
     users: list[User] = [
-        User(user_id="negative-xp", role=Role.admin, cf_handle="negative-xp", email_id="shrey@example.com", trusted_score=88, hashed_password=hash_password(DEFAULT_PASS)),
-        User(user_id="roomTemperatureIQ", role=Role.admin, cf_handle="roomTemperatureIQ", email_id="ani@example.com", trusted_score=88, hashed_password=hash_password(DEFAULT_PASS)),
+        User(user_id="negative-xp", role=Role.admin, cf_handle="negative-xp", email_id="shrey@example.com", hashed_password=hash_password(DEFAULT_PASS)),
+        User(user_id="roomTemperatureIQ", role=Role.admin, cf_handle="roomTemperatureIQ", email_id="ani@example.com", hashed_password=hash_password(DEFAULT_PASS)),
     ]
     for h in cfhandles:
-        uid = "uid_" + h
+        uid = h
         users.append(
             User(
                 user_id=uid,
@@ -92,8 +92,7 @@ def build_users(cfhandles: List[str]) -> List[User]:
                 atcoder_handle=None if random.random() < 0.5 else f"{uid}_ac",
                 codechef_handle=None if random.random() < 0.7 else f"{uid}_cc",
                 twitter_handle=None if random.random() < 0.6 else f"{uid}_tw",
-                trusted_score=random.randint(0, 100),
-                email_id=f"{uid}@example.com",
+                                email_id=f"{uid}@example.com",
                 hashed_password=hash_password(DEFAULT_PASS),
             )
         )
@@ -105,8 +104,7 @@ def build_users(cfhandles: List[str]) -> List[User]:
                 user_id=uid,
                 role=Role.user,
                 cf_handle=f"{uid}_cf",
-                trusted_score=random.randint(0, 100),
-                email_id=f"{uid}@example.com",
+                                email_id=f"{uid}@example.com",
                 hashed_password=hash_password(DEFAULT_PASS),
             )
         )
@@ -285,7 +283,8 @@ def build_reports(parts: List[ContestParticipation], memberships: List[GroupMemb
             timestamp=faker.date_time_between(start_date="-60d", end_date="-30d"),
             reporter_rating_at_report_time=reporter_rating,
             respondent_rating_at_report_time=respondent_rating,
-            resolved=is_resolved
+            resolved=is_resolved,
+            accepted=random.choice([True, False])
         )
         
         # For resolved reports, add resolver information
@@ -301,7 +300,7 @@ def build_reports(parts: List[ContestParticipation], memberships: List[GroupMemb
                 
                 if resolver_membership:
                     resolver_rating = resolver_membership.user_group_rating
-                    report.resolved_by = resolver.user_id
+                    report.resolver_user_id = resolver.user_id
                     report.resolver_cf_handle = resolver.cf_handle
                     report.resolve_message = faker.sentence()
                     report.resolver_rating_at_resolve_time = resolver_rating
@@ -309,8 +308,70 @@ def build_reports(parts: List[ContestParticipation], memberships: List[GroupMemb
         
         reports.append(report)
     
-    print("   total reports:", len(reports))
-    print(f"   resolved reports: {num_resolved_reports}")
+    print("   total reports (randomly generated):", len(reports))
+    print(f"   resolved reports (randomly generated): {num_resolved_reports}")
+
+    # Add specific reports for negative-xp removal from g01
+    respondent_user_id_nxp = "negative-xp"
+    respondent_cf_handle_nxp = "negative-xp" # Assuming user_id is cf_handle for negative-xp
+    target_group_id_g01 = "g01"
+
+    g01_member_candidates = [m for m in memberships if m.group_id == target_group_id_g01]
+
+    if not g01_member_candidates:
+        print(f"   ⚠️  Group {target_group_id_g01} has no members. Skipping specific 'negative-xp' removal reports.")
+    elif not parts:
+        print("   ⚠️  No contest participations available. Skipping specific 'negative-xp' removal reports.")
+    else:
+        # Try to find an admin or moderator in g01 to act as reporter/resolver
+        reporter_resolver_candidates = [m for m in g01_member_candidates if m.role in (Role.admin, Role.moderator) and m.user_id != respondent_user_id_nxp]
+        if not reporter_resolver_candidates:
+            # Fallback to any other user in g01
+            reporter_resolver_candidates = [m for m in g01_member_candidates if m.user_id != respondent_user_id_nxp]
+        
+        if not reporter_resolver_candidates:
+            print(f"   ⚠️  No suitable reporter found in {target_group_id_g01} (other than {respondent_user_id_nxp}). Skipping specific 'negative-xp' removal reports.")
+        else:
+            reporter_membership = random.choice(reporter_resolver_candidates)
+            
+            # Determine respondent's state before removal
+            nxp_membership_in_g01 = next((m for m in g01_member_candidates if m.user_id == respondent_user_id_nxp), None)
+            respondent_role_before_nxp = nxp_membership_in_g01.role if nxp_membership_in_g01 else Role.user
+            respondent_rating_before_nxp = nxp_membership_in_g01.user_group_rating if nxp_membership_in_g01 else 1500
+
+            # Pick a contest for the reports
+            contest_for_report = random.choice(parts).contest_id
+
+            for i in range(2): # Create two such reports
+                report_timestamp = faker.date_time_between(start_date="-25d", end_date="-10d")
+                resolve_timestamp = faker.date_time_between(start_date=report_timestamp, end_date="-1d")
+
+                specific_report = Report(
+                    report_id=f"s_r_nxp_g01_{len(reports) + 1}",
+                    group_id=target_group_id_g01,
+                    contest_id=contest_for_report,
+                    reporter_user_id=reporter_membership.user_id,
+                    respondent_user_id=respondent_user_id_nxp,
+                    reporter_cf_handle=reporter_membership.cf_handle,
+                    respondent_cf_handle=respondent_cf_handle_nxp,
+                    report_description=f"Report for policy violation by {respondent_cf_handle_nxp} in group {target_group_id_g01}. Specific seed {i+1}.",
+                    timestamp=report_timestamp,
+                    reporter_rating_at_report_time=reporter_membership.user_group_rating,
+                    respondent_rating_at_report_time=respondent_rating_before_nxp,
+                    resolved=True,
+                    accepted=True,
+                    respondent_role_before=respondent_role_before_nxp,
+                    respondent_role_after=Role.outsider, # Explicitly set to outsider
+                    resolver_user_id=reporter_membership.user_id, # Reporter is also resolver
+                    resolver_cf_handle=reporter_membership.cf_handle,
+                    resolve_message="User removed from group due to policy violation.",
+                    resolver_rating_at_resolve_time=reporter_membership.user_group_rating,
+                    resolve_time_stamp=resolve_timestamp
+                )
+                reports.append(specific_report)
+            print(f"   Added 2 specific reports for '{respondent_user_id_nxp}' removal from '{target_group_id_g01}'.")
+
+    print("   total reports (including specific):", len(reports))
     return reports
 
 

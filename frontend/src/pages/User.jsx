@@ -65,6 +65,9 @@ export default function User() {
     atcoder: "",
     codechef: ""
   });
+  const [removedFromGroupsCount, setRemovedFromGroupsCount] = useState(null);
+  const [loadingRemovedCount, setLoadingRemovedCount] = useState(false);
+  const [errorRemovedCount, setErrorRemovedCount] = useState(null);
 
   useEffect(() => {
     if (!token) {
@@ -154,7 +157,7 @@ export default function User() {
   
   // Calculate derived values from the fetched data
   const numberOfGroups = groups.length;
-  const removedNumberOfGroups = 0; // This would need to come from the API if available
+  const removedNumberOfTimes = 0; // This would need to come from the API if available
   const handleGroupChange = (e) => {
     setSelectedGroupIdx(Number(e.target.value));
   };
@@ -201,13 +204,11 @@ export default function User() {
             'Authorization': `Bearer ${token}`
           }
         });
-        console.log(response.data);
         
         // Let's try different date formats for debugging
         const formattedRatingData = response.data.map(participation => {
           // Check if contest exists and has start_time_posix
           if (!participation.contest || typeof participation.contest.start_time_posix === 'undefined') {
-            console.warn('Participation missing contest data:', participation);
             return null; // We'll filter these out below
           }
           
@@ -238,7 +239,6 @@ export default function User() {
             rating_delta: rating_delta // Add calculated rating_delta
           };
         }).filter(item => item !== null); // Filter out any null items
-        console.log(formattedRatingData); 
         // Sort by date (using raw timestamps now, so just compare them directly)
         formattedRatingData.sort((a, b) => a.date - b.date);
         
@@ -260,7 +260,32 @@ export default function User() {
     };
     
     fetchRatingData();
-  }, [token, username, selectedGroup, ratingHistoryData]);
+  }, [selectedGroupIdx, groups, token, username]);
+
+  // Fetch removed from groups count
+  useEffect(() => {
+    const fetchRemovedCount = async () => {
+      if (!token || !username) return;
+
+      setLoadingRemovedCount(true);
+      setErrorRemovedCount(null);
+      try {
+        const response = await axios.get(
+          `/api/report_size?respondent_cf_handle=${username}&respondent_role_after=outsider`,
+          {
+            headers: { 'Authorization': `Bearer ${token}` }
+          }
+        );
+        setRemovedFromGroupsCount(response.data.count); // Assuming API returns the count directly
+      } catch (err) {
+        setErrorRemovedCount('Error fetching removal count.');
+      } finally {
+        setLoadingRemovedCount(false);
+      }
+    };
+
+    fetchRemovedCount();
+  }, [token, username]);
 
   return (
     <div className="page-container">
@@ -341,7 +366,10 @@ export default function User() {
                     Member of: <span>{numberOfGroups} groups</span>
                   </div>
                   <div className={`${styles.statItem} standardTextFont`}>
-                    Removed from: <span>{removedNumberOfGroups} groups</span>
+                    Removed from groups: 
+                    <span>
+                      {loadingRemovedCount ? 'Loading...' : errorRemovedCount ? 'Error' : removedFromGroupsCount !== null ? ` ${removedFromGroupsCount} times` : 'N/A'}
+                    </span>
                   </div>
                   {/* Social platforms section */}
                   <div className={`${styles.statItem} standardTextFont`}>
@@ -415,9 +443,6 @@ export default function User() {
                 <div className={`${styles.statsList}`}>
                   <div className={`${styles.statItem} standardTextFont`}>
                     Role: <span style={{ textTransform: 'capitalize' }}>{selectedGroup[8]}</span>
-                  </div>
-                  <div className={`${styles.statItem} standardTextFont`}>
-                    Rated Contests: <span>{selectedGroup[9]}</span>
                   </div>
                   <div className={`${styles.statItem} standardTextFont`}>
                     Report Accuracy: <span title={`${selectedGroup[10]} accepted out of ${selectedGroup[11]} reports`}>

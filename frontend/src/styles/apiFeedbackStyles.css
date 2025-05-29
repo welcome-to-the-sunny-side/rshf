@@ -1,3 +1,4 @@
+/* Original classes - kept for backward compatibility */
 .api-feedback-container {
   display: flex;
   justify-content: center;
@@ -6,17 +7,37 @@
   font-family: sans-serif;
 }
 
-.loading-message {
+/* New api-prefixed classes */
+.api-loading {
   color: #010406; /* Blue */
   /* font-style: italic; */
   /* font-weight: bold; */
 }
 
-.error-message {
-  color: #e74c3c; /* Red */
-  /* font-weight: bold; */
+.api-error {
+  padding: 0.75rem;
+  background-color: #ffebee;
+  color: #c62828;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
 }
 
-.no-data-message {
+.api-success {
+  padding: 0.75rem;
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.api-no-data {
   color: #95a5a6; /* Gray */
+}
+
+.api-field-error {
+  color: #c62828;
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
 }

@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axiosInstance from '../utils/axiosInstance';
 
 const AuthContext = createContext(null);
 
@@ -27,58 +28,38 @@ export const AuthProvider = ({ children }) => {
   }, [user]);
 
   // Use environment variable for backend URL, fallback to localhost for development
-  const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
   const login = async (username, password) => {
     setLoading(true);
     setError(null);
     try {
-      // The API expects the username to be provided in the 'username' field as per OAuth2 standard
-      // but internally it's using this to look up the user
-      const response = await fetch(`${BACKEND_URL}/api/user/login`, {
-        method: 'POST',
+      // Use axios for login (form data)
+      const params = new URLSearchParams();
+      params.append('username', username);
+      params.append('password', password);
+      const response = await axiosInstance.post('/api/user/login', params, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: new URLSearchParams({
-          'username': username,
-          'password': password,
-        }),
       });
-
-      // Check if the response is ok before trying to parse JSON
-      if (!response.ok) {
-        // Try to parse error message if available
-        let errorMessage = 'Login failed';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.detail || errorMessage;
-        } catch (parseError) {
-          // If we can't parse the error response, use status text
-          errorMessage = `Login failed: ${response.statusText}`;
-        }
-        throw new Error(errorMessage);
-      }
-
-      // Only try to parse JSON if we have a successful response
-      const data = await response.json();
+      const data = response.data;
       setToken(data.access_token);
-      
       // Get user details after login
-      const userResponse = await fetch(`${BACKEND_URL}/api/user?user_id=${username}`, {
+      const userResponse = await axiosInstance.get(`/api/user?user_id=${username}`, {
         headers: {
-          'Authorization': `Bearer ${data.access_token}`
-        }
+          'Authorization': `Bearer ${data.access_token}`,
+        },
       });
-      
-      if (userResponse.ok) {
-        const userData = await userResponse.json();
-        setUser(userData); // The endpoint returns a single user object, not an array
-      }
-      
+      setUser(userResponse.data);
       return true;
     } catch (err) {
-      setError(err.message);
+      let errorMessage = 'Login failed';
+      if (err.response && err.response.data && err.response.data.detail) {
+        errorMessage = err.response.data.detail;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      setError(errorMessage);
       return false;
     } finally {
       setLoading(false);
@@ -89,30 +70,16 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${BACKEND_URL}/api/user/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-      });
-
-      if (!response.ok) {
-        // Try to parse error message if available
-        let errorMessage = 'Registration failed';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.detail || errorMessage;
-        } catch (parseError) {
-          // If we can't parse the error response, use status text
-          errorMessage = `Registration failed: ${response.statusText}`;
-        }
-        throw new Error(errorMessage);
-      }
-
+      await axiosInstance.post('/api/user/register', userData);
       return true;
     } catch (err) {
-      setError(err.message);
+      let errorMessage = 'Registration failed';
+      if (err.response && err.response.data && err.response.data.detail) {
+        errorMessage = err.response.data.detail;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      setError(errorMessage);
       return false;
     } finally {
       setLoading(false);

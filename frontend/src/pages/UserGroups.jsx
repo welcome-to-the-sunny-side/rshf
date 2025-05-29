@@ -65,9 +65,10 @@ export default function UserGroups() {
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
-  const columns = ["Group", "Rating", "Max Rating", "Date Joined"];
+  const columns = ["Group", "Role", "Rating", "Max Rating", "Date Joined"];
   const data = userGroupsData.map(membership => [
     <Link to={`/group/${membership.group_id}`} className="tableCellLink">{membership.group_id}</Link>,
+    <span style={{ textTransform: 'capitalize' }}>{membership.role}</span>,
     <span style={{ color: getRatingColor(membership.user_group_rating), fontWeight: 'bold' }}>
       {membership.user_group_rating}
     </span>,
