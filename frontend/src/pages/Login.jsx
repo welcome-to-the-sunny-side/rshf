@@ -5,8 +5,10 @@ import ContentBoxWithTitle from '../components/ContentBoxWithTitle';
 import styles from './Login.module.css'; // Import the new CSS module
 import waifuImage from '../assets/rshf_waifu_login_pose.webp'; // Import the waifu image
 import formInputStyles from '../components/FormInput.module.css';
+import useIsMobile from '../utils/useIsMobile'; // Import the mobile detection hook
 
 export default function Login() {
+  const isMobile = useIsMobile();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const { login, loading, error } = useAuth();
@@ -32,7 +34,70 @@ export default function Login() {
     };
   }, []);
 
-  return (
+  return isMobile ? (
+    <div className={styles.mobileLoginPage}>
+      <div className={styles.mobileFormSide}>
+         <ContentBoxWithTitle
+          className={styles.mobileLoginFormContainer}
+          title={<span>Login</span>}
+          backgroundColor="rgb(230, 255, 230)"
+          contentPadding="1.2rem 1rem"
+        >
+        {error && <div className={styles.errorMessage}>{error}</div>}
+        <form onSubmit={handleSubmit}>
+          <div className={styles.formGroup}>
+            <label htmlFor="username" className={`${styles.formLabel} standardTextFont`}>
+              Username
+            </label>
+            <input
+              type="text"
+              id="username"
+              className={formInputStyles.formInput}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              placeholder="Enter your username"
+              disabled={loading}
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="password" className={`${styles.formLabel} standardTextFont`}>
+              Password
+            </label>
+            <input
+              type="password"
+              id="password"
+              className={formInputStyles.formInput}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              placeholder="Enter your password"
+              disabled={loading}
+            />
+          </div>
+
+          <div style={{ textAlign: 'center', marginTop: '0.4rem' }}>
+            <button
+              type="submit"
+              className="global-button blue small"
+              disabled={loading}
+            >
+              {loading ? 'Logging in...' : 'Login'}
+            </button>
+          </div>
+        </form>
+
+        <p className={`${styles.linkTextContainer} standardTextFont`}>
+          Don't have an account?{' '}
+          <Link to="/register" className="tableCellLink">
+            Register here
+          </Link>
+        </p>
+        </ContentBoxWithTitle>
+      </div>
+    </div>
+  ) : (
     <div className={styles.loginPage}>
       <div className={styles.waifuContainer}>
         <img src={waifuImage} alt="RSHF Waifu" className={styles.waifuImage} />
