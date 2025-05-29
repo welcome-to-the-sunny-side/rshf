@@ -97,14 +97,14 @@ export default function Register() {
           </div>
 
           <div className={styles.formGroup}>
-            <label htmlFor="cf_handle" className={`${styles.formLabel} standardTextFont`}>Codeforces Handle</label>
+            <label htmlFor="cf_handle" className={`${styles.formLabel} standardTextFont`}>Codeforces Username</label>
             <input
               type="text"
               id="cf_handle"
               name="cf_handle"
               value={formData.cf_handle}
               onChange={handleChange}
-              placeholder="Your Codeforces handle"
+              placeholder="Your Codeforces Username"
               disabled={loading}
               className={`${styles.formInput} standardTextFont`}
             />

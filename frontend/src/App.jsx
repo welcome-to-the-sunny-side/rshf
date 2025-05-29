@@ -114,11 +114,6 @@ export default function App() {
               <GroupContestPage />
             </PrivateRoute>
           } />
-          <Route path="/contact" element={
-            <PrivateRoute>
-              <Contact />
-            </PrivateRoute>
-          } />
           <Route path="/post/:postId" element={
             <PrivateRoute>
               <Post />

@@ -548,28 +548,6 @@ def get_reports_range_fetch_endpoint(
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(25, ge=1, le=100, description="Maximum number of records to return (max 100)"),
 ):
-    # Permission check: If group_id is provided, ensure user is a member or admin/mod.
-    if group_id:
-        membership = crud.get_membership(db, current_user.user_id, group_id)
-        # Global admins can always access.
-        # Group moderators/admins can access their group's reports.
-        # Regular users cannot access if group_id is specified unless they are members (implicitly handled by frontend usually)
-        # but for direct API access, we ensure they are at least a member if group_id is given.
-        if current_user.role != models.Role.admin: # Global admin bypasses group membership check
-            if not membership: # Not a member
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Not authorized to access reports for this group. User not a member.",
-                )
-            # If they are a member, check if they are at least a moderator to view all reports of a group
-            # Regular users should only see reports they are involved in (handled by frontend filters or specific endpoints)
-            # This endpoint is for a broader view, typically for mods/admins.
-            if role_rank.get(membership.role, 0) < role_rank.get("moderator", 0):
-                 raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Not authorized to access all reports for this group. Requires moderator or admin role.",
-                )
-
     result = crud.get_reports_range_fetch(
         db=db,
         group_id=group_id,
@@ -606,9 +584,6 @@ def list_announcements(
     db: Session = Depends(get_db),
     current: models.User = Depends(get_current_user),
 ):
-    if group_id and current.role == models.Role.user:
-        if not crud.get_membership(db, current.user_id, group_id):
-            raise HTTPException(403, "insufficient privilege")
     return crud.list_announcements(db, group_id)
 
 
@@ -643,8 +618,6 @@ def get_group_membership_size(
     group = crud.get_group(db, gid)
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
-    if current_user.role != models.Role.admin and not crud.get_membership(db, current_user.user_id, gid):
-        raise HTTPException(status_code=403, detail="Not authorized to access this group's data")
     count = crud.count_group_memberships(db, gid)
     return schemas.CountResponse(count=count)
 
@@ -665,8 +638,6 @@ def get_group_membership_range_fetch(
     group = crud.get_group(db, gid)
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
-    if current_user.role != models.Role.admin and not crud.get_membership(db, current_user.user_id, gid):
-        raise HTTPException(status_code=403, detail="Not authorized to access this group's data")
     memberships = crud.get_group_memberships_paginated(
         db=db,
         group_id=gid,
@@ -704,10 +675,6 @@ def get_group_members_custom_data(
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
     
-    # Check if the user has access to the group (member or admin)
-    if current.role != models.Role.admin and not crud.get_membership(db, current.user_id, group_id):
-        raise HTTPException(status_code=403, detail="Not a member of the group")
-    
     # Get the custom membership data
     return crud.get_group_custom_membership_data(db, group_id)
 
@@ -737,10 +704,6 @@ def get_group_members_custom_data_size(
     group = crud.get_group(db, group_id)
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
-    
-    # Check if the user has access to the group (member or admin)
-    if current_user.role != models.Role.admin and not crud.get_membership(db, current_user.user_id, group_id):
-        raise HTTPException(status_code=403, detail="Not authorized to access this group's data")
     
     # Get the count of members with custom data
     count = crud.count_group_members_with_custom_data(db, group_id)

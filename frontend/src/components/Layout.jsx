@@ -47,7 +47,6 @@ export default function Layout({ children }) {
       <footer className={styles.footer}>
         <div className={styles.footerContent}>
           <Link to="/about" className={styles.footerLink}>About</Link>
-          <Link to="/contact" className={styles.footerLink}>Contact</Link>
         </div>
       </footer>
     </div>

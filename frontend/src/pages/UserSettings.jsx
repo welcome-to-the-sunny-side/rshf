@@ -54,7 +54,6 @@ export default function UserSettings() {
       setTimeout(() => {
         setEmail('user@example.com');
         setCodeforcesHandle('user_cf_handle');
-        setAtcoderHandle('user_atcoder_handle');
       }, 500);
     };
     
@@ -87,12 +86,6 @@ export default function UserSettings() {
     alert('Codeforces handle updated successfully!');
   };
   
-  // Handle Atcoder handle update
-  const handleAtcoderUpdate = () => {
-    console.log('Updating Atcoder handle to:', atcoderHandle);
-    // In a real app, this would call an API to update the Atcoder handle
-    alert('Atcoder handle updated successfully!');
-  };
   
   return (
     <div className="page-container">
@@ -180,34 +173,6 @@ export default function UserSettings() {
               />
               <button
                 onClick={handleCodeforcesUpdate}
-                className="global-button green"
-              >
-                Update
-              </button>
-            </div>
-          </div>
-          
-          {/* Atcoder Account */}
-          <div style={{ marginBottom: '20px' }}>
-            <label htmlFor="atcoder" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
-              Atcoder Account:
-            </label>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-              <input
-                id="atcoder"
-                type="text"
-                value={atcoderHandle}
-                onChange={(e) => setAtcoderHandle(e.target.value)}
-                className="standardTextFont"
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  borderRadius: '4px',
-                  border: '1px solid #ccc'
-                }}
-              />
-              <button
-                onClick={handleAtcoderUpdate}
                 className="global-button green"
               >
                 Update
