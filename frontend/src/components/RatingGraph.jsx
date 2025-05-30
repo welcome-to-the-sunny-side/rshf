@@ -1,6 +1,6 @@
 import React from 'react';
 import styles from './RatingGraph.module.css';
-import { getRatingColor, getRankName, ratingGraphColors, getRatingInfo } from '../utils/ratingUtils';
+import { getRatingColor, getRankName, ratingGraphColors, getRatingInfo, RANK_BANDS } from '../utils/ratingUtils';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceArea
 } from 'recharts';
@@ -102,6 +102,67 @@ export default function RatingGraph({ ratingHistory }) {
 
   const data = formatData();
 
+  const ratings = data.map(d => d.rating);
+  // minRating/maxRating will be based on actual data due to early return for data.length === 0
+  const minRating = Math.min(...ratings);
+  const maxRating = Math.max(...ratings);
+
+  // Initial data-driven y-axis view boundaries
+  const yAxisViewMin = Math.max(0, Math.floor(0.5 * minRating));
+  const yAxisViewMax = Math.ceil(1.1 * maxRating);
+
+  // Initialize final domain with the data-driven view
+  let finalDomainMin = yAxisViewMin;
+  let finalDomainMax = yAxisViewMax;
+
+  // Adjust domain to fully include overlapping rating bands
+  ratingGraphColors.forEach(band => {
+    const bandY1 = band.yaxis.from;
+    // Use a large fixed upper bound for open-ended top bands (e.g., rating >= 3000)
+    const bandEffectiveY2 = band.yaxis.to !== undefined ? band.yaxis.to : 4000;
+
+    // Check if the band (bandY1, bandEffectiveY2) overlaps with the initial data-driven view [yAxisViewMin, yAxisViewMax]
+    const overlapsInitialView = bandY1 < yAxisViewMax && bandEffectiveY2 > yAxisViewMin;
+
+    if (overlapsInitialView) {
+      finalDomainMin = Math.min(finalDomainMin, bandY1);
+      finalDomainMax = Math.max(finalDomainMax, bandEffectiveY2);
+    }
+  });
+  
+  // Ensure the final domain still covers the original data-driven view extent
+  finalDomainMin = Math.min(finalDomainMin, yAxisViewMin);
+  finalDomainMax = Math.max(finalDomainMax, yAxisViewMax);
+
+  // Get rating boundaries for ticks from RANK_BANDS
+  const uniqueBoundaries = Array.from(new Set([
+    0, // Always consider 0 as a potential boundary
+    ...RANK_BANDS.map(b => b.y1),
+    ...RANK_BANDS.map(b => b.y2).filter(y => y !== undefined) // Include defined 'y2' values
+  ])).sort((a, b) => a - b);
+
+  // Filter ticks to be within the final adjusted domain
+  let yTicks = uniqueBoundaries.filter(v => v >= finalDomainMin && v <= finalDomainMax);
+  
+  // Add domain extremities to the ticks array if they are not already present.
+  if (!yTicks.includes(finalDomainMin)) {
+    yTicks.push(finalDomainMin);
+  }
+  if (!yTicks.includes(finalDomainMax)) {
+    yTicks.push(finalDomainMax);
+  }
+  
+  // Sort and remove duplicates again after adding extremities.
+  yTicks = Array.from(new Set(yTicks)).sort((a,b)=>a-b);
+
+  // Handle edge cases for ticks
+  if (finalDomainMin === finalDomainMax) {
+    yTicks = [finalDomainMin]; // Single tick if domain has no range
+  } else if (yTicks.length < 2 && finalDomainMin !== finalDomainMax) {
+     // Ensure at least two ticks if there's a range, using domain ends
+     yTicks = Array.from(new Set([finalDomainMin, finalDomainMax])).sort((a,b)=>a-b);
+  }
+
   // Custom tooltip that shows contest details
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length > 0) {
@@ -150,7 +211,7 @@ export default function RatingGraph({ ratingHistory }) {
       y2,
       fill: band.color,
       opacity: 0.75,
-    };
+    }; 
   });
   
   return (
@@ -171,8 +232,9 @@ export default function RatingGraph({ ratingHistory }) {
             tick={{ fill: '#333' }}
           />
           <YAxis 
-            domain={[0, 3000]}
-            tickCount={10}
+            domain={[finalDomainMin, finalDomainMax]}
+            ticks={yTicks}
+            allowDecimals={false}
             tick={{ fill: '#333' }}
           />
           <Tooltip
