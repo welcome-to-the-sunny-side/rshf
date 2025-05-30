@@ -3,7 +3,7 @@
 
 // Rating graph color bands (for use in RatingGraph)
 export const ratingGraphColors = [
-  { color: '#a00', yaxis: { from: 3000 } },
+  { color: '#a00', yaxis: { from: 3000, to: 5000 } },
   { color: '#f33', yaxis: { from: 2600, to: 2999 } },
   { color: '#f77', yaxis: { from: 2400, to: 2599 } },
   { color: '#ffbb55', yaxis: { from: 2300, to: 2399 } },
@@ -40,7 +40,7 @@ export const RANK_BANDS = [
   { y1: 2300, y2: 2400, color: RANK_COLORS.intmaster },
   { y1: 2400, y2: 2600, color: RANK_COLORS.grandmaster },
   { y1: 2600, y2: 3000, color: RANK_COLORS.intgrandmaster },
-  { y1: 3000,          color: RANK_COLORS.legend } // y2 determined dynamically
+  { y1: 3000, y2: 5000, color: RANK_COLORS.legend } // y2 determined dynamically
 ];
 
 /**
