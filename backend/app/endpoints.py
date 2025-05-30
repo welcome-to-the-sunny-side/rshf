@@ -888,6 +888,20 @@ def run_seed():
     
     return {"message": "Database has been reset and seeded with test data"}
 
+@router.post("/devseed2", status_code=status.HTTP_200_OK)
+def run_seed2():
+    """
+    Development endpoint to run devseed2.py and seed the database with alternate test data.
+    This endpoint has NO authentication restrictions and should only be used in development.
+
+    Returns:
+        Success message
+    """
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from devseed2 import seed
+    seed()
+    return {"message": "Database has been seeded with devseed2 data"}
+
 
 # ------------------------- custom routes --------------------
 

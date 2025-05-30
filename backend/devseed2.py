@@ -35,10 +35,9 @@ faker = Faker()
 DEFAULT_PASS = "devpass"
 
 # --- Contest IDs ---
-MAIN_CONTEST = 2084
+MAIN_CONTESTS = [1779, 1975, 1984, 2084]  # Example: add more contest IDs if needed
+# PAST_CONTESTS = [2093, 2094, 2096]
 PAST_CONTESTS = [2093, 2094, 2096, 2103, 2106, 2098, 2097, 2104, 2108, 2107, 2101, 2109, 2110, 2114]
-# PAST_CONTESTS = [2101, 2109]
-# PAST_CONTESTS = [2109]
 UPCOMING_CONTEST = 2115
 
 SPECIAL_USERS = ["negative-xp", "roomTemperatureIQ"]
@@ -93,7 +92,7 @@ def seed():
     db = SessionLocal()
 
     # --- Step 0: Pre-fetch and sort contest info ---
-    # Fetch contest info for MAIN_CONTEST and all PAST_CONTESTS
+    # Fetch contest info for all PAST_CONTESTS (no main_contest in DB)
     def get_cf_contest_info(contest_id: int):
         url = "https://codeforces.com/api/contest.standings"
         try:
@@ -107,9 +106,8 @@ def seed():
             return None
         return data["result"]["contest"]
 
-    # Fetch contest info for main and past contests
+    # Fetch contest info for all past contests (main_contest is not added to DB)
     contest_infos = []
-    main_info = get_cf_contest_info(MAIN_CONTEST)
     past_infos = []
     for cid in PAST_CONTESTS:
         info = get_cf_contest_info(cid)
@@ -117,8 +115,7 @@ def seed():
             past_infos.append(info)
     # Sort past contests by startTimeSeconds
     past_infos_sorted = sorted(past_infos, key=lambda c: c.get("startTimeSeconds", 0))
-    # Ensure main contest is first
-    contest_infos = ([main_info] if main_info else []) + past_infos_sorted
+    contest_infos = past_infos_sorted
     contest_id_set = set()
     contest_id_list = []
     for cinfo in contest_infos:
@@ -127,14 +124,17 @@ def seed():
             contest_id_list.append(cid)
             contest_id_set.add(cid)
 
-    # 1. Gather main group members from contest 2107 (excluding special users)
-    standings_2107 = get_cf_standings(MAIN_CONTEST)
-    handles_2107 = [h for (h, _) in standings_2107 if h not in SPECIAL_USERS]
-    ratings_2107_map = get_cf_rating_after_map(MAIN_CONTEST)
-    ratings_2107 = {h: ratings_2107_map.get(h, 1500) for h in handles_2107}
-
-    # Add special users manually
-    all_handles = handles_2107 + SPECIAL_USERS
+    # 1. Gather main group members from all MAIN_CONTESTS (excluding special users)
+    all_handles_set = set()
+    for main_cid in MAIN_CONTESTS:
+        standings = get_cf_standings(main_cid)
+        for h, _ in standings:
+            if h not in SPECIAL_USERS:
+                all_handles_set.add(h)
+    all_handles = list(all_handles_set) + SPECIAL_USERS
+    # For ratings, just use the first main contest as before (for initial group rating)
+    ratings_main_map = get_cf_rating_after_map(MAIN_CONTESTS[0])
+    ratings_main = {h: ratings_main_map.get(h, 0) for h in all_handles}
 
     print("number of handles is", len(all_handles))
 
@@ -159,7 +159,7 @@ def seed():
     user_id_to_obj = {u.user_id: u for u in users}
     group_id_to_obj = {g.group_id: g for g in groups}
     for u in users:
-        rating = ratings_2107.get(u.user_id, 0)
+        rating = ratings_main.get(u.user_id, 0)
         if not isinstance(rating, int):
             rating = 0
         role = Role.admin if u.user_id in SPECIAL_USERS else Role.user
@@ -258,13 +258,37 @@ def seed():
         db.commit()
 
     # 6. Add upcoming contest and random registrations
-    contest_upcoming = Contest(contest_id=str(UPCOMING_CONTEST), contest_name=f"CF {UPCOMING_CONTEST}", platform="Codeforces", start_time_posix=int(time.time())+86400, duration_seconds=7200, link=f"https://codeforces.com/contest/{UPCOMING_CONTEST}", finished=False)
+    # Fetch real contest info for upcoming contest
+    upcoming_info = get_cf_contest_info(UPCOMING_CONTEST)
+    contest_upcoming = Contest(
+        contest_id=str(UPCOMING_CONTEST),
+        contest_name=upcoming_info.get("name", f"CF {UPCOMING_CONTEST}") if upcoming_info else f"CF {UPCOMING_CONTEST}",
+        platform="Codeforces",
+        start_time_posix=upcoming_info.get("startTimeSeconds", int(time.time())+86400) if upcoming_info else int(time.time())+86400,
+        duration_seconds=upcoming_info.get("durationSeconds", 7200) if upcoming_info else 7200,
+        link=f"https://codeforces.com/contest/{UPCOMING_CONTEST}",
+        finished=False
+    )
     db.add(contest_upcoming)
     db.commit()
     # Randomly register 60% of group members
     reg_handles = random.sample(all_handles, k=int(0.6*len(all_handles)))
+    # Compute user ratings after all past contests
+    user_final_ratings = {}
+    for gm in db.query(GroupMembership).filter_by(group_id="main").all():
+        user_final_ratings[gm.user_id] = gm.user_group_rating
     for h in reg_handles:
-        cp = ContestParticipation(user_id=h, group_id="main", contest_id=str(UPCOMING_CONTEST), rank=None, delta=None, rating_before=None, rating_after=None, rating_change=None, cf_handle=h)
+        cp = ContestParticipation(
+            user_id=h,
+            group_id="main",
+            contest_id=str(UPCOMING_CONTEST),
+            rank=None,
+            delta=None,
+            rating_before=user_final_ratings.get(h, 0),
+            rating_after=None,
+            rating_change=None,
+            cf_handle=h
+        )
         db.add(cp)
     db.commit()
 
