@@ -9,6 +9,32 @@ from app import schemas
 from datetime import datetime, timedelta
 from app.codeforces_api import cf_api
 
+# helper enrichers ───────────────────────────────────────────Add commentMore actions
+def _enrich_user(db: Session, user: models.User) -> models.User:
+    # Load group memberships for the user
+    user.group_memberships = list(user.memberships)
+    
+    # Load contest participations for the user
+    user.contest_participations = (
+        db.query(models.ContestParticipation)
+        .filter(models.ContestParticipation.user_id == user.user_id)
+        .all()
+    )
+    
+    # No need to explicitly assign handles and other attributes
+    # as they are already part of the User model
+    return user
+
+
+def _enrich_group(db: Session, group: models.Group) -> models.Group:
+    group.contest_participations = (
+        db.query(models.ContestParticipation)
+        .filter(models.ContestParticipation.group_id == group.group_id)
+        .all()
+    )
+    return group
+
+
 # ───────────── user ─────────────
 def create_user(db: Session, payload: schemas.UserRegister) -> models.User:
     db_user = models.User(
@@ -26,12 +52,16 @@ def create_user(db: Session, payload: schemas.UserRegister) -> models.User:
 
 def get_user(db: Session, user_id: str) -> Optional[models.User]:
     user = db.query(models.User).filter(models.User.user_id == user_id).first()
-    return user
+    # return user
+    return _enrich_user(db, user) if user else None
 
 
 def list_users(db: Session) -> List[models.User]:
     users = db.query(models.User).all()
-    return users
+    # return users
+    return [_enrich_user(db, u) for u in users]
+
+
 
 
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import styles from './Layout.module.css';
 import logo from '../assets/logo.png';
 import { useAuth } from '../context/AuthContext';
@@ -7,6 +7,10 @@ import { useAuth } from '../context/AuthContext';
 export default function Layout({ children }) {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const noNavPaths = ['/login', '/register'];
+  const showNav = !noNavPaths.includes(location.pathname);
   
   const handleLogout = () => {
     logout();
@@ -38,11 +42,13 @@ export default function Layout({ children }) {
         )}
       </header>
       {/* New Navigation Bar */}
-      <nav className={styles.navBar}>
-        <Link to="/" className={styles.navLink}>Home</Link>
-        <Link to="/contests" className={styles.navLink}>Contests</Link>
-        <Link to="/groups" className={styles.navLink}>Groups</Link>
-      </nav>
+      {showNav && (
+        <nav className={styles.navBar}>
+          <Link to="/" className={styles.navLink}>Home</Link>
+          <Link to="/contests" className={styles.navLink}>Contests</Link>
+          <Link to="/groups" className={styles.navLink}>Groups</Link>
+        </nav>
+      )}
       <main className={styles.main}>{children}</main>
       <footer className={styles.footer}>
         <div className={styles.footerContent}>

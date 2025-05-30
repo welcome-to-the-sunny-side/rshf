@@ -163,7 +163,8 @@ def get_user(
     # Return email only if the user is querying their own profile
     if user_id != current.user_id:
         user.email_id = None
-    
+
+    print(f"DEBUG: Endpoint /user: Fetched user {user.user_id}, role from DB: {user.role}") # DEBUG
     return user
 
 

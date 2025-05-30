@@ -34,8 +34,8 @@ export default function GroupMembers() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15; // Fixed
   const [sortConfig, setSortConfig] = useState({
-    key: COLUMN_KEYS.DATE_JOINED, // Default sort key
-    direction: 'desc',          // Default sort direction
+    key: COLUMN_KEYS.USER_GROUP_RATING, // Default sort key: rating
+    direction: 'desc',                  // Default sort direction
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
