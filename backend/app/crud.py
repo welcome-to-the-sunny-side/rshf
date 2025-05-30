@@ -112,8 +112,7 @@ def create_group(db: Session, payload: schemas.GroupRegister) -> models.Group:
 
 def get_group(db: Session, group_id: str) -> Optional[models.Group]:
     grp = db.query(models.Group).filter(models.Group.group_id == group_id).first()
-    return _enrich_group(db, grp) if grp else None
-
+    return grp
 
 def list_groups(db: Session):
     groups = (
