@@ -64,4 +64,11 @@
 
 .sortableColumn:hover {
   background-color: rgb(230, 230, 230);
-} 
+}
+
+.noDataCell {
+  padding: 1rem;
+  color: #555;
+  font-style: italic;
+  /* text-align: center; is applied via inline style in BasicTableBox.jsx */
+}

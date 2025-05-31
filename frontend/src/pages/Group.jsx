@@ -298,43 +298,34 @@ export default function Group() {
     }
   };
 
-  // Transform the announcements data for the PagedTableBox component
+  // Prepare data and messages for Announcements PagedTableBox
   const announcementColumns = ["Announcement", "Date"];
-  
-  // Create a loading or error message row if needed
-  let announcementData = [];
-  
+  let displayAnnouncementData = [];
+  let announcementNoDataMessage = API_MESSAGES.NO_ANNOUNCEMENTS; // Default
+
   if (announcementsLoading) {
-    announcementData = [[<span className="loading-message">{API_MESSAGES.LOADING}</span>, '']];
+    announcementNoDataMessage = API_MESSAGES.LOADING;
   } else if (announcementsError) {
-    announcementData = [[<span className="error-message">{API_MESSAGES.ERROR}</span>, '']];
-  } else if (announcementsList.length === 0) {
-    announcementData = [[<span className="no-data-message">{API_MESSAGES.NO_DATA}</span>, '']];
-  } else {
-    // Transform the API data for display
-    announcementData = announcementsList.map(announcement => [
+    announcementNoDataMessage = announcementsError; // Assumes announcementsError is a string message
+  } else if (announcementsList.length > 0) {
+    displayAnnouncementData = announcementsList.map(announcement => [
       <a href={announcement.link} className="tableCellLink" target="_blank" rel="noopener noreferrer">{announcement.title}</a>,
-      new Date(announcement.date).toLocaleDateString('en-US', { 
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      })
+      formatDate(announcement.date) // Using existing formatDate helper
     ]);
-  }
+  } // If loading, error, or no actual data, displayAnnouncementData remains [] and announcementNoDataMessage is used
   
-  // Setup columns for the leaderboard table
-  const leaderboardColumns = ["Rank", "User", "Rating"];
-  
-  // Prepare leaderboard data with loading and error states
-  let leaderboardData = leaderboardRows;
-  
+  // Prepare data and messages for Leaderboard PagedTableBox
+  const leaderboardColumns = ["Rank", "User", "Rating"]; 
+  let displayLeaderboardData = [];
+  let leaderboardNoDataMessage = API_MESSAGES.NO_LEADERBOARD_DATA; // Default or a more specific message
+
   if (leaderboardLoading) {
-    leaderboardData = [[<span className="loading-message">{API_MESSAGES.LOADING}</span>, '', '']];
+    leaderboardNoDataMessage = API_MESSAGES.LOADING;
   } else if (leaderboardError) {
-    leaderboardData = [[<span className="error-message">{API_MESSAGES.ERROR}</span>, '', '']];
-  } else if (leaderboardRows.length === 0) {
-    leaderboardData = [[<span className="no-data-message">{API_MESSAGES.NO_DATA}</span>, '', '']];
-  }
+    leaderboardNoDataMessage = leaderboardError; // Assumes leaderboardError is a string message
+  } else if (leaderboardRows.length > 0) {
+    displayLeaderboardData = leaderboardRows;
+  } // If loading, error, or no actual data, displayLeaderboardData remains [] and leaderboardNoDataMessage is used
 
   // Display loading indicator if data is being fetched
   if (loading) {
@@ -440,7 +431,8 @@ export default function Group() {
           <PagedTableBox 
             title={<Link to={`/group/${groupId}/announcements`} className={titleStyles.titleLink}>Announcements</Link>}
             columns={announcementColumns}
-            data={announcementData}
+            data={displayAnnouncementData}
+            noDataMessage={announcementNoDataMessage}
             backgroundColor="rgb(240, 240, 255)"
             itemsPerPage={10}
           />
@@ -451,7 +443,8 @@ export default function Group() {
           <PagedTableBox 
             title="Leaderboard"
             columns={leaderboardColumns}
-            data={leaderboardData}
+            data={displayLeaderboardData}
+            noDataMessage={leaderboardNoDataMessage}
             backgroundColor="rgb(255, 240, 230)"
             itemsPerPage={10}
           />

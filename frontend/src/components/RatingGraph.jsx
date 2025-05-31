@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styles from './RatingGraph.module.css';
 import { getRatingColor, getRankName, ratingGraphColors, getRatingInfo, RANK_BANDS } from '../utils/ratingUtils';
 import {
@@ -63,6 +63,8 @@ const ClickableDot = (props) => {
 }
 
 export default function RatingGraph({ ratingHistory }) {
+  const [currentTooltipData, setCurrentTooltipData] = useState(null);
+  const HOVER_RADIUS = 15; // pixels; adjust as needed
   // Prepare data for the chart
   const formatData = () => {
     if (!ratingHistory || ratingHistory.length === 0) {
@@ -220,6 +222,38 @@ export default function RatingGraph({ ratingHistory }) {
         <LineChart
           data={data}
           margin={{ top: 20, right: 30, left: 20, bottom: 10 }}
+          onMouseMove={(chartState) => {
+            if (chartState.isTooltipActive && chartState.activePayload && chartState.activePayload.length > 0) {
+              const pointCoordinate = chartState.activeCoordinate; // { x, y } of the data point on chart
+              const mouseCoordinate = { x: chartState.chartX, y: chartState.chartY }; // Mouse position on chart
+
+              if (!pointCoordinate || typeof pointCoordinate.x !== 'number' || typeof pointCoordinate.y !== 'number') {
+                if (currentTooltipData) setCurrentTooltipData(null);
+                return;
+              }
+
+              const distance = Math.sqrt(
+                Math.pow(mouseCoordinate.x - pointCoordinate.x, 2) +
+                Math.pow(mouseCoordinate.y - pointCoordinate.y, 2)
+              );
+
+              if (distance < HOVER_RADIUS) {
+                setCurrentTooltipData({
+                  active: true,
+                  payload: chartState.activePayload,
+                  label: chartState.activeLabel,
+                  coordinate: pointCoordinate,
+                });
+              } else {
+                if (currentTooltipData) setCurrentTooltipData(null);
+              }
+            } else {
+              if (currentTooltipData) setCurrentTooltipData(null);
+            }
+          }}
+          onMouseLeave={() => {
+            setCurrentTooltipData(null);
+          }}
         >
           <defs>
             <filter id="yellowLineShadow" x="-10" y="-10" width="200" height="200">
@@ -238,8 +272,14 @@ export default function RatingGraph({ ratingHistory }) {
             tick={{ fill: '#333' }}
           />
           <Tooltip
+            // Control visibility and data via state
+            active={!!(currentTooltipData && currentTooltipData.active)}
+            payload={currentTooltipData ? currentTooltipData.payload : undefined}
+            label={currentTooltipData ? currentTooltipData.label : undefined}
+            coordinate={currentTooltipData ? currentTooltipData.coordinate : undefined}
+            // Pass all necessary props to CustomTooltip
             content={<CustomTooltip />}
-            cursor={false}
+            cursor={false} // Disable default Recharts cursor line
           />
           
           {/* Add colored backgrounds for rating bands */}

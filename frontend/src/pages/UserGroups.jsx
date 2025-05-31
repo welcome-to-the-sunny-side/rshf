@@ -78,25 +78,17 @@ export default function UserGroups() {
     formatDate(membership.timestamp)
   ]);
 
+  let displayData = data;
+  let noDataMessage = API_MESSAGES.NO_DATA;
   if (loading) {
-    return <div className="page-container">
-      <UserNavBar username={username} isOwnProfile={isOwnProfile} />
-      <div className="api-feedback-container loading-message">{API_MESSAGES.LOADING}</div>
-    </div>;
-  }
-
-  if (error) {
-    return <div className="page-container">
-      <UserNavBar username={username} isOwnProfile={isOwnProfile} />
-      <div className="api-feedback-container error-message">{API_MESSAGES.ERROR}</div>
-    </div>;
-  }
-  
-  if (userGroupsData.length === 0) {
-    return <div className="page-container">
-      <UserNavBar username={username} isOwnProfile={isOwnProfile} />
-      <div className="api-feedback-container no-data-message">{API_MESSAGES.NO_DATA}</div>
-    </div>;
+    displayData = [];
+    noDataMessage = API_MESSAGES.LOADING;
+  } else if (error) {
+    displayData = [];
+    noDataMessage = API_MESSAGES.ERROR;
+  } else if (userGroupsData.length === 0) {
+    displayData = [];
+    noDataMessage = API_MESSAGES.NO_DATA;
   }
 
   return (
@@ -104,7 +96,8 @@ export default function UserGroups() {
       <UserNavBar username={username} isOwnProfile={isOwnProfile} />
       <SortableTableBox
         columns={columns}
-        data={data}
+        data={displayData}
+        noDataMessage={noDataMessage}
         initialSortColumnIndex={1} // Sort by rating initially
         initialSortDirection="desc" // Highest ratings first
       />

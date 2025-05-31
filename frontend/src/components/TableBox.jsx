@@ -2,13 +2,14 @@ import React from 'react';
 import BasicTableBox from './BasicTableBox';
 import styles from './TableBox.module.css';
 
-export default function TableBox({ 
-  title, 
-  columns, 
+export default function TableBox({
+  title,
+  columns,
   data,
   backgroundColor = 'rgb(230, 240, 255)', // Same default as TitledBox
   className = '',
-  sortable = false
+  sortable = false,
+  noDataMessage = "No Data Found" // Added default
 }) {
   return (
     <div className={styles.wrapper}>
@@ -21,6 +22,7 @@ export default function TableBox({
         backgroundColor={backgroundColor}
         className={className}
         sortable={sortable}
+        noDataMessage={noDataMessage} // Passed down
       />
     </div>
   );

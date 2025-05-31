@@ -109,42 +109,37 @@ export default function Groups() {
     return mainGroupRow ? [mainGroupRow] : [];
   }, [mainGroupRow]);
 
+  let tableNoDataMessage;
+  if (loading) {
+    tableNoDataMessage = API_MESSAGES.LOADING;
+  } else if (error) {
+    tableNoDataMessage = error; // This is already API_MESSAGES.ERROR
+  } else if (groups.length === 0) {
+    tableNoDataMessage = "No groups found.";
+  } else if (otherGroupsRows.length === 0 && pinnedRows.length === 0) {
+    tableNoDataMessage = "No groups to display.";
+  } else {
+    tableNoDataMessage = API_MESSAGES.NO_DATA; // Default for table if it renders empty
+  }
+
+  const displayDataForTable = loading || error ? [] : otherGroupsRows;
+  const displayPinnedRowsForTable = loading || error ? [] : pinnedRows;
+
   return (
     <div className="page-container">
-      {/* Error message */}
-      {error && (
-        <div className="api-feedback-container error-message">
-          {API_MESSAGES.ERROR}
-        </div>
-      )}
-      
-      {/* Loading indicator */}
-      {loading ? (
-        <div className="api-feedback-container loading-message">
-          {API_MESSAGES.LOADING}
-        </div>
-      ) : (
-        <>
-          {groups.length === 0 ? (
-            <div className="api-feedback-container no-data-message">
-              No groups found.
-            </div>
-          ) : (
-            <div className={styles.groupsTableWrapper}>
-              <SortablePagedTableBox 
-                columns={columns}
-                data={otherGroupsRows}
-                pinnedRows={pinnedRows}
-                backgroundColor="rgb(230, 240, 255)"
-                itemsPerPage={15}
-                initialSortColumnIndex={2} // Member Count column
-                initialSortDirection="desc" // Descending order
-                className="groupPageGroupsTable"
-              />
-            </div>
-          )}
-        </>
-      )}
+      <div className={styles.groupsTableWrapper}>
+        <SortablePagedTableBox 
+          columns={columns}
+          data={displayDataForTable}
+          pinnedRows={displayPinnedRowsForTable}
+          noDataMessage={tableNoDataMessage}
+          backgroundColor="rgb(230, 240, 255)"
+          itemsPerPage={15}
+          initialSortColumnIndex={2} // Member Count column
+          initialSortDirection="desc" // Descending order
+          className="groupPageGroupsTable"
+        />
+      </div>
     </div>
   );
 }

@@ -104,22 +104,24 @@ export default function Contests() {
   };
   
   // Format data for upcoming contests
-  const upcomingData = upcomingContests.length === 0 && !loading.upcoming && !error.upcoming
-    ? [[API_MESSAGES.NO_DATA, "", ""]]
+  const upcomingTableData = (loading.upcoming || error.upcoming || upcomingContests.length === 0)
+    ? []
     : upcomingContests.map(contest => [
         createContestLink(contest),
         contest.platform,
         formatDateTime(contest.start_time_posix)
       ]);
+  const upcomingNoDataMessage = loading.upcoming ? API_MESSAGES.LOADING : (error.upcoming ? API_MESSAGES.ERROR : API_MESSAGES.NO_DATA);
   
   // Format data for past contests
-  const pastData = pastContests.length === 0 && !loading.past && !error.past
-    ? [[API_MESSAGES.NO_DATA, "", ""]]
+  const pastTableData = (loading.past || error.past || pastContests.length === 0)
+    ? []
     : pastContests.map(contest => [
         createContestLink(contest),
         contest.platform,
         formatDateTime(contest.start_time_posix)
       ]);
+  const pastNoDataMessage = loading.past ? API_MESSAGES.LOADING : (error.past ? API_MESSAGES.ERROR : API_MESSAGES.NO_DATA);
 
   return (
     <div className="page-container contestsPage">
@@ -137,35 +139,25 @@ export default function Contests() {
       )}
       
       {/* Active/Upcoming Contests */}
-      {loading.upcoming ? (
-        <div className="api-feedback-container loading-message">
-          {API_MESSAGES.LOADING}
-        </div>
-      ) : (
-        <TableBox 
-          title={<span className={titleStyles.titleText}>Active/Upcoming Contests</span>}
-          columns={columns}
-          data={upcomingData}
-          backgroundColor="rgb(230, 255, 230)" // Light green background
-          className="contestsTable"
-        />
-      )}
+      <TableBox 
+        title={<span className={titleStyles.titleText}>Active/Upcoming Contests</span>}
+        columns={columns}
+        data={upcomingTableData}
+        noDataMessage={upcomingNoDataMessage}
+        backgroundColor="rgb(230, 255, 230)" // Light green background
+        className="contestsTable"
+      />
 
       {/* Past Contests - Using PagedTableBox */}
-      {loading.past ? (
-        <div className="api-feedback-container loading-message">
-          {API_MESSAGES.LOADING}
-        </div>
-      ) : (
-        <PagedTableBox 
-          title={<span className={titleStyles.titleText}>Past Contests</span>}
-          columns={columns}
-          data={pastData}
-          backgroundColor="rgb(245, 245, 245)" // Light gray background
-          itemsPerPage={15}
-          className="contestsTable"
-        />
-      )}
+      <PagedTableBox 
+        title={<span className={titleStyles.titleText}>Past Contests</span>}
+        columns={columns}
+        data={pastTableData}
+        noDataMessage={pastNoDataMessage}
+        backgroundColor="rgb(245, 245, 245)" // Light gray background
+        itemsPerPage={15}
+        className="contestsTable"
+      />
     </div>
   );
 }

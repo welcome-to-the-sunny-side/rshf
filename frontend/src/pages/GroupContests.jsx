@@ -123,87 +123,85 @@ export default function GroupContests() {
     columns = [...columns, "Rank", "Rating Change", "Final Rating"];
   }
   
-  // Transform the data for the table component
-  const tableRows = contests.map(contest => {
-    // Get participants/members ratio from group_views if available
-    let participantsMembers = "-";
-    if (contest.group_views && contest.group_views[groupId]) {
-      const totalParticipants = contest.group_views[groupId].total_participants || 0;
-      const totalMembers = contest.group_views[groupId].total_members || 0;
-      participantsMembers = `${totalParticipants}/${totalMembers}`;
-    }
-    
-    // Base data for all users (logged in or not)
-    const baseData = [
-      <Link to={`/group/${groupId}/contest/${contest.contest_id}`} className="tableCellLink">{contest.contest_name}</Link>,
-      contest.platform,
-      formatDateTime(new Date(contest.start_time_posix * 1000).toISOString()),
-      participantsMembers
-    ];
-    
-    // Add participation data for members
-    if (isLoggedInUserMember && user) {
-      const participation = participations[contest.contest_id];
-      
-      if (participation) {
-        // Calculate rating change
-        const ratingBefore = participation.rating_before || 0;
-        const ratingAfter = participation.rating_after || 0;
-        const ratingChange = ratingAfter - ratingBefore;
-        const ratingChangeText = ratingChange > 0 ? `+${ratingChange}` : ratingChange.toString();
-        const ratingChangeColor = ratingChange > 0 ? 'green' : (ratingChange < 0 ? 'red' : 'gray');
-        
-        return [
-          ...baseData,
-          participation.rank || "-",
-          <span style={{ color: ratingChangeColor, fontWeight: 'bold' }}>{ratingChangeText}</span>,
-          <span style={{ color: getRatingColor(ratingAfter), fontWeight: 'bold' }}>{ratingAfter}</span>
-        ];
-      } else {
-        // No participation data for this contest
-        return [
-          ...baseData,
-          "-",
-          "-",
-          "-"
-        ];
+  // Determine noDataMessage and prepare tableRows
+  let currentNoDataMessage = "No contests found for this group."; // Default for empty state
+  let displayTableRows = [];
+
+  if (loading) {
+    currentNoDataMessage = "Loading contests...";
+  } else if (error) {
+    currentNoDataMessage = error; // Display the error message from state
+  } else if (contests.length > 0) {
+    // Only map rows if not loading, no error, and contests exist
+    displayTableRows = contests.map(contest => {
+      // Get participants/members ratio from group_views if available
+      let participantsMembers = "-";
+      if (contest.group_views && contest.group_views[groupId]) {
+        const totalParticipants = contest.group_views[groupId].total_participants || 0;
+        const totalMembers = contest.group_views[groupId].total_members || 0;
+        participantsMembers = `${totalParticipants}/${totalMembers}`;
       }
-    }
-    
-    return baseData;
-  });
+      
+      // Base data for all users (logged in or not)
+      const baseData = [
+        <Link to={`/group/${groupId}/contest/${contest.contest_id}`} className="tableCellLink">{contest.contest_name}</Link>,
+        contest.platform,
+        formatDateTime(new Date(contest.start_time_posix * 1000).toISOString()),
+        participantsMembers
+      ];
+      
+      // Add participation data for members
+      if (isLoggedInUserMember && user) {
+        const participation = participations[contest.contest_id];
+        
+        if (participation) {
+          // Calculate rating change
+          const ratingBefore = participation.rating_before || 0;
+          const ratingAfter = participation.rating_after || 0;
+          const ratingChange = ratingAfter - ratingBefore;
+          const ratingChangeText = ratingChange > 0 ? `+${ratingChange}` : ratingChange.toString();
+          const ratingChangeColor = ratingChange > 0 ? 'green' : (ratingChange < 0 ? 'red' : 'gray');
+          
+          return [
+            ...baseData,
+            participation.rank || "-",
+            <span style={{ color: ratingChangeColor, fontWeight: 'bold' }}>{ratingChangeText}</span>,
+            <span style={{ color: getRatingColor(ratingAfter), fontWeight: 'bold' }}>{ratingAfter}</span>
+          ];
+        } else {
+          // No participation data for this contest
+          return [
+            ...baseData,
+            "-",
+            "-",
+            "-"
+          ];
+        }
+      }
+      
+      return baseData;
+    });
+  }
+  // If loading, error, or no contests, displayTableRows remains [] and currentNoDataMessage is shown by SortablePagedTableBox
 
   return (
     <div className="page-container">
       {/* Floating button box */}
       <GroupNavBar groupId={groupId} showModViewButton={showModViewButton} />
       
-      {/* Error message */}
-      {error && (
-        <div className="error-message" style={{ color: 'red', margin: '20px', textAlign: 'center' }}>
-          {error}
-        </div>
-      )}
-      
-      {/* Loading indicator */}
-      {loading ? (
-        <div className="loading-indicator" style={{ textAlign: 'center', margin: '50px' }}>
-          Loading contests...
-        </div>
-      ) : (
-        /* Contests table */
-        <div className>
-          <SortablePagedTableBox 
-            columns={columns}
-            data={tableRows}
-            backgroundColor="rgb(230, 255, 230)" // Light green
-            itemsPerPage={15}
-            initialSortColumnIndex={isLoggedInUserMember ? 6 : 2} // Date/Time or Final Rating column
-            initialSortDirection="desc" // Descending order
-            className="groupContestsTable"
-          />
-        </div>
-      )}
+      {/* Contests table is now always rendered. SortablePagedTableBox handles loading/error/noData states via noDataMessage */}
+      <div className={styles.groupContestsTableContainer}> {/* Added a wrapper for potential styling */}
+        <SortablePagedTableBox 
+          columns={columns}
+          data={displayTableRows} // Use displayTableRows which is empty for Loading/Error/NoData states
+          noDataMessage={currentNoDataMessage} // Pass the determined message
+          backgroundColor="rgb(230, 255, 230)" // Light green
+          itemsPerPage={15}
+          initialSortColumnIndex={isLoggedInUserMember ? 6 : 2} // Date/Time or Final Rating column
+          initialSortDirection="desc" // Descending order
+          className="groupContestsTable"
+        />
+      </div>
     </div>
   );
 } 

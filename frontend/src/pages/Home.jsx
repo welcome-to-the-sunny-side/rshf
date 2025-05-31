@@ -188,55 +188,46 @@ export default function Home() {
     }
   }, [token, navigate]);
 
-  // Transform the data for the group table
-  const groupData = loading.groups
-    ? [[API_MESSAGES.LOADING, ""]]
-    : error.groups
-      ? [[API_MESSAGES.ERROR, ""]]
-      : groups.length === 0
-        ? [[API_MESSAGES.NO_DATA, ""]]
-        : groups.map(group => [
-            <Link to={`/group/${group.name}`} className="tableCellLink">{group.name}</Link>,
-            group.memberCount.toLocaleString()
-          ]);
+  // Transform the data for the groups table
+  const groupTableData = (loading.groups || error.groups || groups.length === 0)
+    ? []
+    : groups.map(group => [
+        <Link to={`/group/${group.name}`} className="tableCellLink">{group.name}</Link>,
+        group.memberCount.toLocaleString()
+      ]);
+  const groupNoDataMessage = loading.groups ? API_MESSAGES.LOADING : (error.groups ? API_MESSAGES.ERROR : API_MESSAGES.NO_DATA);
 
   const announcementColumns = ["Announcement", "Date"];
   // Transform the data for the announcements table
-  const announcementData = loading.announcements
-    ? [[API_MESSAGES.LOADING, ""]]
-    : error.announcements
-      ? [[API_MESSAGES.ERROR, ""]]
-      : announcements.length === 0
-        ? [[API_MESSAGES.NO_DATA, ""]]
-        : announcements.map(announcement => [
-            <a href={announcement.link} className="tableCellLink" target="_blank" rel="noopener noreferrer">{announcement.title}</a>,
-            new Date(announcement.date).toLocaleDateString('en-US', { 
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric'
-            })
-          ]);
+  const announcementTableData = (loading.announcements || error.announcements || announcements.length === 0)
+    ? []
+    : announcements.map(announcement => [
+        <a href={announcement.link} className="tableCellLink" target="_blank" rel="noopener noreferrer">{announcement.title}</a>,
+        new Date(announcement.date).toLocaleDateString('en-US', { 
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        })
+      ]);
+  const announcementNoDataMessage = loading.announcements ? API_MESSAGES.LOADING : (error.announcements ? API_MESSAGES.ERROR : API_MESSAGES.NO_DATA);
 
   const contestColumns = ["Contest", "Date"];
   // Transform the data for the contests table
-  const contestData = loading.contests
-    ? [[API_MESSAGES.LOADING, ""]]
-    : error.contests
-      ? [[API_MESSAGES.ERROR, ""]]
-      : contests.length === 0 
-        ? [[API_MESSAGES.NO_DATA, ""]]
-        : contests.map(contest => [
-            <Link to={`/contest/${contest.contest_id}`} className="tableCellLink">{contest.contest_name}</Link>,
-            contest.date
-              ? new Date(contest.date).toLocaleString('en-US', { 
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })
-              : "Date not specified"
-          ]);
+  const contestTableData = (loading.contests || error.contests || contests.length === 0)
+    ? []
+    : contests.map(contest => [
+        <Link to={`/contest/${contest.contest_id}`} className="tableCellLink">{contest.contest_name}</Link>,
+        contest.date
+          ? new Date(contest.date).toLocaleString('en-US', { 
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            })
+          : "Date not specified"
+      ]);
+  const contestNoDataMessage = loading.contests ? API_MESSAGES.LOADING : (error.contests ? API_MESSAGES.ERROR : API_MESSAGES.NO_DATA);
 
   return (
     <div className="page-container">
@@ -245,49 +236,28 @@ export default function Home() {
           <TableBox 
             title={<Link to="/groups" className={titleStyles.titleLink}>Top Groups</Link>}
             columns={groupColumns}
-            data={groupData}
+            data={groupTableData}
+            noDataMessage={groupNoDataMessage}
             backgroundColor="rgb(230, 240, 255)"
             className="topGroupsTable"
           />
 
-          {/* Conditionally render contests */}
-          {loading.contests ? (
-            <ContentBoxWithTitle 
-              title={<Link to="/contests" className={titleStyles.titleLink}>Active/Upcoming Contests</Link>}
-              backgroundColor="rgb(230, 255, 230)"
-            >
-              <div className="api-feedback-container loading-message">{API_MESSAGES.LOADING}</div>
-            </ContentBoxWithTitle>
-          ) : error.contests ? (
-            <ContentBoxWithTitle 
-              title={<Link to="/contests" className={titleStyles.titleLink}>Active/Upcoming Contests</Link>}
-              backgroundColor="rgb(230, 255, 230)"
-            >
-              <div className="api-feedback-container error-message">{API_MESSAGES.ERROR}</div>
-            </ContentBoxWithTitle>
-          ) : contests.length > 0 ? (
-            <TableBox 
-              title={<Link to="/contests" className={titleStyles.titleLink}>Active/Upcoming Contests</Link>}
-              columns={contestColumns}
-              data={contestData} 
-              backgroundColor="rgb(230, 255, 230)"
-              className="homeContestsTable"
-            />
-          ) : (
-            <ContentBoxWithTitle 
-              title={<Link to="/contests" className={titleStyles.titleLink}>Active/Upcoming Contests</Link>}
-              backgroundColor="rgb(230, 255, 230)"
-            >
-              <div className="api-feedback-container no-data-message">No Active/Upcoming Contests T_T</div>
-            </ContentBoxWithTitle>
-          )}
+          <TableBox 
+            title={<Link to="/contests" className={titleStyles.titleLink}>Active/Upcoming Contests</Link>}
+            columns={contestColumns}
+            data={contestTableData} 
+            noDataMessage={contestNoDataMessage}
+            backgroundColor="rgb(230, 255, 230)"
+            className="homeContestsTable"
+          />
         </div>
         
         {/* Using PagedTableBox for Announcements */}
         <PagedTableBox 
           title="Announcements"
           columns={announcementColumns}
-          data={announcementData}
+          data={announcementTableData}
+          noDataMessage={announcementNoDataMessage}
           backgroundColor="rgb(255, 230, 230)"
           className={`${styles['main-content']} announcementsTable`}
           itemsPerPage={15}

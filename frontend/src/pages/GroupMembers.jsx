@@ -202,43 +202,22 @@ export default function GroupMembers() {
       {/* Floating button box */}
       <GroupNavBar groupId={groupId} showModViewButton={showModViewButton} />
       
-      {/* Error message */}
-      
-      
-      {/* Loading indicator */}
-      {loading ? (
-        <div className="api-feedback-container loading-message">
-          {API_MESSAGES.LOADING}
-        </div>
-      ) : error ? (
-        <div className="api-feedback-container error-message">
-          {API_MESSAGES.ERROR}
-        </div>
-      ) : membersData.length === 0 ? (
-        <div className="api-feedback-container no-data-message">
-          {API_MESSAGES.NO_DATA}
-        </div>
-      ) : (
-        /* Members table */
-        <div className={styles.membersTableWrapper}>
-          <LazyLoadingSortablePagedTableBox
-            columns={tableColumns}
-            items={membersData}
-            totalItems={totalMembers}
-            itemsPerPage={itemsPerPage}
-            currentPage={currentPage}
-            onPageChange={handlePageChange}
-            sortConfig={sortConfig}
-            onSortChange={handleSort} // handleSort expects columnKey, which onSortChange provides
-            isLoading={loading}
-            error={error}
-            noDataMessage={API_MESSAGES.NO_DATA}
-            // You can add a title prop if desired, e.g., title="Group Members"
-            // className and tableBoxClassName can be used for further styling if needed
-            // backgroundColor="rgb(230, 240, 255)" // If you want to restore this
-          />
-        </div>
-      )}
+      {/* Members table is now always rendered, LazyLoadingSortablePagedTableBox handles its own loading/error/noData states */}
+      <div className={styles.membersTableWrapper}>
+        <LazyLoadingSortablePagedTableBox
+          columns={tableColumns}
+          items={membersData} // Pass the actual data or an empty array
+          totalItems={totalMembers}
+          itemsPerPage={itemsPerPage}
+          currentPage={currentPage}
+          onPageChange={handlePageChange}
+          sortConfig={sortConfig}
+          onSortChange={handleSort}
+          isLoading={loading} // Pass loading state
+          error={error} // Pass error state (LazyLoading component will handle displaying it as a row)
+          // noDataMessage prop will use its default "No Data Found" or be overridden by loading/error states internally
+        />
+      </div>
     </div>
   );
 } 

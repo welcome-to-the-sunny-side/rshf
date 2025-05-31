@@ -3,7 +3,7 @@ import TableBox from './TableBox';
 import BasicTableBox from './BasicTableBox';
 import styles from './PagedTableBox.module.css';
 
-const PagedTableBox = ({ title, columns, data, backgroundColor, itemsPerPage = 15, className }) => {
+const PagedTableBox = ({ title, columns, data, backgroundColor, itemsPerPage = 15, className, noDataMessage = "No Data Found" }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [jumpPageInput, setJumpPageInput] = useState('');
   const totalPages = Math.ceil(data.length / itemsPerPage);
@@ -103,12 +103,14 @@ const PagedTableBox = ({ title, columns, data, backgroundColor, itemsPerPage = 1
           columns={columns}
           data={currentData}
           backgroundColor={backgroundColor}
+          noDataMessage={noDataMessage} // Pass down
         />
       ) : (
         <BasicTableBox 
           columns={columns}
           data={currentData}
           backgroundColor={backgroundColor}
+          noDataMessage={noDataMessage} // Pass down
         />
       )}
       
