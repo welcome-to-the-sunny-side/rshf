@@ -77,7 +77,7 @@ export default function Home() {
         // Process the groups to extract member counts
         const processedGroups = data.map(group => ({
           id: group.group_id,
-          name: group.group_id, // Using group_id as name since group_name was removed
+          name: group.group_name,
           memberCount: group.member_count
         }))
         // Sort by member count in descending order
@@ -188,17 +188,14 @@ export default function Home() {
     }
   }, [token, navigate]);
 
-  // Transform the data for the group table
-  const groupData = loading.groups
-    ? [[API_MESSAGES.LOADING, ""]]
-    : error.groups
-      ? [[API_MESSAGES.ERROR, ""]]
-      : groups.length === 0
-        ? [[API_MESSAGES.NO_DATA, ""]]
-        : groups.map(group => [
-            <Link to={`/group/${group.id}`} className="tableCellLink">{group.name}</Link>,
-            group.memberCount.toLocaleString()
-          ]);
+  // Transform the data for the groups table
+  const groupTableData = (loading.groups || error.groups || groups.length === 0)
+    ? []
+    : groups.map(group => [
+        <Link to={`/group/${group.name}`} className="tableCellLink">{group.name}</Link>,
+        group.memberCount.toLocaleString()
+      ]);
+  const groupNoDataMessage = loading.groups ? API_MESSAGES.LOADING : (error.groups ? API_MESSAGES.ERROR : API_MESSAGES.NO_DATA);
 
   const announcementColumns = ["Announcement", "Date"];
   // Transform the data for the announcements table

@@ -82,7 +82,7 @@ export default function Groups() {
     return [
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <PinIcon />
-        <Link to={`/group/${mainGroup.group_id}`} className="tableCellLink" style={{ fontWeight: 600 }}>{mainGroup.group_id}</Link>
+        <Link to={`/group/${mainGroup.group_id}`} className="tableCellLink" style={{ fontWeight: 600 }}>{mainGroup.group_name}</Link>
       </div>,
       <span style={{ fontWeight: 500 }}>{mainGroup.is_private ? 'private' : 'public'}</span>,
       <span style={{ fontWeight: 500 }}>{mainGroup.member_count.toLocaleString()}</span>,
@@ -97,7 +97,7 @@ export default function Groups() {
     }
     
     return otherGroups.map(group => [
-      <Link to={`/group/${group.group_id}`} className="tableCellLink">{group.group_id}</Link>,
+      <Link to={`/group/${group.group_id}`} className="tableCellLink">{group.group_name}</Link>,
       group.is_private ? 'private' : 'public',
       group.member_count.toLocaleString(),
       formatDate(group.timestamp)

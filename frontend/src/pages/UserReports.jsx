@@ -17,9 +17,9 @@ export default function UserReports() {
 
   // Table state for each section
   const [activeAgainst, setActiveAgainst] = useState({ items: [], total: 0, page: 1, sort: { key: 'timestamp', direction: 'desc' }, loading: true, error: null });
-  const [processedAgainst, setProcessedAgainst] = useState({ items: [], total: 0, page: 1, sort: { key: 'resolve_time_stamp', direction: 'desc' }, loading: true, error: null });
+  const [processedAgainst, setProcessedAgainst] = useState({ items: [], total: 0, page: 1, sort: { key: 'resolve_timestamp', direction: 'desc' }, loading: true, error: null });
   const [activeBy, setActiveBy] = useState({ items: [], total: 0, page: 1, sort: { key: 'timestamp', direction: 'desc' }, loading: true, error: null });
-  const [processedBy, setProcessedBy] = useState({ items: [], total: 0, page: 1, sort: { key: 'resolve_time_stamp', direction: 'desc' }, loading: true, error: null });
+  const [processedBy, setProcessedBy] = useState({ items: [], total: 0, page: 1, sort: { key: 'resolve_timestamp', direction: 'desc' }, loading: true, error: null });
 
   const itemsPerPage = 10;
   const API_BASE_URL = '/api';
@@ -134,10 +134,10 @@ export default function UserReports() {
       ) : 'N/A',
     },
     {
-      key: 'resolve_time_stamp',
+      key: 'resolve_timestamp',
       label: 'Resolve Date',
       sortable: true,
-      render: (report) => report.resolve_time_stamp ? formatDate(report.resolve_time_stamp) : 'N/A',
+      render: (report) => report.resolve_timestamp ? formatDate(report.resolve_timestamp) : 'N/A',
     },
     {
       key: 'result',

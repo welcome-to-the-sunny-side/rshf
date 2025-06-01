@@ -168,7 +168,7 @@ const ContestPage = () => {
 
         return [
           <Link key={`${groupId}-link`} to={`/group/${groupId}/contest/${contest_id}`} className="tableCellLink">
-            {groupId} {/* Using group_id as the name */}
+            {groupId} {/* Ideally, this would be group_name */}
           </Link>,
           registeredText,
           <div key={`${groupId}-action-wrap`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', width: '100%' }}>
@@ -206,7 +206,7 @@ const ContestPage = () => {
 
         return [
           <Link key={`${participation.group_id}-link`} to={`/group/${participation.group_id}/contest/${contest_id}`} className="tableCellLink">
-            {participation.group_id} {/* Using group_id as the name */}
+            {participation.group_id} {/* Ideally, group_name */}
           </Link>,
           <>
             <span style={{ fontWeight: 'bold' }}>{participation.rank || 'N/A'}</span>

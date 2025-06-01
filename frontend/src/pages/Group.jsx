@@ -27,7 +27,7 @@ export default function Group() {
   
   // Initialize group data with state
   const [groupData, setGroupData] = useState({
-    name: "", // Will store group_id as the name
+    name: "",
     type: "",
     created: "",
     memberCount: 0,
@@ -86,7 +86,7 @@ export default function Group() {
         // Determine type from is_private flag
         const type = fetchedGroup.is_private ? "Private" : "Public";
         setGroupData({
-          name: fetchedGroup.group_id, // Use group_id as the name
+          name: fetchedGroup.group_name,
           type: type,
           created: fetchedGroup.timestamp,
           memberCount: fetchedGroup.member_count,

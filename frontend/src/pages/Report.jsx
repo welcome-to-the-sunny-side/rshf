@@ -15,82 +15,11 @@ export default function Report() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isModerator, setIsModerator] = useState(false);
-  const [userRole, setUserRole] = useState('');
-  const [canResolveReport, setCanResolveReport] = useState(false);
-  const [availableRoles, setAvailableRoles] = useState([]);
 
   // State for form inputs in the "Take Action" section
   const [actionReporterStatus, setActionReporterStatus] = useState('No change');
   const [actionRespondentStatus, setActionRespondentStatus] = useState('Member');
   const [actionReviewerNote, setActionReviewerNote] = useState('');
-  
-  // Role ranking system to match backend
-  const roleRank = {
-    'admin': 3,
-    'moderator': 2,
-    'user': 1,
-    'fag': 0,
-    'kicked': -1
-  };
-
-  // Set dropdowns to current roles when report loads
-  useEffect(() => {
-    if (reportData && userRole) {
-      // Set default values for dropdowns based on current roles
-      setActionReporterStatus(roleToDropdown(reportData.reporter_role_after || reportData.reporter_role_before || 'user'));
-      setActionRespondentStatus(roleToDropdown(reportData.respondent_role_after || reportData.respondent_role_before || 'user'));
-      
-      // Check if user can resolve this report
-      const currentRoleValue = roleRank[userRole];
-      const reporterRoleValue = roleRank[reportData.reporter_role_before || 'user'];
-      const respondentRoleValue = roleRank[reportData.respondent_role_before || 'user'];
-      const moderatorValue = roleRank['moderator'];
-      const maxRequiredValue = Math.max(reporterRoleValue, respondentRoleValue, moderatorValue);
-      
-      // User can resolve the report if their role rank is >= the max required
-      setCanResolveReport(currentRoleValue >= maxRequiredValue);
-    }
-  }, [reportData, userRole]);
-
-  // Helper to map backend role to dropdown label
-  function roleToDropdown(role) {
-    let mp = {
-      'admin': 'Admin',
-      'moderator': 'Moderator',
-      'user': 'Member',
-      'kicked': 'Outsider',
-      'fag': 'Faggot'
-    }
-    return mp[role] || 'No change'
-  }
-
-  // Helper to map dropdown label to backend role
-  function dropdownToRole(label, fallback) {
-    let mp = {
-      'Admin': 'admin',
-      'Moderator': 'moderator',
-      'Member': 'user',
-      'Outsider': 'kicked',
-      'Faggot': 'fag'
-    }
-    return mp[label] || fallback
-  }
-  
-  // Function to determine available roles based on user's role
-  function getAvailableRoles(userRoleValue) {
-    const allRoles = [
-      { value: 'admin', label: 'Admin', rank: roleRank['admin'] },
-      { value: 'moderator', label: 'Moderator', rank: roleRank['moderator'] },
-      { value: 'user', label: 'Member', rank: roleRank['user'] },
-      { value: 'fag', label: 'Faggot', rank: roleRank['fag'] },
-      { value: 'kicked', label: 'Outsider', rank: roleRank['kicked'] }
-    ];
-    
-    // Filter roles that are <= user's role rank
-    return allRoles
-      .filter(role => role.rank <= userRoleValue || userRole === 'admin')
-      .map(role => ({ value: role.label, role: role.value }));
-  }
 
   useEffect(() => {
     const fetchReportDetails = async () => {
@@ -128,7 +57,6 @@ export default function Report() {
     const checkMembership = async () => {
       if (!user || !token || !groupId) {
         setIsModerator(false);
-        setUserRole('');
         return;
       }
       try {
@@ -136,23 +64,14 @@ export default function Report() {
           headers: { Authorization: `Bearer ${token}` },
           params: { group_id: groupId, user_id: user.user_id },
         });
-        if (response.data) {
-          const currentRole = response.data.role;
-          setUserRole(currentRole);
-          setIsModerator(currentRole === 'moderator' || currentRole === 'admin');
-          
-          // Set available role options based on user's role
-          setAvailableRoles(getAvailableRoles(roleRank[currentRole]));
+        if (response.data && (response.data.role === 'moderator' || response.data.role === 'admin')) {
+          setIsModerator(true);
         } else {
           setIsModerator(false);
-          setUserRole('');
-          setAvailableRoles([]);
         }
       } catch (err) {
         console.error('Failed to check membership:', err);
         setIsModerator(false);
-        setUserRole('');
-        setAvailableRoles([]);
       }
     };
 
@@ -167,31 +86,27 @@ export default function Report() {
 
   const handleAction = async (accepted) => {
     if (!user) {
-      alert('You must be logged in to perform this action.');
-      return;
+        alert('You must be logged in to perform this action.');
+        return;
     }
+    
     try {
       setLoading(true);
-      // Determine fallback roles if "No change" is selected
-      const reporterFallback = reportData.reporter_role_after || reportData.reporter_role_before || 'user';
-      const respondentFallback = reportData.respondent_role_after || reportData.respondent_role_before || 'user';
-      // Prepare payload per ReportResolve schema
-      const payload = {
+      // Make API call to resolve the report
+      await axios.put('/api/report/resolve', {
         report_id: reportId,
         resolver_user_id: user.user_id,
-        resolve_message: actionReviewerNote,
-        reporter_role_after: dropdownToRole(actionReporterStatus, reporterFallback),
-        respondent_role_after: dropdownToRole(actionRespondentStatus, respondentFallback),
-        accepted: accepted
-      };
-      await axios.put('/api/report/resolve', payload, {
+        resolve_message: actionReviewerNote
+      }, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
       // Fetch the updated report data
       const response = await axios.get(`/api/report`, {
         headers: { Authorization: `Bearer ${token}` },
         params: { report_id: reportId },
       });
+      
       if (response.data && response.data.length > 0) {
         setReportData(response.data[0]);
         alert(`Report successfully ${accepted ? 'accepted' : 'rejected'}!`);
@@ -203,7 +118,6 @@ export default function Report() {
       setLoading(false);
     }
   };
-
 
   if (loading) {
     return <div className="page-container standardTextFont">Loading report details...</div>;
@@ -299,15 +213,13 @@ export default function Report() {
                     padding: '6px',
                     borderRadius: '4px',
                     border: '1px solid #ccc',
-                    width: '160px',
-                    opacity: canResolveReport ? '1' : '0.7'
+                    width: '160px'
                   }}
-                  disabled={!canResolveReport}
                 >
                   <option value="No change">No change</option>
-                  {availableRoles.map(role => (
-                    <option key={role.value} value={role.value}>{role.value}</option>
-                  ))}
+                  <option value="Moderator">Moderator</option>
+                  <option value="Member">Member</option>
+                  <option value="Outsider">Outsider</option>
                 </select>
               </div>
               
@@ -323,15 +235,11 @@ export default function Report() {
                     padding: '6px',
                     borderRadius: '4px',
                     border: '1px solid #ccc',
-                    width: '160px',
-                    opacity: canResolveReport ? '1' : '0.7'
+                    width: '160px'
                   }}
-                  disabled={!canResolveReport}
                 >
-                  <option value="No change">No change</option>
-                  {availableRoles.map(role => (
-                    <option key={role.value} value={role.value}>{role.value}</option>
-                  ))}
+                  <option value="Member">Member</option>
+                  <option value="Outsider">Outsider</option>
                 </select>
               </div>
             </div>
@@ -349,12 +257,10 @@ export default function Report() {
                   width: '100%',
                   padding: '8px',
                   borderRadius: '4px',
-                  border: '1px solid #ccc', 
+                  border: '1px solid #ccc',
                   minHeight: '100px',
-                  resize: 'vertical',
-                  opacity: canResolveReport ? '1' : '0.7'
+                  resize: 'vertical'
                 }}
-                disabled={!canResolveReport}
               />
             </div>
             
@@ -362,25 +268,16 @@ export default function Report() {
               <button
                 onClick={() => handleAction(true)}
                 className="global-button green"
-                disabled={!canResolveReport}
-                style={{ opacity: canResolveReport ? '1' : '0.7', cursor: canResolveReport ? 'pointer' : 'not-allowed' }}
               >
                 Accept Report
               </button>
               <button
                 onClick={() => handleAction(false)}
                 className="global-button red"
-                disabled={!canResolveReport}
-                style={{ opacity: canResolveReport ? '1' : '0.7', cursor: canResolveReport ? 'pointer' : 'not-allowed' }}
               >
                 Reject Report
               </button>
             </div>
-            {!canResolveReport && (
-              <div style={{ marginTop: '10px', color: 'red', fontSize: '0.9em' }}>
-                You don't have sufficient privileges to resolve this report.
-              </div>
-            )}
           </div>
         </ContentBoxWithTitle>
       )}
@@ -404,9 +301,9 @@ export default function Report() {
                   </Link>
                 </div>
               )}
-              {reportData.resolve_timestamp && (
+              {reportData.resolve_time_stamp && (
                 <div>
-                  <strong>Resolve Date:</strong> {formatDate(reportData.resolve_timestamp)}
+                  <strong>Resolve Date:</strong> {formatDate(reportData.resolve_time_stamp)}
                 </div>
               )}
               <div>
