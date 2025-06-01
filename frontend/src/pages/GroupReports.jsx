@@ -518,62 +518,40 @@ return (
 
     <div className={styles.reportsTableWrapper}>
       {/* Active Reports Table */}
-      {activeLoading && activeReports.length === 0 && (
-        <div className="api-feedback-container loading-message">{API_MESSAGES.LOADING}</div>
-      )}
-      {activeError && (
-        <div className="api-feedback-container error-message">{activeError}</div>
-      )}
-      {!activeLoading && !activeError && activeReports.length === 0 && activeTotal === 0 && (
-        <div className="api-feedback-container no-data-message">{API_MESSAGES.NO_REPORTS_ACTIVE}</div>
-      )}
-      {(activeReports.length > 0 || activeTotal > 0) && !activeError && (
-        <LazyLoadingSortablePagedTableBox
-          title={<span className={titleStyles.titleText}>Active Reports</span>}
-          columns={activeTableColumns}
-          items={activeReports}
-          totalItems={activeTotal}
-          itemsPerPage={itemsPerPage}
-          currentPage={activePage}
-          onPageChange={setActivePage}
-          sortConfig={activeSort}
-          onSortChange={handleActiveSort}
-          isLoading={activeLoading && activeReports.length > 0} // Show subtle loading when loading more pages
-          // error={activeError} // Error is handled above
-          noDataMessage={API_MESSAGES.NO_REPORTS_ACTIVE} // Should not be hit if logic above is correct
-          backgroundColor="rgb(255, 245, 230)"
-          className="activeReportsTable"
-        />
-      )}
+      <LazyLoadingSortablePagedTableBox
+        title={<span className={titleStyles.titleText}>Active Reports</span>}
+        columns={activeTableColumns}
+        items={activeReports}
+        totalItems={activeTotal}
+        itemsPerPage={itemsPerPage}
+        currentPage={activePage}
+        onPageChange={setActivePage}
+        sortConfig={activeSort}
+        onSortChange={handleActiveSort}
+        isLoading={activeLoading} // Pass the main loading state
+        error={activeError} // Pass the error state
+        noDataMessage={API_MESSAGES.NO_REPORTS_ACTIVE} // Specific message for no active reports
+        backgroundColor="rgb(255, 245, 230)"
+        className="activeReportsTable"
+      />
 
       {/* Processed Reports Table */}
-      {processedLoading && processedReports.length === 0 && (
-        <div className="api-feedback-container loading-message">{API_MESSAGES.LOADING}</div>
-      )}
-      {processedError && (
-        <div className="api-feedback-container error-message">{processedError}</div>
-      )}
-      {!processedLoading && !processedError && processedReports.length === 0 && processedTotal === 0 && (
-        <div className="api-feedback-container no-data-message">{API_MESSAGES.NO_REPORTS_PROCESSED}</div>
-      )}
-      {(processedReports.length > 0 || processedTotal > 0) && !processedError && (
-        <LazyLoadingSortablePagedTableBox
-          title={<span className={titleStyles.titleText}>Processed Reports</span>}
-          columns={processedTableColumns}
-          items={processedReports}
-          totalItems={processedTotal}
-          itemsPerPage={itemsPerPage}
-          currentPage={processedPage}
-          onPageChange={setProcessedPage}
-          sortConfig={processedSort}
-          onSortChange={handleProcessedSort}
-          isLoading={processedLoading && processedReports.length > 0}
-          // error={processedError}
-          noDataMessage={API_MESSAGES.NO_REPORTS_PROCESSED}
-          backgroundColor="rgb(230, 255, 240)"
-          className="processedReportsTable"
-        />
-      )}
+      <LazyLoadingSortablePagedTableBox
+        title={<span className={titleStyles.titleText}>Processed Reports</span>}
+        columns={processedTableColumns}
+        items={processedReports}
+        totalItems={processedTotal}
+        itemsPerPage={itemsPerPage}
+        currentPage={processedPage}
+        onPageChange={setProcessedPage}
+        sortConfig={processedSort}
+        onSortChange={handleProcessedSort}
+        isLoading={processedLoading} // Pass the main loading state
+        error={processedError} // Pass the error state
+        noDataMessage={API_MESSAGES.NO_REPORTS_PROCESSED} // Specific message for no processed reports
+        backgroundColor="rgb(230, 255, 240)"
+        className="processedReportsTable"
+      />
     </div>
   </div>
 );

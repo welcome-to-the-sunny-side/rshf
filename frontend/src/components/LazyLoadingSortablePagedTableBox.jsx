@@ -17,7 +17,7 @@ const LazyLoadingSortablePagedTableBox = ({
   onSortChange = () => {},
   isLoading = false,
   error = null,
-  noDataMessage = "No data available.",
+  noDataMessage: noDataMessageFromProps = "No Data Found", // Renamed and default updated
   className = '',
   tableBoxClassName = '',
   backgroundColor,
@@ -170,29 +170,34 @@ const LazyLoadingSortablePagedTableBox = ({
     );
   };
 
-  if (isLoading && items.length === 0) { // Show loading only if there's no data yet
-    return <div className={styles.loadingMessage}>Loading...</div>; 
-  }
+  // Determine the message to display if the table body is empty
+  let currentNoDataMessage = noDataMessageFromProps;
+  let displayItems = processedItems;
 
   if (error) {
-    return <div className={styles.errorMessage}>{typeof error === 'string' ? error : 'An error occurred.'}</div>;
+    currentNoDataMessage = typeof error === 'string' ? error : (error.message || "Error fetching data. Please try again.");
+    displayItems = []; // Ensure table is empty when error message is shown
+  } else if (isLoading && items.length === 0) {
+    currentNoDataMessage = "Loading...";
+    displayItems = []; // Ensure table is empty for loading message if no items yet
+  } else if (items.length === 0) {
+    currentNoDataMessage = noDataMessageFromProps; // Default "No Data Found"
+    displayItems = [];
   }
+  // If not loading, no error, and items exist, displayItems remains processedItems and currentNoDataMessage is not used by BasicTableBox
 
-  if (totalItems === 0 && !isLoading && !error) {
-    return <div className={styles.noDataMessage}>{noDataMessage}</div>;
-  }
-  
   const TableComponent = title ? TableBox : BasicTableBox;
 
   return (
     <div className={`${styles.container} ${className}`}>
       <TableComponent
         title={title}
-        columns={tableBoxColumns} 
-        data={processedItems} 
+        columns={tableBoxColumns}
+        data={displayItems} // Use displayItems which is empty for Loading/Error/NoData states
         backgroundColor={backgroundColor}
         className={tableBoxClassName}
-        sortable={true} /* This is critical to make th elements get .sortableColumn class */
+        sortable={true}
+        noDataMessage={currentNoDataMessage} // This message is shown by BasicTableBox if displayItems is empty
       />
       {/* Display loading indicator subtly if loading more pages but data already exists */}
       {isLoading && items.length > 0 && <div className={styles.loadingMoreMessage}>Loading more...</div>}

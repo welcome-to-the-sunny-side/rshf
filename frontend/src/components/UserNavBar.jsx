@@ -8,6 +8,7 @@ export default function UserNavBar({ username, isOwnProfile }) {
   // Determine which link is active based on the current path
   const isProfileActive = currentPath === `/user/${username}`;
   const isGroupsActive = currentPath === `/user/${username}/groups`;
+  const isReportsActive = currentPath === `/user/${username}/reports`;
   const isSettingsActive = currentPath === `/user/${username}/settings`;
   
   return (
@@ -23,6 +24,12 @@ export default function UserNavBar({ username, isOwnProfile }) {
         style={isGroupsActive ? { backgroundColor: '#e0e0e0' } : {}}
       >
         groups
+      </Link>
+      <Link 
+        to={`/user/${username}/reports`} 
+        style={isReportsActive ? { backgroundColor: '#e0e0e0' } : {}}
+      >
+        reports
       </Link>
       {isOwnProfile && (
         <Link 

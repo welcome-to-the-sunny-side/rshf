@@ -395,29 +395,23 @@ const GroupContestPage = () => {
       </ContentBoxWithTitle>
       
       {/* Registration or Rank list Box */}
-      {loading.participationsTable ? (
-        <div className="api-feedback-container loading-message" style={{ marginTop: '20px' }}>
-          {API_MESSAGES.LOADING}
-        </div>
-      ) : (
-        <div style={{ marginTop: '20px' }}>
-          <LazyLoadingSortablePagedTableBox 
-            title={!contestData.finished ? "Registration List" : "Rank List"}
-            columns={currentColumns}
-            items={pagedParticipationData}
-            totalItems={totalParticipations}
-            itemsPerPage={ITEMS_PER_PAGE}
-            currentPage={currentPage}
-            onPageChange={handlePageChange}
-            sortConfig={sortConfig}
-            onSortChange={handleSort}
-            isLoading={loading.participationsTable}
-            error={error.participationsTable}
-            noDataMessage={API_MESSAGES.NO_DATA}
-            backgroundColor="rgb(230, 255, 230)"
-          />
-        </div>
-      )}
+      <div style={{ marginTop: '20px' }}>
+        <LazyLoadingSortablePagedTableBox 
+          title={!contestData.finished ? "Registration List" : "Rank List"}
+          columns={currentColumns}
+          items={pagedParticipationData}
+          totalItems={totalParticipations}
+          itemsPerPage={ITEMS_PER_PAGE}
+          currentPage={currentPage}
+          onPageChange={handlePageChange}
+          sortConfig={sortConfig}
+          onSortChange={handleSort}
+          isLoading={loading.participationsTable}
+          error={error.participationsTable}
+          noDataMessage={contestData ? (!contestData.finished ? "No registrations yet." : "No participants found.") : API_MESSAGES.NO_DATA}
+          backgroundColor="rgb(230, 255, 230)"
+        />
+      </div>
     </div>
   );
 };

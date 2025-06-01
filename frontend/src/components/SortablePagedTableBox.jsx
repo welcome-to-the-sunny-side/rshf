@@ -59,7 +59,8 @@ const SortablePagedTableBox = ({
   className,
   initialSortColumnIndex = -1,
   initialSortDirection = 'desc',
-  pinnedRows = [] // Parent should memoize this if it's not static
+  pinnedRows = [], // Parent should memoize this if it's not static
+  noDataMessage = "No Data Found" // Default changed
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortColumnIndex, setSortColumnIndex] = useState(initialSortColumnIndex);
@@ -216,6 +217,7 @@ const SortablePagedTableBox = ({
           data={currentData}
           backgroundColor={backgroundColor}
           sortable={true}
+          noDataMessage={noDataMessage} // Pass down
         />
       ) : (
         <BasicTableBox 
@@ -223,6 +225,7 @@ const SortablePagedTableBox = ({
           data={currentData}
           backgroundColor={backgroundColor}
           sortable={true}
+          noDataMessage={noDataMessage} // Pass down
         />
       )}
       

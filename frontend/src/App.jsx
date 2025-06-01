@@ -8,6 +8,7 @@ import Register from './pages/Register';
 import User from './pages/User';
 import UserGroups from './pages/UserGroups';
 import UserSettings from './pages/UserSettings';
+import UserReports from './pages/UserReports';
 import Groups from './pages/Groups';
 import Group from './pages/Group';
 import GroupMembers from './pages/GroupMembers';
@@ -51,6 +52,11 @@ export default function App() {
           <Route path="/user/:username/groups" element={
             <PrivateRoute>
               <UserGroups />
+            </PrivateRoute>
+          } />
+          <Route path="/user/:username/reports" element={
+            <PrivateRoute>
+              <UserReports />
             </PrivateRoute>
           } />
           <Route path="/user/:username/settings" element={

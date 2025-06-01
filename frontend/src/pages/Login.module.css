@@ -122,3 +122,9 @@
     background: #fff;
   }
 }
+
+.fieldError {
+    color: var(--button-red);
+    margin-top: 2px;
+    font-size: 0.75rem;
+  }

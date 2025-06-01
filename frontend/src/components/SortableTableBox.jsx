@@ -57,7 +57,8 @@ const SortableTableBox = ({
   className,
   initialSortColumnIndex = -1,
   initialSortDirection = 'desc',
-  pinnedRows = []
+  pinnedRows = [],
+  noDataMessage = "No Data Found"
 }) => {
   const [sortColumnIndex, setSortColumnIndex] = useState(initialSortColumnIndex);
   const [sortDirection, setSortDirection] = useState(initialSortDirection);
@@ -124,6 +125,7 @@ const SortableTableBox = ({
           data={sortedData}
           backgroundColor={backgroundColor}
           sortable={true}
+          noDataMessage={noDataMessage}
         />
       ) : (
         <BasicTableBox 
@@ -131,6 +133,7 @@ const SortableTableBox = ({
           data={sortedData}
           backgroundColor={backgroundColor}
           sortable={true}
+          noDataMessage={noDataMessage}
         />
       )}
     </div>
