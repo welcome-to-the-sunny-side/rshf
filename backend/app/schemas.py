@@ -69,6 +69,7 @@ class GroupRegister(BaseModel):
     metadata is retained.
     """
     group_id: str
+    group_name: Optional[str] = None
     creator_user_id: str
     group_description: Optional[str] = None
     is_private: bool = False
@@ -77,6 +78,7 @@ class GroupRegister(BaseModel):
 
 class GroupUpdate(BaseModel):
     group_id: str
+    group_name: Optional[str] = None
     group_description: Optional[str] = None
     is_private: Optional[bool] = None
     extension_link: Optional[str] = None
@@ -110,6 +112,7 @@ class GroupMembershipOut(BaseModel):
 
 class GroupOutFull(BaseModel):
     group_id: str
+    group_name: Optional[str] = None
     group_description: Optional[str] = None
     is_private: bool = False
     extension_link: Optional[str] = None
@@ -122,6 +125,7 @@ class GroupOutFull(BaseModel):
 
 class GroupOut(BaseModel):
     group_id: str
+    group_name: Optional[str] = None
     group_description: Optional[str] = None
     is_private: bool = False
     extension_link: Optional[str] = None
@@ -135,6 +139,7 @@ class GroupOut(BaseModel):
 # single-group shape used by /group endpoint
 class GroupSingle(BaseModel):
     group_id: str
+    group_name: Optional[str] = None
     group_description: Optional[str] = None
     is_private: bool = False
     extension_link: Optional[str] = None

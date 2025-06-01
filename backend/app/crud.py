@@ -88,6 +88,7 @@ def create_group(db: Session, payload: schemas.GroupRegister) -> models.Group:
     """
     grp = models.Group(
         group_id=payload.group_id,
+        group_name=payload.group_name if hasattr(payload, 'group_name') and payload.group_name else payload.group_id,
         group_description=payload.group_description,
         is_private=payload.is_private,
         extension_link=payload.extension_link,
@@ -115,8 +116,7 @@ def get_group(db: Session, group_id: str) -> Optional[models.Group]:
 
 def list_groups(db: Session):
     """
-    Returns (Group, member_count) tuples; also injects a fake `group_name`
-    attribute for legacy endpoint code that still references it.
+    Returns (Group, member_count) tuples.
     """
     rows = (
         db.query(models.Group, func.count(models.GroupMembership.user_id).label("member_count"))
@@ -124,23 +124,21 @@ def list_groups(db: Session):
         .group_by(models.Group.group_id)
         .all()
     )
-    for grp, _ in rows:
-        setattr(grp, "group_name", grp.group_id)  # back-compat shim
     return rows
 
 
-def update_group(db: Session, payload: schemas.GroupUpdate) -> Optional[models.Group]:
-    grp = get_group(db, payload.group_id)
+def update_group(db: Session, payload: schemas.GroupUpdate):
+    grp = db.query(models.Group).filter(models.Group.group_id == payload.group_id).first()
     if not grp:
-        return None
-
+        raise Exception("group not found")
+    if payload.group_name is not None:
+        grp.group_name = payload.group_name
     if payload.group_description is not None:
         grp.group_description = payload.group_description
     if payload.is_private is not None:
         grp.is_private = payload.is_private
     if payload.extension_link is not None:
         grp.extension_link = payload.extension_link
-
     db.commit()
     db.refresh(grp)
     return grp

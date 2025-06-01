@@ -131,6 +131,7 @@ def build_groups() -> List[Group]:
     groups = [
         Group(
             group_id="main",
+            group_name="main",
             group_description="all users",
             is_private=False,
             extension_link=None,
@@ -141,6 +142,7 @@ def build_groups() -> List[Group]:
         groups.append(
             Group(
                 group_id=gid,
+                group_name=gid,
                 group_description=faker.sentence(),
                 is_private=random.random() < 0.3,
                 extension_link=None,

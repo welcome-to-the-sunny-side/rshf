@@ -9,9 +9,7 @@ class Role(str, enum.Enum):
     admin = "admin"
     moderator = "moderator"
     user = "user"
-    fag = "fag"
     kicked = "kicked"
-
 
 class ModelBase(Base):
     __abstract__ = True
@@ -45,7 +43,7 @@ class Group(ModelBase):
     """
     __tablename__ = "groups"
     group_id = Column(String, primary_key=True, index=True)
-    # removed grp name: will be same as group id
+    group_name = Column(String, nullable=True, index=True)  # restored group_name
     group_description = Column(String, nullable=True)
     is_private = Column(Boolean, nullable=False, default=False)
     extension_link = Column(String, nullable=True)
@@ -53,9 +51,7 @@ class Group(ModelBase):
     memberships = relationship("GroupMembership", back_populates="group", cascade="all, delete", lazy="dynamic")
     participations = relationship("ContestParticipation", back_populates="group", cascade="all, delete", lazy="dynamic")
     def __repr__(self):
-        return f"<Group(id={self.group_id}, name='{self.group_id}')>"
-
-
+        return f"<Group(id={self.group_id}, name='{self.group_name}')>"
 
 class GroupMembership(ModelBase):
     __tablename__ = "group_memberships"

@@ -154,7 +154,6 @@ def seed():
     db.commit()
 
     # 3. Build memberships for all users in 'main' group
-    from app.models import Status
     memberships = []
     user_id_to_obj = {u.user_id: u for u in users}
     group_id_to_obj = {g.group_id: g for g in groups}
@@ -170,7 +169,6 @@ def seed():
             role=role,
             user_group_rating=rating,
             user_group_max_rating=rating,
-            status=Status.active,
         )
         memberships.append(membership)
     db.add_all(memberships)
