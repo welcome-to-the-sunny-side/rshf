@@ -11,7 +11,6 @@ class Role(str, Enum):
     admin     = "admin"
     moderator = "moderator"
     user      = "user"
-    fag       = "fag"
     kicked    = "kicked"
 
 
