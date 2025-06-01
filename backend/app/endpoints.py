@@ -1095,6 +1095,8 @@ def change_membership_role(
     Raises:
         HTTPException: If the user doesn't have sufficient privileges or the membership doesn't exist
     """
+
+    
     # Check permissions based on the requirements
     check_role_modification_privileges(
         db=db,
@@ -1103,6 +1105,12 @@ def change_membership_role(
         group_id=payload.group_id,
         new_role=payload.new_role
     )
+
+    if payload.new_role == "kicked":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Use remove_user_from_group endpoint instead"
+        )
     
     # Update the membership role
     updated_membership = crud.update_membership_role(
