@@ -104,7 +104,7 @@ export default function User() {
         setUserData(response.data);
         
         // Process group memberships into the required format
-        // [group_name, group_rating, group_rank, group_rank_color, max_group_rating, max_group_rank, max_group_rank_color, member_since, role, rated_contests, report_accuracy_accepted, report_accuracy_total]
+        // [group_id, group_rating, group_rank, group_rank_color, max_group_rating, max_group_rank, max_group_rank_color, member_since, role, rated_contests, report_accuracy_accepted, report_accuracy_total]
         if (response.data.group_memberships && response.data.group_memberships.length > 0) {
           const formattedGroups = response.data.group_memberships.map(membership => {
             // Get rank name and color based on rating using the utility functions

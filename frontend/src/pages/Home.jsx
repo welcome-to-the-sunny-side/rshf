@@ -77,7 +77,7 @@ export default function Home() {
         // Process the groups to extract member counts
         const processedGroups = data.map(group => ({
           id: group.group_id,
-          name: group.group_name,
+          name: group.group_id, // Using group_id as name since group_name was removed
           memberCount: group.member_count
         }))
         // Sort by member count in descending order
@@ -196,7 +196,7 @@ export default function Home() {
       : groups.length === 0
         ? [[API_MESSAGES.NO_DATA, ""]]
         : groups.map(group => [
-            <Link to={`/group/${group.name}`} className="tableCellLink">{group.name}</Link>,
+            <Link to={`/group/${group.id}`} className="tableCellLink">{group.name}</Link>,
             group.memberCount.toLocaleString()
           ]);
 

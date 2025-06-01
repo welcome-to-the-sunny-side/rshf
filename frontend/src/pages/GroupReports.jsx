@@ -41,7 +41,7 @@ export default function GroupReports() {
   const [processedReports, setProcessedReports] = useState([]);
   const [processedTotal, setProcessedTotal] = useState(0);
   const [processedPage, setProcessedPage] = useState(1);
-  const [processedSort, setProcessedSort] = useState({ key: 'resolve_time_stamp', direction: 'desc' });
+  const [processedSort, setProcessedSort] = useState({ key: 'resolve_timestamp', direction: 'desc' });
   const [processedLoading, setProcessedLoading] = useState(true);
   const [processedError, setProcessedError] = useState(null);
   const [refreshActiveReportsSignal, setRefreshActiveReportsSignal] = useState(0);
@@ -388,10 +388,10 @@ const processedTableColumns = [
     ) : 'N/A',
   },
   {
-    key: 'resolve_time_stamp', // Corresponds to 'resolve_time_stamp' in model
+    key: 'resolve_timestamp', // Corresponds to 'resolve_timestamp' in model
     label: 'Resolve Date',
     sortable: true,
-    render: (report) => report.resolve_time_stamp ? formatDate(report.resolve_time_stamp) : 'N/A',
+    render: (report) => report.resolve_timestamp ? formatDate(report.resolve_timestamp) : 'N/A',
   },
   {
     key: 'result',
