@@ -1,28 +1,26 @@
 # app/crud.py
+from __future__ import annotations
+
 from typing import List, Optional, Dict, Any
 
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, asc, desc
+from datetime import datetime
+
 from app import models
 from app.utils import hash_password, verify_password
 from app import schemas
-from datetime import datetime, timedelta
 from app.codeforces_api import cf_api
 
-# helper enrichers ───────────────────────────────────────────Add commentMore actions
+# ───────────────────────────── internal enrichers ─────────────────────────────
 def _enrich_user(db: Session, user: models.User) -> models.User:
-    # Load group memberships for the user
+    """Attach memberships and participations so Pydantic can serialise them."""
     user.group_memberships = list(user.memberships)
-    
-    # Load contest participations for the user
     user.contest_participations = (
         db.query(models.ContestParticipation)
         .filter(models.ContestParticipation.user_id == user.user_id)
         .all()
     )
-    
-    # No need to explicitly assign handles and other attributes
-    # as they are already part of the User model
     return user
 
 
@@ -34,8 +32,7 @@ def _enrich_group(db: Session, group: models.Group) -> models.Group:
     )
     return group
 
-
-# ───────────── user ─────────────
+# ───────────────────────────── USERS ─────────────────────────────
 def create_user(db: Session, payload: schemas.UserRegister) -> models.User:
     db_user = models.User(
         user_id=payload.user_id,
@@ -51,35 +48,28 @@ def create_user(db: Session, payload: schemas.UserRegister) -> models.User:
 
 
 def get_user(db: Session, user_id: str) -> Optional[models.User]:
-    user = db.query(models.User).filter(models.User.user_id == user_id).first()
-    # return user
-    return _enrich_user(db, user) if user else None
+    usr = db.query(models.User).filter(models.User.user_id == user_id).first()
+    return _enrich_user(db, usr) if usr else None
 
 
 def list_users(db: Session) -> List[models.User]:
-    users = db.query(models.User).all()
-    # return users
-    return [_enrich_user(db, u) for u in users]
-
-
-
+    return [_enrich_user(db, u) for u in db.query(models.User).all()]
 
 
 def get_user_by_handle(db: Session, cf_handle: str) -> Optional[models.User]:
     return db.query(models.User).filter(models.User.cf_handle == cf_handle).first()
 
 
-
 def update_user(db: Session, user_id: str, payload: schemas.UserUpdate) -> Optional[models.User]:
     user = get_user(db, user_id)
     if not user:
         return None
-
     if payload.cf_handle is not None:
         user.cf_handle = payload.cf_handle
     if payload.password is not None:
         user.hashed_password = hash_password(payload.password)
-
+    if payload.role is not None:
+        user.role = payload.role
     db.commit()
     db.refresh(user)
     return user
@@ -87,181 +77,197 @@ def update_user(db: Session, user_id: str, payload: schemas.UserUpdate) -> Optio
 
 def authenticate_user(db: Session, user_id: str, password: str) -> Optional[models.User]:
     user = get_user(db, user_id)
-    print(user)
-    print(password, user.hashed_password)
-    if not user:
-        return None
-    if not verify_password(password, user.hashed_password):
+    if not user or not verify_password(password, user.hashed_password):
         return None
     return user
 
-
-# ───────────── group ─────────────
+# ───────────────────────────── GROUPS ─────────────────────────────
 def create_group(db: Session, payload: schemas.GroupRegister) -> models.Group:
-    group = models.Group(group_id=payload.group_id, group_name=payload.group_name)
-    db.add(group)
+    """
+    A group's display label is now its `group_id`; descriptive metadata is optional.
+    """
+    grp = models.Group(
+        group_id=payload.group_id,
+        group_description=payload.group_description,
+        is_private=payload.is_private,
+        extension_link=payload.extension_link,
+    )
+    db.add(grp)
     db.commit()
-    db.refresh(group)
+    db.refresh(grp)
 
     # creator joins as admin
-    membership = models.GroupMembership(
-        user_id=payload.creator_user_id,
-        group_id=payload.group_id,
-        role=models.Role.admin,
-        user_group_rating=0,
+    db.add(
+        models.GroupMembership(
+            user_id=payload.creator_user_id,
+            group_id=payload.group_id,
+            role=models.Role.admin,
+            user_group_rating=1_500,
+        )
     )
-    db.add(membership)
     db.commit()
-    return group
-
-def get_group(db: Session, group_id: str) -> Optional[models.Group]:
-    grp = db.query(models.Group).filter(models.Group.group_id == group_id).first()
     return grp
 
+
+def get_group(db: Session, group_id: str) -> Optional[models.Group]:
+    return db.query(models.Group).filter(models.Group.group_id == group_id).first()
+
+
 def list_groups(db: Session):
-    groups = (
-        db.query(
-            models.Group,
-            func.count(models.GroupMembership.user_id).label("member_count")
-        )
+    """
+    Returns (Group, member_count) tuples; also injects a fake `group_name`
+    attribute for legacy endpoint code that still references it.
+    """
+    rows = (
+        db.query(models.Group, func.count(models.GroupMembership.user_id).label("member_count"))
         .outerjoin(models.GroupMembership, models.Group.group_id == models.GroupMembership.group_id)
         .group_by(models.Group.group_id)
         .all()
     )
-    # don't enrich here 
-    return groups
+    for grp, _ in rows:
+        setattr(grp, "group_name", grp.group_id)  # back-compat shim
+    return rows
 
 
 def update_group(db: Session, payload: schemas.GroupUpdate) -> Optional[models.Group]:
-    group = get_group(db, payload.group_id)
-    if not group:
+    grp = get_group(db, payload.group_id)
+    if not grp:
         return None
 
-    if payload.group_name is not None:
-        group.group_name = payload.group_name
+    if payload.group_description is not None:
+        grp.group_description = payload.group_description
+    if payload.is_private is not None:
+        grp.is_private = payload.is_private
+    if payload.extension_link is not None:
+        grp.extension_link = payload.extension_link
 
     db.commit()
-    db.refresh(group)
-    return group
+    db.refresh(grp)
+    return grp
 
-
-# ───────────── membership ─────────────
+# ───────────────────────────── MEMBERSHIPS ─────────────────────────────
 def add_membership(db: Session, payload: schemas.GroupMembershipAdd) -> models.GroupMembership:
-    user_cf_handle = payload.cf_handle
-    if user_cf_handle is None:
-        # If cf_handle is not provided in payload, try to get it from the User model
-        user = db.query(models.User).filter(models.User.user_id == payload.user_id).first()
-        if user and user.cf_handle:
-            user_cf_handle = user.cf_handle
+    cf_handle = payload.cf_handle
+    if cf_handle is None:
+        usr = db.query(models.User).filter(models.User.user_id == payload.user_id).first()
+        cf_handle = usr.cf_handle if usr else None
 
-    membership = models.GroupMembership(
+    m = models.GroupMembership(
         user_id=payload.user_id,
         group_id=payload.group_id,
-        cf_handle=user_cf_handle,  # Populate the new cf_handle field
+        cf_handle=cf_handle,
         role=payload.role,
-        user_group_rating=payload.user_group_rating,
+        user_group_rating=payload.user_group_rating or 1_500,
     )
-    db.add(membership)
+    db.add(m)
+    db.commit()
+    db.refresh(m)
+    return m
+
+
+def remove_membership(db: Session, user_id: str, group_id: str) -> bool:
+    m = (
+        db.query(models.GroupMembership)
+        .filter(models.GroupMembership.user_id == user_id, models.GroupMembership.group_id == group_id)
+        .first()
+    )
+    if not m:
+        return False
+    db.delete(m)
+    db.commit()
+    return True
+
+
+def get_membership(db: Session, user_id: str, group_id: str) -> Optional[models.GroupMembership]:
+    return (
+        db.query(models.GroupMembership)
+        .filter(models.GroupMembership.user_id == user_id, models.GroupMembership.group_id == group_id)
+        .first()
+    )
+    
+
+def update_membership_role(db: Session, user_id: str, group_id: str, new_role: models.Role) -> Optional[models.GroupMembership]:
+    """
+    Update the role of a user in a group.
+    
+    Args:
+        db: Database session
+        user_id: ID of the user whose role is being changed
+        group_id: ID of the group
+        new_role: New role to assign to the user
+        
+    Returns:
+        Updated GroupMembership object if successful, None if the membership doesn't exist
+    """
+    membership = get_membership(db, user_id, group_id)
+    if not membership:
+        return None
+    
+    membership.role = new_role
     db.commit()
     db.refresh(membership)
     return membership
 
-
-def remove_membership(db: Session, user_id: str, group_id: str) -> bool:
-    membership = (
-        db.query(models.GroupMembership)
-        .filter(
-            models.GroupMembership.user_id == user_id,
-            models.GroupMembership.group_id == group_id,
-        )
-        .first()
-    )
-    if not membership:
-        return False
-    db.delete(membership)
-    db.commit()
-    return True
-
-# ───────────── contest participation ─────────────
+# ───────────────────────────── CONTEST PARTICIPATIONS ─────────────────────────────
 def register_contest_participation(
     db: Session, payload: schemas.ContestRegistration
 ) -> models.ContestParticipation:
+    usr = db.query(models.User).filter(models.User.user_id == payload.user_id).first()
+    mem = get_membership(db, payload.user_id, payload.group_id)
 
-    user = db.query(models.User).filter(models.User.user_id == payload.user_id).first()
-    user_cf_handle = user.cf_handle
-    membership = db.query(models.GroupMembership).filter(
-        models.GroupMembership.user_id == payload.user_id,
-        models.GroupMembership.group_id == payload.group_id,
-    ).first()
-    rating_before = membership.user_group_rating
-
-    participation = models.ContestParticipation(
+    part = models.ContestParticipation(
         user_id=payload.user_id,
         group_id=payload.group_id,
         contest_id=payload.contest_id,
-        cf_handle=user_cf_handle,
-        rating_before=rating_before,
+        cf_handle=usr.cf_handle,
+        rating_before=mem.user_group_rating,
     )
-    db.add(participation)
+    db.add(part)
 
-    group = db.query(models.Group).filter(models.Group.group_id == payload.group_id).first()
     contest = db.query(models.Contest).filter(models.Contest.contest_id == payload.contest_id).first()
-    if payload.group_id not in contest.group_views:
-        contest.group_views[payload.group_id] = {
-            'total_members': group.memberships.count(),
-            'total_participants': 1,
-        }
-    else:
-        contest.group_views[payload.group_id]['total_participants'] += 1
+    if contest.group_views is None:
+        contest.group_views = {}
+
+    views = contest.group_views.setdefault(
+        payload.group_id,
+        {"total_members": mem.group.memberships.count(), "total_participants": 0},
+    )
+    views["total_participants"] += 1
 
     from sqlalchemy.orm.attributes import flag_modified
+
     flag_modified(contest, "group_views")
     db.commit()
-    db.refresh(participation)
-    return participation
+    db.refresh(part)
+    return part
 
 
-def deregister_contest_participation(
-    db: Session, 
-    user_id: str, 
-    group_id: str,
-    contest_id: str
-) -> bool:
-    """
-    Delete a contest participation and update the contest's group_views.
-    
-    Args:
-        db: Database session
-        user_id: ID of the user to deregister
-        group_id: ID of the group to deregister from
-        contest_id: ID of the contest to deregister from
-        
-    Returns:
-        Boolean indicating whether the deregistration was successful
-    """
-    # Find the participation
-    participation = db.query(models.ContestParticipation).filter(
-        models.ContestParticipation.user_id == user_id,
-        models.ContestParticipation.group_id == group_id,
-        models.ContestParticipation.contest_id == contest_id
-    ).first()
-    
-    if not participation:
+def deregister_contest_participation(db: Session, user_id: str, group_id: str, contest_id: str) -> bool:
+    part = (
+        db.query(models.ContestParticipation)
+        .filter(
+            models.ContestParticipation.user_id == user_id,
+            models.ContestParticipation.group_id == group_id,
+            models.ContestParticipation.contest_id == contest_id,
+        )
+        .first()
+    )
+    if not part:
         return False
-    
-    # Update the contest's group_views to decrement the participant count
+
     contest = db.query(models.Contest).filter(models.Contest.contest_id == contest_id).first()
     if contest and contest.group_views and group_id in contest.group_views:
-        if contest.group_views[group_id]['total_participants'] > 0:
-            contest.group_views[group_id]['total_participants'] -= 1
+        contest.group_views[group_id]["total_participants"] = max(
+            0, contest.group_views[group_id]["total_participants"] - 1
+        )
         from sqlalchemy.orm.attributes import flag_modified
+
         flag_modified(contest, "group_views")
-    
-    # Delete the participation
-    db.delete(participation)
+
+    db.delete(part)
     db.commit()
-    
     return True
+
 
 def filter_contest_participations(
     db: Session,
@@ -269,15 +275,15 @@ def filter_contest_participations(
     uid: Optional[str] = None,
     cid: Optional[str] = None,
 ) -> List[models.ContestParticipation]:
-    # Use joinedload to eagerly load the contest relationship
     q = db.query(models.ContestParticipation).options(joinedload(models.ContestParticipation.contest))
-    if gid is not None:
+    if gid:
         q = q.filter(models.ContestParticipation.group_id == gid)
-    if uid is not None:
+    if uid:
         q = q.filter(models.ContestParticipation.user_id == uid)
-    if cid is not None:
+    if cid:
         q = q.filter(models.ContestParticipation.contest_id == cid)
     return q.all()
+
 
 def count_contest_participations(
     db: Session,
@@ -285,19 +291,14 @@ def count_contest_participations(
     user_id: Optional[str] = None,
     contest_id: Optional[str] = None,
 ) -> int:
-    """
-    Counts contest participations based on optional filters for group_id, user_id, and contest_id.
-    """
-    query = db.query(models.ContestParticipation.user_id) # Querying a single column for count is often slightly more efficient
-    
-    if group_id is not None:
-        query = query.filter(models.ContestParticipation.group_id == group_id)
-    if user_id is not None:
-        query = query.filter(models.ContestParticipation.user_id == user_id)
-    if contest_id is not None:
-        query = query.filter(models.ContestParticipation.contest_id == contest_id)
-        
-    return query.count()
+    q = db.query(models.ContestParticipation.user_id)
+    if group_id:
+        q = q.filter(models.ContestParticipation.group_id == group_id)
+    if user_id:
+        q = q.filter(models.ContestParticipation.user_id == user_id)
+    if contest_id:
+        q = q.filter(models.ContestParticipation.contest_id == contest_id)
+    return q.count()
 
 
 def get_contest_participations_range_fetch(
@@ -306,299 +307,180 @@ def get_contest_participations_range_fetch(
     uid: Optional[str] = None,
     cid: Optional[str] = None,
     sort_by: Optional[schemas.ContestParticipationSortByField] = None,
-    sort_dir: Optional[schemas.SortOrder] = schemas.SortOrder.DESC, # Corrected to SortOrder
+    sort_dir: schemas.SortOrder = schemas.SortOrder.DESC,
     offset: int = 0,
     limit: int = 25,
 ) -> Dict[str, Any]:
-    query = db.query(models.ContestParticipation).options(
+    q = db.query(models.ContestParticipation).options(
         joinedload(models.ContestParticipation.user),
-        joinedload(models.ContestParticipation.contest) # Eager load contest for potential display
+        joinedload(models.ContestParticipation.contest),
     )
 
-    # Apply filters
-    if gid is not None:
-        query = query.filter(models.ContestParticipation.group_id == gid)
-    if uid is not None:
-        query = query.filter(models.ContestParticipation.user_id == uid)
-    if cid is not None:
-        query = query.filter(models.ContestParticipation.contest_id == cid)
+    if gid:
+        q = q.filter(models.ContestParticipation.group_id == gid)
+    if uid:
+        q = q.filter(models.ContestParticipation.user_id == uid)
+    if cid:
+        q = q.filter(models.ContestParticipation.contest_id == cid)
 
-    # Get total count before pagination
-    total = query.count()
+    total = q.count()
 
-    # Apply sorting
+    sort_map = {
+        schemas.ContestParticipationSortByField.CF_HANDLE: models.ContestParticipation.cf_handle,
+        schemas.ContestParticipationSortByField.RATING_BEFORE: models.ContestParticipation.rating_before,
+        schemas.ContestParticipationSortByField.RATING_AFTER: models.ContestParticipation.rating_after,
+        schemas.ContestParticipationSortByField.RATING_CHANGE: models.ContestParticipation.rating_change,
+        schemas.ContestParticipationSortByField.RANK: models.ContestParticipation.rank,
+    }
     if sort_by:
-        sort_column = None
-        if sort_by == schemas.ContestParticipationSortByField.CF_HANDLE:
-            sort_column = models.ContestParticipation.cf_handle # Sort by the local cf_handle
-        elif sort_by == schemas.ContestParticipationSortByField.RATING_BEFORE:
-            sort_column = models.ContestParticipation.rating_before
-        elif sort_by == schemas.ContestParticipationSortByField.RATING_AFTER:
-            sort_column = models.ContestParticipation.rating_after
-        elif sort_by == schemas.ContestParticipationSortByField.RATING_CHANGE:
-            sort_column = models.ContestParticipation.rating_change
-        elif sort_by == schemas.ContestParticipationSortByField.RANK:
-            sort_column = models.ContestParticipation.rank
-        # Example for timestamp if added to ContestParticipationSortByField and model
-        # elif sort_by == schemas.ContestParticipationSortByField.TIMESTAMP:
-        #     sort_column = models.ContestParticipation.timestamp
+        col = sort_map[sort_by]
+        q = q.order_by(asc(col) if sort_dir == schemas.SortOrder.ASC else desc(col))
+    else:
+        q = q.order_by(desc(models.ContestParticipation.rating_after))
 
-        if sort_column is not None:
-            if sort_dir == schemas.SortOrder.ASC: # Corrected to SortOrder
-                query = query.order_by(sort_column.asc())
-            else:
-                query = query.order_by(sort_column.desc())
-    else: # Default sort if none provided
-        # Defaulting to rating_after descending. Change if another default is preferred.
-        query = query.order_by(models.ContestParticipation.rating_after.desc())
-
-    # Apply pagination
-    items = query.offset(offset).limit(limit).all()
-
+    items = q.offset(offset).limit(limit).all()
     return {"items": items, "total": total}
 
-
-# ------------------------- contest -------------------------
-
-def list_contests(
-    db: Session,
-    finished: Optional[bool] = None,
-) -> List[models.Contest]:
-    """
-    List all contests, optionally filtered by the finished flag.
-    
-    Args:
-        db: Database session
-        finished: Optional boolean to filter contests by their finished status
-        
-    Returns:
-        List of Contest objects
-    """
+# ───────────────────────────── CONTEST METADATA & CF SYNC ─────────────────────────────
+def list_contests(db: Session, finished: Optional[bool] = None) -> List[models.Contest]:
     q = db.query(models.Contest)
     if finished is not None:
         q = q.filter(models.Contest.finished == finished)
     return q.all()
 
+
 def map_cf_contest_to_internal(cf_contest: Dict[str, Any]) -> Dict[str, Any]:
-    contest_id = f"cf_{cf_contest['id']}"
     return {
-        "contest_id": contest_id,
+        "contest_id": f"cf_{cf_contest['id']}",
         "contest_name": cf_contest.get("name", "Unknown Contest"),
         "platform": "Codeforces",
         "start_time_posix": cf_contest.get("startTimeSeconds", 0),
         "duration_seconds": cf_contest.get("durationSeconds", 0),
         "link": f"https://codeforces.com/contest/{cf_contest['id']}",
-        "internal_contest_identifier": (cf_contest['id']),
-        "finished": cf_contest.get("phase", "BEFORE") == "FINISHED"
+        "internal_contest_identifier": str(cf_contest["id"]),
+        "finished": cf_contest.get("phase", "BEFORE") == "FINISHED",
     }
-
-def update_upcoming_contests(db: Session):
-    """
-    update all upcoming contests in the database.
-    """
-    upcoming = cf_api.fetch_upcoming_contests()
-    to_add = []
-    for contest in upcoming:
-        # check if contest is already in db
-        if get_contest_by_internal_identifier(db, contest['id']) is None:
-            to_add.append(models.Contest(
-                **map_cf_contest_to_internal(contest)
-            ))
-    
-    db.add_all(to_add)
-    db.commit()
-
-def update_contest_info_from_cf_api(db: Session, cf_contest_id: str, group_id: Optional[str] = None):
-    """
-        update all contest related tables using standings fetched from cf api
-    """
-
-    contest = get_contest_by_internal_identifier(db, cf_contest_id)
-    if contest is None:
-        print("contest not in db")
-        return
-
-    # update contest participation objects
-    group_rank = dict()
-    standingsObj = cf_api.contest_standings(contest.internal_contest_identifier)
-
-    group_view = dict()
-    
-    print("updating participation objects...")
-    updated_parts = []
-    for row in standingsObj["rows"]:
-        user = get_user_by_handle(db, row["handle"])
-        if user is None:
-            continue
-        
-        # just get all participations satisying uid=handle, cid=contest_id
-        parts = filter_contest_participations(db, uid=user.user_id, cid=contest.contest_id, gid=group_id)
-        for part in parts:
-            membership = get_membership(db, user.user_id, part.group_id)
-            part.rating_before = membership.user_group_rating
-            part.rank = group_rank.get(part.group_id, 0)
-            part.took_part = True
-            group_rank[part.group_id] = group_rank.get(part.group_id, 0) + 1
-            updated_parts.append(part)
-
-            if part.group_id not in group_view:
-                group_view[part.group_id] = {
-                    "total_members": part.group.memberships.count(),
-                    "total_participants": 0,
-                }
-            group_view[part.group_id]["total_participants"] += 1
-
-    db.commit()
-    print("updated participation objects!!")
-    
-    print("updating contest object...")
-    update_contest(
-        db,
-        contest_id=contest.contest_id,
-        finished=True,
-        standings=cf_api.contest_standings(contest.internal_contest_identifier),
-        group_views=group_view
-    )
-    print("updated contest object!!")
-
-    db.commit()
-    return updated_parts
-    
-
-def update_finished_contests(db: Session, group_id: Optional[str] = None, cutoff_days: Optional[int] = None):
-    """
-        fetch and update recently finished contests from cf
-    """
-    finished = cf_api.fetch_finished_contests(cutoff_days)
-    to_add = []
-    for contest in finished:
-        # check if contest is already in db -> contest HAS to be already in db to update its standings
-        db_contest = get_contest_by_internal_identifier(db, contest['id'])
-        if db_contest is None:
-            continue
-        update_contest_info_from_cf_api(db, contest['id'], group_id)
-        
-
-        
-
 
 def get_contest(db: Session, contest_id: str) -> Optional[models.Contest]:
     """
-    Get a single contest by its ID.
-    
-    Args:
-        db: Database session
-        contest_id: ID of the contest to retrieve
-        
-    Returns:
-        Contest object or None if not found
+    Fetch a single Contest row by primary-key `contest_id`.
     """
-    return db.query(models.Contest).filter(models.Contest.contest_id == contest_id).first()
-
-def get_contest_by_internal_identifier(db: Session, id: Any) -> Optional[models.Contest]:
-    """
-        query a contest by its codeforces id
-    """
-    return db.query(models.Contest).filter(models.Contest.internal_contest_identifier == str(id)).first()
+    return (
+        db.query(models.Contest)
+        .filter(models.Contest.contest_id == contest_id)
+        .first()
+    )
 
 
-def create_contest(db: Session, contest_data: Dict[str, Any]) -> Optional[models.Contest]:
-    """
-    Create a new contest in the database.
-    
-    Args:
-        db: Database session
-        contest_data: Dictionary containing contest information
-        
-    Returns:
-        Created Contest object or None if error
-    """
+def get_contest_by_internal_identifier(db: Session, iid: str | int) -> Optional[models.Contest]:
+    return (
+        db.query(models.Contest)
+        .filter(models.Contest.internal_contest_identifier == str(iid))
+        .first()
+    )
+
+
+def create_contest(db: Session, data: Dict[str, Any]) -> Optional[models.Contest]:
     try:
-        contest = models.Contest(**contest_data)
-        db.add(contest)
+        c = models.Contest(**data)
+        db.add(c)
         db.commit()
-        db.refresh(contest)
-        return contest
-    except Exception as e:
+        db.refresh(c)
+        return c
+    except Exception:
         db.rollback()
-        print(f"Error creating contest: {e}")
         return None
 
 
 def update_contest(
     db: Session,
     contest_id: str,
+    *,
     finished: Optional[bool] = None,
     contest_name: Optional[str] = None,
     start_time_posix: Optional[int] = None,
     duration_seconds: Optional[int] = None,
-    standings: Optional[Dict[str, Any]] = None
+    standings: Optional[Dict[str, Any]] = None,
+    group_views: Optional[Dict[str, Any]] = None,
 ) -> Optional[models.Contest]:
-    """
-    Update an existing contest.
-    
-    Args:
-        db: Database session
-        contest_id: ID of the contest to update
-        finished: New finished status
-        contest_name: New contest name
-        start_time_posix: New start time
-        duration_seconds: New duration
-        standings: Contest standings data
-        
-    Returns:
-        Updated Contest object or None if not found
-    """
-    contest = db.query(models.Contest).filter(models.Contest.contest_id == contest_id).first()
-    if not contest:
+    c = db.query(models.Contest).filter(models.Contest.contest_id == contest_id).first()
+    if not c:
         return None
-    
     if finished is not None:
-        contest.finished = finished
+        c.finished = finished
     if contest_name is not None:
-        contest.contest_name = contest_name
+        c.contest_name = contest_name
     if start_time_posix is not None:
-        contest.start_time_posix = start_time_posix
+        c.start_time_posix = start_time_posix
     if duration_seconds is not None:
-        contest.duration_seconds = duration_seconds
+        c.duration_seconds = duration_seconds
     if standings is not None:
-        contest.standings = standings
-    
+        c.standings = standings
+    if group_views is not None:
+        c.group_views = group_views
     db.commit()
-    db.refresh(contest)
-    return contest
+    db.refresh(c)
+    return c
 
 
+def update_upcoming_contests(db: Session) -> None:
+    upcoming = cf_api.fetch_upcoming_contests()
+    to_add = [
+        models.Contest(**map_cf_contest_to_internal(cf_c))
+        for cf_c in upcoming
+        if get_contest_by_internal_identifier(db, cf_c["id"]) is None
+    ]
+    if to_add:
+        db.add_all(to_add)
+        db.commit()
 
 
-# ───────────── membership helpers ─────────────
-def get_membership(db: Session, user_id: str, group_id: str) -> Optional[models.GroupMembership]:
-    """
-    fetch a single membership row or None.
-    """
-    return (
-        db.query(models.GroupMembership)
-        .filter(
-            models.GroupMembership.user_id == user_id,
-            models.GroupMembership.group_id == group_id,
+def update_contest_info_from_cf_api(db: Session, cf_contest_id: str, group_id: Optional[str] = None) -> None:
+    contest = get_contest_by_internal_identifier(db, cf_contest_id)
+    if contest is None:
+        return
+
+    standings = cf_api.contest_standings(contest.internal_contest_identifier)
+    group_rank: dict[str, int] = {}
+    group_views: dict[str, dict[str, int]] = {}
+
+    for row in standings["rows"]:
+        handle = row["handle"]
+        user = get_user_by_handle(db, handle)
+        if not user:
+            continue
+
+        parts = filter_contest_participations(
+            db, uid=user.user_id, cid=contest.contest_id, gid=group_id
         )
-        .first()
+        for part in parts:
+            mem = get_membership(db, user.user_id, part.group_id)
+            part.rating_before = mem.user_group_rating
+            part.rank = group_rank.get(part.group_id, 0)
+            group_rank[part.group_id] = part.rank + 1
+
+            gv = group_views.setdefault(
+                part.group_id,
+                {"total_members": mem.group.memberships.count(), "total_participants": 0},
+            )
+            gv["total_participants"] += 1
+
+    db.commit()
+
+    update_contest(
+        db,
+        contest.contest_id,
+        finished=True,
+        standings=standings,
+        group_views=group_views,
     )
 
 
-def list_groups_for_user(db: Session, user_id: str) -> List[models.Group]:
-    """
-    all groups a user belongs to. handy for non-admin listing.
-    """
-    return (
-        db.query(models.Group)
-        .join(
-            models.GroupMembership,
-            models.Group.group_id == models.GroupMembership.group_id,
-        )
-        .filter(models.GroupMembership.user_id == user_id)
-        .all()
-    )
+def update_finished_contests(db: Session, group_id: Optional[str] = None, cutoff_days: Optional[int] = None) -> None:
+    finished = cf_api.fetch_finished_contests(cutoff_days)
+    for cf_c in finished:
+        if get_contest_by_internal_identifier(db, cf_c["id"]):
+            update_contest_info_from_cf_api(db, cf_c["id"], group_id)
 
 # ───────────── reports ─────────────
 
@@ -738,19 +620,29 @@ def resolve_report(db: Session, payload: schemas.ReportResolve) -> Optional[mode
         models.GroupMembership.group_id == rpt.group_id,
     ).first()
     
-    # Update the 'after' roles to reflect current roles at resolution time
-    
-    if respondent_membership:
-        rpt.respondent_role_after = respondent_membership.role
+    # Set the 'after' roles from the payload (as required by new schema)
+    rpt.reporter_role_after = payload.reporter_role_after
+    rpt.respondent_role_after = payload.respondent_role_after
+
+    # Modify reporter/respondent memberships as per role change or removal
+    if payload.reporter_role_after == models.Role.kicked:
+        remove_membership(db, rpt.reporter_user_id, rpt.group_id)
+    elif reporter_membership:
+        update_membership_role(db, rpt.reporter_user_id, rpt.group_id, payload.reporter_role_after)
+
+    if payload.respondent_role_after == models.Role.kicked:
+        remove_membership(db, rpt.respondent_user_id, rpt.group_id)
+    elif respondent_membership:
+        update_membership_role(db, rpt.respondent_user_id, rpt.group_id, payload.respondent_role_after)
 
     rpt.resolved = True
     rpt.resolver_cf_handle = resolver_cf_handle
     rpt.resolver_user_id = payload.resolver_user_id
-    rpt.resolver_cf_handle = resolver_cf_handle
     rpt.resolve_message = payload.resolve_message
+    rpt.accepted = payload.accepted
     rpt.resolver_rating_at_resolve_time = resolver_rating_at_resolve_time
-    rpt.resolve_timestamp = datetime.utcnow() # type: ignore
-    rpt.resolve_time_stamp = int(datetime.utcnow().timestamp())
+    current_time = datetime.utcnow()
+    rpt.resolve_timestamp = current_time
     db.commit()
     db.refresh(rpt)
     return rpt
@@ -804,7 +696,7 @@ def get_reports_range_fetch(
         schemas.ReportSortByField.RESPONDENT_CF_HANDLE: models.Report.respondent_cf_handle,
         schemas.ReportSortByField.REPORT_DATE: models.Report.timestamp,
         schemas.ReportSortByField.RESOLVER_CF_HANDLE: models.Report.resolver_cf_handle,
-        schemas.ReportSortByField.RESOLVE_DATE: models.Report.resolve_time_stamp,
+        schemas.ReportSortByField.RESOLVE_DATE: models.Report.resolve_timestamp,
         schemas.ReportSortByField.ACCEPTED: models.Report.accepted,
     }
 

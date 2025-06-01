@@ -9,14 +9,9 @@ class Role(str, enum.Enum):
     admin = "admin"
     moderator = "moderator"
     user = "user"
-    outsider = "outsider"  # Added to match schemas.Role and allow this value in DB
+    fag = "fag"
+    kicked = "kicked"
 
-class Status(str, enum.Enum):
-    active = "active"
-    pending_user = "pending_user"
-    pending_group = "pending_group"
-    user_left = "user_left"
-    kicked_out = "kicked_out"
 
 class ModelBase(Base):
     __abstract__ = True
@@ -25,8 +20,7 @@ class ModelBase(Base):
 class User(ModelBase):
     __tablename__ = "users"
 
-    user_id = Column(String, primary_key=True, index=True) 
-    # user_id -> username that user will login through
+    user_id = Column(String, primary_key=True, index=True) # same as cf_handle initially: tech debt for december ft. shrey
     role = Column(Enum(Role), nullable=False, default=Role.user) 
 
     # handles
@@ -34,13 +28,13 @@ class User(ModelBase):
     atcoder_handle = Column(String, unique=False, index=True, nullable=True)
     codechef_handle = Column(String, unique=False, index=True, nullable=True)
     twitter_handle = Column(String, unique=False, index=True, nullable=True)
-    
     email_id = Column(String, nullable=False)
 
     # hqas to be hashed
     hashed_password = Column(String, nullable=False, default=hash_password("devpass"))
 
     memberships = relationship("GroupMembership", back_populates="user", cascade="all, delete", lazy="dynamic")
+    participations = relationship("ContestParticipation", back_populates="user", cascade="all, delete", lazy="dynamic")
     def __repr__(self):
         return f"<User(id={self.user_id}, cf_handle='{self.cf_handle}')>"
 
@@ -51,13 +45,15 @@ class Group(ModelBase):
     """
     __tablename__ = "groups"
     group_id = Column(String, primary_key=True, index=True)
-    group_name = Column(String, unique=True, index=True, nullable=False)
+    # removed grp name: will be same as group id
     group_description = Column(String, nullable=True)
     is_private = Column(Boolean, nullable=False, default=False)
+    extension_link = Column(String, nullable=True)
 
     memberships = relationship("GroupMembership", back_populates="group", cascade="all, delete", lazy="dynamic")
+    participations = relationship("ContestParticipation", back_populates="group", cascade="all, delete", lazy="dynamic")
     def __repr__(self):
-        return f"<Group(id={self.group_id}, name='{self.group_name}')>"
+        return f"<Group(id={self.group_id}, name='{self.group_id}')>"
 
 
 
@@ -71,7 +67,6 @@ class GroupMembership(ModelBase):
     user_group_rating = Column(Integer, nullable=False, default=1500, index=True)
     user_group_max_rating = Column(Integer, nullable=False, default=1500, index=True)
     
-    status = Column(Enum(Status), nullable=False, default=Status.active)
     cf_handle = Column(String, nullable=True, index=True) # Added cf_handle
 
     __table_args__ = (PrimaryKeyConstraint('user_id', 'group_id'),)
@@ -94,7 +89,7 @@ class Contest(ModelBase):
     internal_contest_identifier = Column(String, nullable=True)
     standings = Column(JSON, nullable=True)
     finished = Column(Boolean, nullable=False, default=False)
-    group_views = Column(JSON, nullable=True)
+    group_views = Column(JSON, nullable=True) # this is derived data
 
     participations = relationship("ContestParticipation", back_populates="contest", cascade="all, delete")
     def __repr__(self):
@@ -116,8 +111,8 @@ class ContestParticipation(ModelBase):
     rating_change = Column(Integer, nullable=True, index=True)
     cf_handle = Column(String, nullable=True, index=True)
 
-    user = relationship("User")    
-    group = relationship("Group")
+    user = relationship("User", back_populates="participations")    
+    group = relationship("Group", back_populates="participations")
     contest = relationship("Contest", back_populates="participations")
 
     def __repr__(self):
@@ -144,6 +139,8 @@ class Report(ModelBase):
     # roles before and after report resolution
     respondent_role_before = Column(Enum(Role), nullable=True)
     respondent_role_after = Column(Enum(Role), nullable=True, index=True)
+    reporter_role_before = Column(Enum(Role), nullable=True)
+    reporter_role_after = Column(Enum(Role), nullable=True)
 
     report_description = Column(String, nullable=False)
     resolved = Column(Boolean, nullable=False, default=False, index=True)
@@ -151,7 +148,7 @@ class Report(ModelBase):
     resolver_cf_handle = Column(String, nullable=True, index=True)
     resolve_message = Column(String, nullable=True)
     accepted = Column(Boolean, nullable=True, index=True)
-    resolve_time_stamp = Column(DateTime, nullable=True, index=True)
+    resolve_timestamp = Column(DateTime, nullable=True, index=True)
 
 
 class Announcement(ModelBase):

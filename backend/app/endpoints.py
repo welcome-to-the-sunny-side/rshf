@@ -21,7 +21,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 998_244_353  # memes stay
 
-role_rank = {"admin": 3, "moderator": 2, "user": 1}  # simpler than enums
+role_rank = {"admin": 3, "moderator": 2, "user": 1, "fag": 0, "kicked": -1}  # simpler than enums
 
 
 def get_db():
@@ -86,6 +86,73 @@ def ensure_group_mod(db: Session, uid: str, gid: str):
     m = crud.get_membership(db, uid, gid)
     if not m or role_rank[m.role] < role_rank["moderator"]:
         raise HTTPException(403, "insufficient privilege")
+        
+# helper to check if a user has sufficient privileges to modify roles in a group
+def check_role_modification_privileges(db: Session, requester_id: str, target_id: str, group_id: str, new_role: str):
+    """Check if a user has sufficient privileges to modify another user's role in a group.
+    
+    Args:
+        db: Database session
+        requester_id: ID of the user making the request
+        target_id: ID of the user whose role is being modified
+        group_id: ID of the group
+        new_role: The new role to be assigned
+        
+    Raises:
+        HTTPException: If the requester doesn't have sufficient privileges or membership doesn't exist
+    """
+    # Get memberships
+    requester_membership = crud.get_membership(db, requester_id, group_id)
+    target_membership = crud.get_membership(db, target_id, group_id)
+    
+    # Check if memberships exist
+    if not requester_membership:
+        raise HTTPException(status_code=403, detail="You are not a member of this group")
+    if not target_membership:
+        raise HTTPException(status_code=404, detail="Target user is not a member of this group")
+    
+    requester_role_rank = role_rank[requester_membership.role]
+    target_role_rank = role_rank[target_membership.role]
+    new_role_rank = role_rank[new_role]
+    
+    # Check if requester is either strictly greater in role than the target OR is an admin
+    if not (requester_role_rank > target_role_rank or requester_membership.role == "admin"):
+        raise HTTPException(status_code=403, detail="Insufficient privilege to modify this user's role")
+    
+    # Check if new role is not greater than requester's role
+    if new_role_rank > requester_role_rank:
+        raise HTTPException(status_code=403, detail="Cannot assign a role higher than your own role")
+
+# helper to check if a user has sufficient privileges to remove another user from a group
+def check_removal_privileges(db: Session, requester_id: str, target_id: str, group_id: str):
+    """Check if a user has sufficient privileges to remove another user from a group.
+    
+    Args:
+        db: Database session
+        requester_id: ID of the user making the request
+        target_id: ID of the user being removed
+        group_id: ID of the group
+        
+    Raises:
+        HTTPException: If the requester doesn't have sufficient privileges or membership doesn't exist
+    """
+    # Get memberships
+    requester_membership = crud.get_membership(db, requester_id, group_id)
+    target_membership = crud.get_membership(db, target_id, group_id)
+    
+    # Check if memberships exist
+    if not requester_membership:
+        raise HTTPException(status_code=403, detail="You are not a member of this group")
+    if not target_membership:
+        raise HTTPException(status_code=404, detail="Target user is not a member of this group")
+    
+    requester_role_rank = role_rank[requester_membership.role]
+    target_role_rank = role_rank[target_membership.role]
+    
+    # Check if requester is either strictly greater in role than the target OR is an admin
+    if not (requester_role_rank > target_role_rank or requester_membership.role == "admin"):
+        raise HTTPException(status_code=403, detail="Insufficient privilege to remove this user from the group")
+
 
 
 # ---------- user endpoints ----------
@@ -528,7 +595,37 @@ def resolve_report(
     rpt = db.query(models.Report).filter(models.Report.report_id == payload.report_id).first()
     if not rpt:
         raise HTTPException(404, "report not found")
-    ensure_group_mod(db, current.user_id, rpt.group_id)
+
+    # Auth: current user must be the resolver
+    if current.user_id != payload.resolver_user_id:
+        raise HTTPException(403, "You are not the resolver for this report.")
+
+    # Fetch reporter and respondent roles (after resolution, as provided in payload)
+    reporter_role = payload.reporter_role_after
+    respondent_role = payload.respondent_role_after
+
+    reporter_membership = db.query(models.GroupMembership).filter(
+        models.GroupMembership.user_id == rpt.reporter_user_id,
+        models.GroupMembership.group_id == rpt.group_id,
+    ).first()
+    respondent_membership = db.query(models.GroupMembership).filter(
+        models.GroupMembership.user_id == rpt.respondent_user_id,
+        models.GroupMembership.group_id == rpt.group_id,
+    ).first()
+    resolver_membership = db.query(models.GroupMembership).filter(
+        models.GroupMembership.user_id == payload.resolver_user_id,
+        models.GroupMembership.group_id == rpt.group_id,
+    ).first()
+    
+    current_role_value = role_rank.get(str(resolver_membership.role.value), 0)
+    reporter_role_value = role_rank.get(str(reporter_membership.role.value), 0)
+    respondent_role_value = role_rank.get(str(respondent_membership.role.value), 0)
+    moderator_value = role_rank["moderator"]
+    max_required = max(reporter_role_value, respondent_role_value, moderator_value)
+
+    if current_role_value < max_required:
+        raise HTTPException(403, f"Insufficient role to resolve this report. Current role: {current_role_value}, required role: {max_required}")
+
     return crud.resolve_report(db, payload)
 
 
@@ -904,6 +1001,95 @@ def run_seed2():
 
 
 # ------------------------- custom routes --------------------
+
+# ---------- group membership removal ----------
+@router.post("/remove_user_from_group", status_code=status.HTTP_200_OK)
+def remove_user_from_group(
+    payload: schemas.GroupMembershipRemove,
+    db: Session = Depends(get_db),
+    current: models.User = Depends(get_current_user),
+):
+    """
+    Delete a group membership object, removing a user from a group.
+    
+    Args:
+        payload: GroupMembershipRemove object containing user_id and group_id
+        db: Database session
+        current: Current authenticated user
+    
+    Returns:
+        Success message
+    
+    Raises:
+        HTTPException: If the user doesn't have sufficient privileges or the membership doesn't exist
+    """
+    # Check permissions based on the requirements
+    check_removal_privileges(
+        db=db,
+        requester_id=current.user_id,
+        target_id=payload.user_id,
+        group_id=payload.group_id
+    )
+    
+    # Remove the membership
+    success = crud.remove_membership(
+        db=db,
+        user_id=payload.user_id,
+        group_id=payload.group_id
+    )
+    
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Membership not found"
+        )
+    
+    return {"detail": "User successfully removed from group"}
+
+@router.put("/change_membership_status", response_model=schemas.GroupMembershipOut)
+def change_membership_role(
+    payload: schemas.GroupMembershipRoleUpdate,
+    db: Session = Depends(get_db),
+    current: models.User = Depends(get_current_user),
+):
+    """
+    Modify the role attribute of a group membership object.
+    
+    Args:
+        payload: GroupMembershipRoleUpdate object containing user_id, group_id, and new_role
+        db: Database session
+        current: Current authenticated user
+    
+    Returns:
+        Updated GroupMembershipOut object
+    
+    Raises:
+        HTTPException: If the user doesn't have sufficient privileges or the membership doesn't exist
+    """
+    # Check permissions based on the requirements
+    check_role_modification_privileges(
+        db=db,
+        requester_id=current.user_id,
+        target_id=payload.user_id,
+        group_id=payload.group_id,
+        new_role=payload.new_role
+    )
+    
+    # Update the membership role
+    updated_membership = crud.update_membership_role(
+        db=db,
+        user_id=payload.user_id,
+        group_id=payload.group_id,
+        new_role=payload.new_role
+    )
+    
+    if not updated_membership:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Membership not found"
+        )
+    
+    return updated_membership
 
 @router.post("/contest/register", response_model=schemas.ContestParticipationOut)
 def register_contest_participation_endpoint(
