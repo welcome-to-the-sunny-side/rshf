@@ -27,7 +27,7 @@ export default function GroupReports() {
   // User role state
   const [userRole, setUserRole] = useState(null);
   const [showModViewButton, setShowModViewButton] = useState(false);
-  const isLoggedInUserMember = userRole === "moderator" || userRole === "member" || userRole === "admin";
+  const isLoggedInUserMember = userRole === "moderator" || userRole === "user" || userRole === "admin";
 
   // State for Active Reports (unresolved)
   const [activeReports, setActiveReports] = useState([]);
