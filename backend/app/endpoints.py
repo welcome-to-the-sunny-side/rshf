@@ -909,6 +909,35 @@ def check_membership(
     return membership
 
 
+@router.get("/get_request", response_model=schemas.RequestOut)
+def get_request_endpoint(
+    request_id: str = Query(..., description="Request ID to retrieve"),
+    db: Session = Depends(get_db),
+    current: models.User = Depends(get_current_user),
+):
+    """
+    Get a specific request by its request_id.
+    
+    Args:
+        request_id: ID of the request to retrieve
+        db: Database session
+        current: Current authenticated user
+        
+    Returns:
+        The request with the specified ID
+        
+    Raises:
+        HTTPException: If the request is not found
+    """
+    request = crud.get_request(db, request_id)
+    if not request:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Request not found"
+        )
+    
+    return request
+
 # ---------------------- admin routes ----------------------
 
 @router.post("/admin/update-finished-contests", status_code=status.HTTP_200_OK)
@@ -1248,3 +1277,213 @@ def contest_group_counts(
     
     # Return the group's counts from the group_views dictionary
     return contest.group_views.get(group_id)
+
+
+@router.post("/create_request", response_model=schemas.RequestOut)
+def create_request(
+    payload: schemas.RequestCreate,
+    db: Session = Depends(get_db),
+    current: models.User = Depends(get_current_user),
+):
+    """
+    Create a new request for a user to join a group.
+    
+    Args:
+        payload: RequestCreate object containing user_id and group_id
+        db: Database session
+        current: Current authenticated user
+        
+    Returns:
+        The created request
+        
+    Raises:
+        HTTPException: If validation fails
+    """
+    # Verify the current user is the same as the one in the payload
+    if current.user_id != payload.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only create requests for yourself"
+        )
+    
+    # Check if group exists
+    group = crud.get_group(db, payload.group_id)
+    if not group:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Group not found"
+        )
+    
+    # Check if user already has a membership in the group
+    existing_membership = crud.get_membership(db, payload.user_id, payload.group_id)
+    if existing_membership:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="You are already a member of this group"
+        )
+    
+    # Check if there's already an unresolved request for this user and group
+    existing_request = db.query(models.Request).filter(
+        models.Request.user_id == payload.user_id,
+        models.Request.group_id == payload.group_id,
+        models.Request.resolved == False
+    ).first()
+    
+    if existing_request:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="You already have a pending request for this group"
+        )
+    
+    # Create the request
+    return crud.create_request(db, payload)
+
+
+@router.post("/resolve_request", response_model=schemas.RequestOut)
+def resolve_request(
+    payload: schemas.RequestResolve,
+    db: Session = Depends(get_db),
+    current: models.User = Depends(get_current_user),
+):
+    """
+    Resolve a request by accepting or rejecting it.
+    If accepted, a group membership is created for the requesting user.
+    
+    Args:
+        payload: RequestResolve object containing request_id, accepted, and resolver_user_id
+        db: Database session
+        current: Current authenticated user
+        
+    Returns:
+        The updated request
+        
+    Raises:
+        HTTPException: If validation fails or insufficient privileges
+    """
+    # Verify the current user is the same as the resolver in the payload
+    if current.user_id != payload.resolver_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only resolve requests as yourself"
+        )
+    
+    # Get the request
+    request = crud.get_request(db, payload.request_id)
+    if not request:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Request not found"
+        )
+    
+    # Check if the request is already resolved
+    if request.resolved:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Request is already resolved"
+        )
+    
+    # Check if the resolver has sufficient privileges in the group (moderator or higher)
+    membership = crud.get_membership(db, current.user_id, request.group_id)
+    if not membership or role_rank[membership.role] < role_rank["moderator"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You must be a moderator or admin of the group to resolve requests"
+        )
+    
+    # Resolve the request
+    resolved_request = crud.resolve_request(db, payload)
+    if not resolved_request:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to resolve request"
+        )
+    
+    return resolved_request
+
+
+@router.get("/request_range_fetch", response_model=schemas.RequestRangeFetchResponse)
+def get_requests_range_fetch_endpoint(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+    group_id: Optional[str] = Query(None, description="Filter by group ID"),
+    user_id: Optional[str] = Query(None, description="Filter by user ID"),
+    resolver_user_id: Optional[str] = Query(None, description="Filter by resolver's user ID"),
+    resolved: Optional[bool] = Query(None, description="Filter by resolved status"),
+    accepted: Optional[bool] = Query(None, description="Filter by accepted status"),
+    sort_by: Optional[schemas.RequestSortByField] = Query(schemas.RequestSortByField.TIMESTAMP, description="Field to sort by"),
+    sort_order: Optional[schemas.SortOrder] = Query(schemas.SortOrder.DESC, description="Sort order"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(25, ge=1, le=100, description="Maximum number of records to return (max 100)"),
+):
+    """
+    Get a paginated list of requests with filters and sorting options.
+    
+    Args:
+        db: Database session
+        current_user: Current authenticated user
+        group_id: Optional filter by group ID
+        user_id: Optional filter by user ID
+        resolver_user_id: Optional filter by resolver user ID
+        resolved: Optional filter by resolved status
+        accepted: Optional filter by accepted status
+        sort_by: Field to sort by
+        sort_order: Sort order (asc/desc)
+        skip: Number of records to skip (pagination offset)
+        limit: Maximum number of records to return
+        
+    Returns:
+        RequestRangeFetchResponse with items and total count
+    """
+    result = crud.get_requests_range_fetch(
+        db=db,
+        group_id=group_id,
+        user_id=user_id,
+        resolver_user_id=resolver_user_id,
+        resolved=resolved,
+        accepted=accepted,
+        sort_by=sort_by,
+        sort_order=sort_order,
+        skip=skip,
+        limit=limit,
+    )
+    return schemas.RequestRangeFetchResponse(items=result["items"], total=result["total"])
+
+
+@router.get("/requests_count", response_model=schemas.CountResponse)
+def get_requests_count(
+    group_id: Optional[str] = Query(None, description="Filter by group ID"),
+    user_id: Optional[str] = Query(None, description="Filter by user ID"),
+    resolved: Optional[bool] = Query(None, description="Filter by resolved status"),
+    accepted: Optional[bool] = Query(None, description="Filter by accepted status"),
+    resolver_user_id: Optional[str] = Query(None, description="Filter by resolver user ID"),
+    resolver_cf_handle: Optional[str] = Query(None, description="Filter by resolver CF handle"),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """
+    Get the count of requests based on the provided filters.
+    All filters are optional. If no filters are provided, returns the total count of all requests.
+    
+    Args:
+        group_id: Optional filter by group ID
+        user_id: Optional filter by user ID
+        resolved: Optional filter by resolved status
+        accepted: Optional filter by accepted status
+        resolver_user_id: Optional filter by resolver user ID
+        resolver_cf_handle: Optional filter by resolver CF handle
+        db: Database session
+        current_user: Current authenticated user
+        
+    Returns:
+        CountResponse with the count of matching requests
+    """
+    count = crud.count_requests(
+        db=db, 
+        group_id=group_id,
+        user_id=user_id,
+        resolved=resolved,
+        accepted=accepted,
+        resolver_user_id=resolver_user_id,
+        resolver_cf_handle=resolver_cf_handle
+    )
+    return schemas.CountResponse(count=count)

@@ -154,3 +154,16 @@ class Announcement(ModelBase):
     group_id = Column(String, ForeignKey("groups.group_id"), nullable=False)
     title = Column(String, nullable=False)
     content = Column(String, nullable=False)
+
+class Request(ModelBase):
+    __tablename__ = "requests"
+
+    request_id = Column(String, primary_key=True, index=True)
+    group_id = Column(String, ForeignKey("groups.group_id"), nullable=False, index=True)
+    user_id = Column(String, ForeignKey("users.user_id"), nullable=False, index=True)
+    
+    resolved = Column(Boolean, nullable=False, default=False, index=True)
+    accepted = Column(Boolean, nullable=True, index=True)
+    resolve_timestamp = Column(DateTime, nullable=True, index=True)
+    resolver_user_id = Column(String, ForeignKey("users.user_id"), nullable=True, index=True)
+    resolver_cf_handle = Column(String, nullable=True, index=True)

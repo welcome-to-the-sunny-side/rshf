@@ -6,7 +6,7 @@ import random
 import time
 from typing import List
 from collections import defaultdict
-
+from datetime import datetime
 import numpy as np
 import requests
 from faker import Faker
@@ -24,13 +24,16 @@ from app.models import (
     Report,
     Role,
     User,
+    Request,
 )
+from app.codeforces_api import CodeforcesAPI
 
 SEED = 42
 random.seed(SEED)
 np.random.seed(SEED)
 Faker.seed(SEED)
 faker = Faker()
+cf_api = CodeforcesAPI()
 
 DEFAULT_PASS = "devpass"
 
@@ -352,7 +355,93 @@ def seed():
 
     print("\ndata generated in", f"{time.perf_counter() - t0:.1f}s")
 
+    print("generating some non-member users for seeding requests")
+    non_member_users = []
+    already_added = set()
+    users = db.query(User).all()
+    for user in users:
+        already_added.add(user.cf_handle)
+    handle_set = cf_api.user_ratedList()
+    while len(non_member_users) < 200:
+        idx = random.randint(0, len(handle_set))
+        handle = handle_set[idx]["handle"]
+        if handle not in already_added:
+            non_member_users.append(
+                User(
+                    user_id=handle,
+                    role=Role.user,
+                    cf_handle=handle,
+                    email_id=f"{handle}@example.com",
+                    hashed_password=hash_password(DEFAULT_PASS),
+                )
+            )
+            already_added.add(handle)
+
+    db.add_all(non_member_users)
+    db.commit()
+
+    print("non-member users generated in", f"{time.perf_counter() - t0:.1f}s")
+
+    banner("generating request objects")
+    reqs = []
+    new_memberships = []
+    for user in non_member_users:
+
+        req_type = int(random.random() *3 )
+
+        if req_type == 0:
+            # unresolved request
+            reqs.append(
+                Request(
+                    request_id=f"req{len(reqs) + 1}",
+                    group_id="main",
+                    user_id=user.user_id,
+                )
+            )
+        elif req_type == 1:
+            # accepted request
+            resolver = random.choice(SPECIAL_USERS)
+            reqs.append(
+                Request(
+                    request_id=f"req{len(reqs) + 1}",
+                    group_id="main",
+                    user_id=user.user_id,
+                    accepted=True,
+                    resolved=True,
+                    resolver_user_id=resolver,
+                    resolver_cf_handle=resolver,
+                    resolve_timestamp=datetime.now(),
+                )
+            )
+            new_memberships.append(
+                GroupMembership(
+                    user_id=user.user_id,
+                    group_id="main",
+                    role=Role.user,
+                )
+            )
+        else:
+            # rejected request
+            resolver = random.choice(SPECIAL_USERS)
+            reqs.append(
+                Request(
+                    request_id=f"req{len(reqs) + 1}",
+                    group_id="main",
+                    user_id=user.user_id,
+                    accepted=False,
+                    resolved=True,
+                    resolver_user_id=resolver,
+                    resolver_cf_handle=resolver,
+                    resolve_timestamp=datetime.now(),
+                )
+            )
+
+    db.add_all(reqs)
+    db.add_all(new_memberships)
+    db.commit()
+
     banner("SEED2 DONE – happy hacking 🛠️")
+    
 
 if __name__ == "__main__":
     seed()

@@ -937,3 +937,195 @@ def get_ratings_by_cf_handles(db: Session, group_id: str, cf_handles: List[str])
     
     return ratings
 
+
+# ───────────── requests ─────────────
+def create_request(db: Session, payload: schemas.RequestCreate) -> models.Request:
+    """
+    Create a new request for a user to join a group.
+    
+    Args:
+        db: Database session
+        payload: RequestCreate object containing user_id and group_id
+        
+    Returns:
+        The created Request object
+    """
+    # Generate a request_id by counting existing requests
+    request_count = db.query(models.Request).count()
+    request_id = f"REQ-{request_count + 1}"
+    
+    # Create the request object
+    db_request = models.Request(
+        request_id=request_id,
+        group_id=payload.group_id,
+        user_id=payload.user_id,
+        resolved=False
+    )
+    
+    db.add(db_request)
+    db.commit()
+    db.refresh(db_request)
+    
+    return db_request
+
+
+def resolve_request(db: Session, payload: schemas.RequestResolve) -> Optional[models.Request]:
+    """
+    Resolve a request by updating its status and, if accepted, creating a group membership.
+    
+    Args:
+        db: Database session
+        payload: RequestResolve object containing request_id, accepted, and resolver_user_id
+        
+    Returns:
+        The updated Request object if found, None otherwise
+    """
+    # Get the request
+    request = db.query(models.Request).filter(models.Request.request_id == payload.request_id).first()
+    if not request:
+        return None
+    
+    # Get resolver's CF handle
+    resolver = db.query(models.User).filter(models.User.user_id == payload.resolver_user_id).first()
+    resolver_cf_handle = resolver.cf_handle if resolver else None
+    
+    # Update request fields
+    request.resolved = True
+    request.accepted = payload.accepted
+    request.resolve_timestamp = datetime.utcnow()
+    request.resolver_user_id = payload.resolver_user_id
+    request.resolver_cf_handle = resolver_cf_handle
+    
+    # If request is accepted, create a group membership
+    if payload.accepted:
+        # Create a membership for the user in the group
+        membership_payload = schemas.GroupMembershipAdd(
+            user_id=request.user_id,
+            group_id=request.group_id,
+            role=models.Role.user
+        )
+        add_membership(db, membership_payload)
+    
+    db.commit()
+    db.refresh(request)
+    
+    return request
+
+
+def count_requests(
+    db: Session,
+    group_id: Optional[str] = None,
+    user_id: Optional[str] = None,
+    resolved: Optional[bool] = None,
+    accepted: Optional[bool] = None,
+    resolver_user_id: Optional[str] = None,
+    resolver_cf_handle: Optional[str] = None,
+) -> int:
+    """
+    Count requests based on the provided filters.
+    
+    Args:
+        db: Database session
+        group_id: Optional filter by group ID
+        user_id: Optional filter by user ID
+        resolved: Optional filter by resolved status
+        accepted: Optional filter by accepted status
+        resolver_user_id: Optional filter by resolver user ID
+        resolver_cf_handle: Optional filter by resolver CF handle
+        
+    Returns:
+        Count of requests matching all the provided filters
+    """
+    query = db.query(models.Request)
+    
+    # Apply filters if provided (all columns are indexed for O(log n) lookup)
+    if group_id is not None:
+        query = query.filter(models.Request.group_id == group_id)
+    
+    if user_id is not None:
+        query = query.filter(models.Request.user_id == user_id)
+    
+    if resolved is not None:
+        query = query.filter(models.Request.resolved == resolved)
+    
+    if accepted is not None:
+        query = query.filter(models.Request.accepted == accepted)
+    
+    if resolver_user_id is not None:
+        query = query.filter(models.Request.resolver_user_id == resolver_user_id)
+    
+    if resolver_cf_handle is not None:
+        query = query.filter(models.Request.resolver_cf_handle == resolver_cf_handle)
+    
+    return query.count()
+
+def get_request(db: Session, request_id: str) -> Optional[models.Request]:
+    return db.query(models.Request).filter(models.Request.request_id == request_id).first()
+
+def get_requests_range_fetch(
+    db: Session,
+    group_id: Optional[str] = None,
+    user_id: Optional[str] = None,
+    resolver_user_id: Optional[str] = None,
+    resolved: Optional[bool] = None,
+    accepted: Optional[bool] = None,
+    sort_by: schemas.RequestSortByField = schemas.RequestSortByField.TIMESTAMP,
+    sort_order: schemas.SortOrder = schemas.SortOrder.DESC,
+    skip: int = 0,
+    limit: int = 25,
+) -> Dict[str, Any]:
+    """
+    Get a paginated list of requests with filters and sorting options.
+    
+    Args:
+        db: Database session
+        group_id: Optional filter by group ID
+        user_id: Optional filter by user ID
+        resolver_user_id: Optional filter by resolver user ID
+        resolved: Optional filter by resolved status
+        accepted: Optional filter by accepted status
+        sort_by: Field to sort by
+        sort_order: Sort order (asc/desc)
+        skip: Number of records to skip (pagination offset)
+        limit: Maximum number of records to return
+        
+    Returns:
+        Dictionary with 'items' (list of requests) and 'total' (total count)
+    """
+    # Base query
+    query = db.query(models.Request)
+    
+    # Apply filters if provided
+    if group_id is not None:
+        query = query.filter(models.Request.group_id == group_id)
+    
+    if user_id is not None:
+        query = query.filter(models.Request.user_id == user_id)
+    
+    if resolver_user_id is not None:
+        query = query.filter(models.Request.resolver_user_id == resolver_user_id)
+    
+    if resolved is not None:
+        query = query.filter(models.Request.resolved == resolved)
+    
+    if accepted is not None:
+        query = query.filter(models.Request.accepted == accepted)
+    
+    # Get total count for pagination info
+    total = query.count()
+    
+    # Apply sorting
+    sort_column = getattr(models.Request, sort_by.value)
+    if sort_order == schemas.SortOrder.DESC:
+        query = query.order_by(desc(sort_column))
+    else:
+        query = query.order_by(asc(sort_column))
+    
+    # Apply pagination
+    requests = query.offset(skip).limit(limit).all()
+    
+    return {
+        "items": requests,
+        "total": total
+    }
+

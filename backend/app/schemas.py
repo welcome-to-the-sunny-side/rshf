@@ -332,6 +332,52 @@ class GroupMembershipRoleUpdate(BaseModel):
     group_id: str
     new_role: Role
 
+# ───────────── requests ─────────────
+class RequestCreate(BaseModel):
+    user_id: str
+    group_id: str
+
+
+class RequestResolve(BaseModel):
+    request_id: str
+    accepted: bool
+    resolver_user_id: str
+
+
+class RequestOut(BaseModel):
+    request_id: str
+    group_id: str
+    user_id: str
+    timestamp: datetime
+    resolved: bool
+    accepted: Optional[bool] = None
+    resolve_timestamp: Optional[datetime] = None
+    resolver_user_id: Optional[str] = None
+    resolver_cf_handle: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class RequestSortByField(str, Enum):
+    REQUEST_ID = "request_id"
+    GROUP_ID = "group_id"
+    USER_ID = "user_id"
+    TIMESTAMP = "timestamp"
+    RESOLVED = "resolved"
+    ACCEPTED = "accepted"
+    RESOLVE_TIMESTAMP = "resolve_timestamp"
+    RESOLVER_USER_ID = "resolver_user_id"
+
+
+class RequestRangeFetchResponse(BaseModel):
+    items: List[RequestOut]
+    total: int
+
+    class Config:
+        from_attributes = True
+
+
 # ───────────── forward-ref rebuilds ─────────────
 GroupOut.model_rebuild()
 UserOut.model_rebuild()
