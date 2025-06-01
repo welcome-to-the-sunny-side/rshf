@@ -70,6 +70,8 @@ def update_user(db: Session, user_id: str, payload: schemas.UserUpdate) -> Optio
         user.hashed_password = hash_password(payload.password)
     if payload.role is not None:
         user.role = payload.role
+    if payload.email_id is not None:
+        user.email_id = payload.email_id
     db.commit()
     db.refresh(user)
     return user
@@ -131,6 +133,10 @@ def update_group(db: Session, payload: schemas.GroupUpdate):
     grp = db.query(models.Group).filter(models.Group.group_id == payload.group_id).first()
     if not grp:
         raise Exception("group not found")
+    
+    # Store the original is_private status to check if it changes
+    original_is_private = grp.is_private
+    
     if payload.group_name is not None:
         grp.group_name = payload.group_name
     if payload.group_description is not None:
@@ -139,6 +145,48 @@ def update_group(db: Session, payload: schemas.GroupUpdate):
         grp.is_private = payload.is_private
     if payload.extension_link is not None:
         grp.extension_link = payload.extension_link
+    
+    # If group is changed from private to public, accept all pending requests
+    if original_is_private and payload.is_private is not None and not payload.is_private:
+        # Find all unresolved requests for this group
+        pending_requests = db.query(models.Request).filter(
+            models.Request.group_id == payload.group_id,
+            models.Request.resolved == False
+        ).all()
+        
+        # Use the group creator as the resolver
+        resolver_user = db.query(models.User).join(models.GroupMembership).filter(
+            models.GroupMembership.group_id == payload.group_id,
+            models.GroupMembership.role == models.Role.admin
+        ).first()
+        
+        resolver_user_id = resolver_user.user_id if resolver_user else None
+        resolver_cf_handle = resolver_user.cf_handle if resolver_user else None
+        
+        # Mark all requests as resolved and accepted
+        for request in pending_requests:
+            # Update request fields
+            request.resolved = True
+            request.accepted = True
+            request.resolve_timestamp = datetime.utcnow()
+            request.resolver_user_id = resolver_user_id
+            request.resolver_cf_handle = resolver_cf_handle
+            
+            # Create a membership for the requesting user
+            membership_exists = db.query(models.GroupMembership).filter(
+                models.GroupMembership.user_id == request.user_id,
+                models.GroupMembership.group_id == request.group_id
+            ).first()
+            
+            # Only create membership if it doesn't already exist
+            if not membership_exists:
+                membership_payload = schemas.GroupMembershipAdd(
+                    user_id=request.user_id,
+                    group_id=request.group_id,
+                    role=models.Role.user
+                )
+                add_membership(db, membership_payload)
+    
     db.commit()
     db.refresh(grp)
     return grp

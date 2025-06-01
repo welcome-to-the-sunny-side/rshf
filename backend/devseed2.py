@@ -4,7 +4,9 @@ Special seeder for 'main' group based on contest 2107 participants and custom co
 """
 import random
 import time
-from typing import List
+import json
+import os
+from typing import List, Dict, Any, Tuple, Optional
 from collections import defaultdict
 from datetime import datetime
 import numpy as np
@@ -46,11 +48,50 @@ UPCOMING_CONTEST = 2115
 SPECIAL_USERS = ["negative-xp", "roomTemperatureIQ"]
 
 def banner(msg: str):
-    print("\n[1m»", msg, "\u001b[0m")
+    print("\n[1m»", msg, "\u001b[0m")
+
+# Cache directory setup
+CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cache')
+os.makedirs(CACHE_DIR, exist_ok=True)
+
+class CFCache:
+    @staticmethod
+    def get_cache_path(function_name: str, contest_id: int) -> str:
+        """Get the cache file path for a specific function and contest_id."""
+        return os.path.join(CACHE_DIR, f"{function_name}_{contest_id}.json")
+    
+    @staticmethod
+    def get_from_cache(function_name: str, contest_id: int) -> Optional[Any]:
+        """Try to get data from cache for the given function and contest_id."""
+        cache_path = CFCache.get_cache_path(function_name, contest_id)
+        if os.path.exists(cache_path):
+            try:
+                with open(cache_path, 'r') as f:
+                    print(f"   📂 Using cached data for {function_name}({contest_id})")
+                    return json.load(f)
+            except Exception as e:
+                print(f"   ⚠️ Cache read error: {e}")
+        return None
+    
+    @staticmethod
+    def save_to_cache(function_name: str, contest_id: int, data: Any) -> None:
+        """Save data to cache for the given function and contest_id."""
+        cache_path = CFCache.get_cache_path(function_name, contest_id)
+        try:
+            with open(cache_path, 'w') as f:
+                json.dump(data, f)
+                print(f"   💾 Saved data to cache for {function_name}({contest_id})")
+        except Exception as e:
+            print(f"   ⚠️ Cache write error: {e}")
 
 
-def get_cf_standings(contest_id: int):
+def get_cf_standings(contest_id: int) -> List[Tuple[str, int]]:
     """Return list of (handle, rank) for each participant in the contest standings."""
+    # Check cache first
+    cached_result = CFCache.get_from_cache('get_cf_standings', contest_id)
+    if cached_result is not None:
+        return cached_result
+    
     url = "https://codeforces.com/api/contest.standings"
     banner(f"cf api → contest {contest_id}")
     try:
@@ -70,10 +111,18 @@ def get_cf_standings(contest_id: int):
         handle = party["members"][0]["handle"]
         rank = row.get("rank")
         result.append((handle, rank))
+    
+    # Save result to cache
+    CFCache.save_to_cache('get_cf_standings', contest_id, result)
     return result
 
-def get_cf_rating_after_map(contest_id: int):
+def get_cf_rating_after_map(contest_id: int) -> Dict[str, int]:
     """Return dict: handle -> newRating (after contest)."""
+    # Check cache first
+    cached_result = CFCache.get_from_cache('get_cf_rating_after_map', contest_id)
+    if cached_result is not None:
+        return cached_result
+    
     url = "https://codeforces.com/api/contest.ratingChanges"
     banner(f"cf api → rating changes {contest_id}")
     try:
@@ -86,7 +135,12 @@ def get_cf_rating_after_map(contest_id: int):
     if data.get("status") != "OK":
         print("   ⚠️  api returned", data.get("comment", "bad status"))
         return {}
-    return {row["handle"]: row["newRating"] for row in data["result"]}
+    
+    result = {row["handle"]: row["newRating"] for row in data["result"]}
+    
+    # Save result to cache
+    CFCache.save_to_cache('get_cf_rating_after_map', contest_id, result)
+    return result
 
 
 def seed():
@@ -96,18 +150,29 @@ def seed():
 
     # --- Step 0: Pre-fetch and sort contest info ---
     # Fetch contest info for all PAST_CONTESTS (no main_contest in DB)
-    def get_cf_contest_info(contest_id: int):
+    def get_cf_contest_info(contest_id: int) -> Optional[Dict[str, Any]]:
+        # Check cache first
+        cached_result = CFCache.get_from_cache('get_cf_contest_info', contest_id)
+        if cached_result is not None:
+            return cached_result
+        
         url = "https://codeforces.com/api/contest.standings"
         try:
             resp = requests.get(url, params={"contestId": contest_id, "from": 1, "count": 1}, timeout=10)
             data = resp.json()
+            time.sleep(1)  # Add a small delay to avoid rate limiting
         except Exception as e:
             print(f"   ⚠️  api error (contest info for {contest_id}):", e)
             return None
         if data.get("status") != "OK":
             print(f"   ⚠️  api returned bad status for contest info {contest_id}")
             return None
-        return data["result"]["contest"]
+        
+        result = data["result"]["contest"]
+        
+        # Save result to cache
+        CFCache.save_to_cache('get_cf_contest_info', contest_id, result)
+        return result
 
     # Fetch contest info for all past contests (main_contest is not added to DB)
     contest_infos = []
@@ -152,7 +217,8 @@ def seed():
     db.commit()
 
     # 2. Build groups
-    groups = [Group(group_id="main", group_name="main", group_description="all users", is_private=False)]
+    groups = [Group(group_id="main", group_name="main", group_description="all users", is_private=False),
+    Group(group_id="private", group_name="private", group_description="private group", is_private=True)]
     db.add_all(groups)
     db.commit()
 
@@ -355,37 +421,43 @@ def seed():
 
     print("\ndata generated in", f"{time.perf_counter() - t0:.1f}s")
 
-    print("generating some non-member users for seeding requests")
-    non_member_users = []
-    already_added = set()
-    users = db.query(User).all()
-    for user in users:
-        already_added.add(user.cf_handle)
-    handle_set = cf_api.user_ratedList()
-    while len(non_member_users) < 200:
-        idx = random.randint(0, len(handle_set))
-        handle = handle_set[idx]["handle"]
-        if handle not in already_added:
-            non_member_users.append(
-                User(
-                    user_id=handle,
-                    role=Role.user,
-                    cf_handle=handle,
-                    email_id=f"{handle}@example.com",
-                    hashed_password=hash_password(DEFAULT_PASS),
-                )
-            )
-            already_added.add(handle)
-
-    db.add_all(non_member_users)
-    db.commit()
-
-    print("non-member users generated in", f"{time.perf_counter() - t0:.1f}s")
 
     banner("generating request objects")
     reqs = []
     new_memberships = []
-    for user in non_member_users:
+
+    # add special users to private group
+    for handle in SPECIAL_USERS:
+        new_memberships.append(
+            GroupMembership(
+                user_id=handle,
+                group_id="private",
+                role=Role.admin,
+                user_group_rating=1500,
+                user_group_max_rating=1500,
+                cf_handle=handle,
+            )
+        )
+
+
+    for user in users:
+        if user.user_id in SPECIAL_USERS:
+            continue
+
+        if random.random() < 0.5:
+            # add this as a normal membership
+            new_memberships.append(
+                GroupMembership(
+                    user_id=user.user_id,
+                    group_id="private",
+                    role=Role.user,
+                    user_group_rating=1500,
+                    user_group_max_rating=1500,
+                    cf_handle=user.cf_handle,
+                )
+            )
+            continue
+            
 
         req_type = int(random.random() *3 )
 
@@ -394,7 +466,7 @@ def seed():
             reqs.append(
                 Request(
                     request_id=f"req{len(reqs) + 1}",
-                    group_id="main",
+                    group_id="private",
                     user_id=user.user_id,
                 )
             )
@@ -404,7 +476,7 @@ def seed():
             reqs.append(
                 Request(
                     request_id=f"req{len(reqs) + 1}",
-                    group_id="main",
+                    group_id="private",
                     user_id=user.user_id,
                     accepted=True,
                     resolved=True,
@@ -416,8 +488,11 @@ def seed():
             new_memberships.append(
                 GroupMembership(
                     user_id=user.user_id,
-                    group_id="main",
+                    group_id="private",
                     role=Role.user,
+                    user_group_rating=1500,
+                    user_group_max_rating=1500,
+                    cf_handle=user.cf_handle,
                 )
             )
         else:
@@ -426,7 +501,7 @@ def seed():
             reqs.append(
                 Request(
                     request_id=f"req{len(reqs) + 1}",
-                    group_id="main",
+                    group_id="private",
                     user_id=user.user_id,
                     accepted=False,
                     resolved=True,

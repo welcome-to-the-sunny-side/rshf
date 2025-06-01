@@ -1313,6 +1313,11 @@ def create_request(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Group not found"
         )
+    if not group.is_private:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You cannot request to join a public group"
+        )
     
     # Check if user already has a membership in the group
     existing_membership = crud.get_membership(db, payload.user_id, payload.group_id)
