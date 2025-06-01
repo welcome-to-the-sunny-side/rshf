@@ -22,6 +22,54 @@ from app.models import (
     User,
 )
 
+def create_group(group_id, group_name, creator_user_id=None, group_description=None, is_private=False):
+    """
+    Create a group in the database.
+    Args:
+        group_id (str): Unique group ID
+        group_name (str): Name of the group
+        creator_user_id (str, optional): User ID of the creator. If provided, adds as admin member.
+        group_description (str, optional): Description of the group
+        is_private (bool, optional): Whether the group is private
+    Returns:
+        Group: The created Group instance
+    Raises:
+        Exception: If group creation fails
+    """
+    db = SessionLocal()
+    try:
+        # Check if group already exists
+        existing = db.query(Group).filter(Group.group_id == group_id).first()
+        if existing:
+            raise Exception(f"Group with id {group_id} already exists.")
+        group = Group(
+            group_id=group_id,
+            group_name=group_name,
+            group_description=group_description,
+            is_private=is_private,
+        )
+        db.add(group)
+        db.commit()
+        db.refresh(group)
+        # Add creator as admin member if provided
+        if creator_user_id:
+            membership = GroupMembership(
+                user_id=creator_user_id,
+                group_id=group_id,
+                role=Role.admin,
+                user_group_rating=0,
+                user_group_max_rating=0,
+            )
+            db.add(membership)
+            db.commit()
+        return group
+    except Exception as e:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+
 def delete_group(group_id):
     """
     Delete a group from the database
@@ -68,4 +116,4 @@ def delete(contest_id):
         print(f"Error deleting contest: {str(e)}")
 
 if __name__ == "__main__":
-    delete("2115")
+    create_group("haha", "haha")
