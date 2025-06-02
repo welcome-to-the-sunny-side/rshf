@@ -95,7 +95,8 @@ def write_extension_data_to_r2():
     for obj in group_memberships:
         store_data = [
             obj.cf_handle,
-            obj.user_group_rating
+            obj.user_group_rating,
+            obj.user_group_max_rating
         ]
         if obj.group_id not in data:
             data[obj.group_id] = dict()
@@ -106,7 +107,7 @@ def write_extension_data_to_r2():
         'timestamp': datetime.now().isoformat(),
         'data': data,
         'data_format': [
-            'cf_handle', 'user_group_rating'
+            'cf_handle', 'user_group_rating', 'user_group_max_rating'
         ]
     }
     
@@ -119,5 +120,5 @@ def write_extension_data_to_r2():
     return extension_data_link, timestamp_link
 
 def read_extension_data_from_r2():
-    return read_from_r2('extension_data.json')
+    return read_from_r2('extension_data')
     
