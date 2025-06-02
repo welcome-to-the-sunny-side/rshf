@@ -6,6 +6,8 @@ node_modules
 .env
 self.txt
 vomitignore.txt
+vomit.txt
+vomitinclude.txt
 *.py[cod]
 .ipynb*
 __pycache__/
