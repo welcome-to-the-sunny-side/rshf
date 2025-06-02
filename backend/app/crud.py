@@ -91,7 +91,6 @@ def create_group(db: Session, payload: schemas.GroupRegister) -> models.Group:
         group_name=payload.group_name if hasattr(payload, 'group_name') and payload.group_name else payload.group_id,
         group_description=payload.group_description,
         is_private=payload.is_private,
-        extension_link=payload.extension_link,
     )
     db.add(grp)
     db.commit()
@@ -141,8 +140,7 @@ def update_group(db: Session, payload: schemas.GroupUpdate):
         grp.group_description = payload.group_description
     if payload.is_private is not None:
         grp.is_private = payload.is_private
-    if payload.extension_link is not None:
-        grp.extension_link = payload.extension_link
+
     
     # If group is changed from private to public, accept all pending requests
     if original_is_private and payload.is_private is not None and not payload.is_private:

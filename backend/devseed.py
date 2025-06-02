@@ -134,7 +134,6 @@ def build_groups() -> List[Group]:
             group_name="main",
             group_description="all users",
             is_private=False,
-            extension_link=None,
         )
     ]
     for i in range(1, NUM_GROUPS):
@@ -145,7 +144,6 @@ def build_groups() -> List[Group]:
                 group_name=gid,
                 group_description=faker.sentence(),
                 is_private=random.random() < 0.3,
-                extension_link=None,
             )
         )
     print("   total groups:", len(groups))

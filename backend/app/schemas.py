@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from enum import Enum
 from typing import List, Optional, Dict
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, constr
 from datetime import datetime
 
 # ───────────── common ─────────────
@@ -70,9 +70,8 @@ class GroupRegister(BaseModel):
     group_id: str
     group_name: Optional[str] = None
     creator_user_id: str
-    group_description: Optional[str] = None
+    group_description: Optional[constr(max_length=500)] = None
     is_private: bool = False
-    extension_link: Optional[str] = None
 
 
 class GroupUpdate(BaseModel):
@@ -80,7 +79,6 @@ class GroupUpdate(BaseModel):
     group_name: Optional[str] = None
     group_description: Optional[str] = None
     is_private: Optional[bool] = None
-    extension_link: Optional[str] = None
 
 
 class GroupMembershipAdd(BaseModel):
@@ -114,7 +112,6 @@ class GroupOutFull(BaseModel):
     group_name: Optional[str] = None
     group_description: Optional[str] = None
     is_private: bool = False
-    extension_link: Optional[str] = None
     timestamp: datetime | None = None
     memberships: List[GroupMembershipOut] = []
 
@@ -127,7 +124,6 @@ class GroupOut(BaseModel):
     group_name: Optional[str] = None
     group_description: Optional[str] = None
     is_private: bool = False
-    extension_link: Optional[str] = None
     timestamp: datetime | None = None
     member_count: int = 0
 
@@ -141,7 +137,6 @@ class GroupSingle(BaseModel):
     group_name: Optional[str] = None
     group_description: Optional[str] = None
     is_private: bool = False
-    extension_link: Optional[str] = None
     timestamp: datetime | None = None
     memberships: List[GroupMembershipOut] = []
 
@@ -223,7 +218,7 @@ class ReportCreate(BaseModel):
     respondent_user_id: str
     reporter_cf_handle: Optional[str] = None
     respondent_cf_handle: Optional[str] = None
-    report_description: str
+    report_description: constr(max_length=1000)
     respondent_role_before: Optional[Role] = None
     respondent_role_after: Optional[Role] = None
     accepted: Optional[bool] = None

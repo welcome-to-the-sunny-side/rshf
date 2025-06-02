@@ -46,7 +46,6 @@ class Group(ModelBase):
     group_name = Column(String, nullable=True, index=True)  # restored group_name
     group_description = Column(String, nullable=True)
     is_private = Column(Boolean, nullable=False, default=False)
-    extension_link = Column(String, nullable=True)
 
     memberships = relationship("GroupMembership", back_populates="group", cascade="all, delete", lazy="dynamic")
     participations = relationship("ContestParticipation", back_populates="group", cascade="all, delete", lazy="dynamic")
