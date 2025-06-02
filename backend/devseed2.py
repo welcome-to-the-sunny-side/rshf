@@ -260,7 +260,7 @@ def seed():
     for cinfo in contest_infos:
         cid = cinfo["id"]
         contest = Contest(
-            contest_id=str(cid),
+            contest_id="c" + str(cid),
             contest_name=cinfo.get("name", f"CF {cid}"),
             platform="Codeforces",
             start_time_posix=cinfo.get("startTimeSeconds", int(time.time())),
@@ -313,7 +313,7 @@ def seed():
                 cp = ContestParticipation(
                     user_id=h,
                     group_id="main",
-                    contest_id=str(cid),
+                    contest_id="c"+str(cid),
                     rank=rank,
                     delta=info["rating_change"] if info else None,
                     rating_before=info["oldRating"] if info else 0,
@@ -328,7 +328,7 @@ def seed():
     # Fetch real contest info for upcoming contest
     upcoming_info = get_cf_contest_info(UPCOMING_CONTEST)
     contest_upcoming = Contest(
-        contest_id=str(UPCOMING_CONTEST),
+        contest_id="c"+str(UPCOMING_CONTEST),
         contest_name=upcoming_info.get("name", f"CF {UPCOMING_CONTEST}") if upcoming_info else f"CF {UPCOMING_CONTEST}",
         platform="Codeforces",
         start_time_posix=upcoming_info.get("startTimeSeconds", int(time.time())+86400) if upcoming_info else int(time.time())+86400,
@@ -348,7 +348,7 @@ def seed():
         cp = ContestParticipation(
             user_id=h,
             group_id="main",
-            contest_id=str(UPCOMING_CONTEST),
+            contest_id="c"+str(UPCOMING_CONTEST),
             rank=None,
             delta=None,
             rating_before=user_final_ratings.get(h, 0),
@@ -370,7 +370,7 @@ def seed():
         report = Report(
             report_id=f"r{idx}",
             group_id="main",
-            contest_id=str(PAST_CONTESTS[0]),
+            contest_id="c"+str(PAST_CONTESTS[0]),
             reporter_user_id=reporter,
             respondent_user_id=respondent,
             reporter_cf_handle=reporter,
