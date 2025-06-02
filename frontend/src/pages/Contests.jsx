@@ -9,7 +9,7 @@ import styles from './Contests.module.css';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { API_MESSAGES } from '../constants/apiMessages';
-import '../styles/apiFeedbackStyles.css';
+// import '../styles/apiFeedbackStyles.css';
 
 export default function Contests() {
   const navigate = useNavigate();
@@ -124,20 +124,7 @@ export default function Contests() {
   const pastNoDataMessage = loading.past ? API_MESSAGES.LOADING : (error.past ? API_MESSAGES.ERROR : API_MESSAGES.NO_DATA);
 
   return (
-    <div className="page-container contestsPage">
-      {/* Error messages */}
-      {error.upcoming && (
-        <div className="api-feedback-container error-message">
-          {API_MESSAGES.ERROR}
-        </div>
-      )}
-      
-      {error.past && (
-        <div className="api-feedback-container error-message">
-          {API_MESSAGES.ERROR}
-        </div>
-      )}
-      
+    <div className="page-container contestsPage">     
       {/* Active/Upcoming Contests */}
       <TableBox 
         title={<span className={titleStyles.titleText}>Active/Upcoming Contests</span>}
