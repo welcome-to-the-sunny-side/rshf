@@ -773,6 +773,7 @@ def create_announcement(db: Session, payload: schemas.AnnouncementCreate) -> mod
     anmt = models.Announcement(
         announcement_id=announcement_id,
         group_id=payload.group_id,
+        user_id=payload.user_id,
         title=payload.title,
         content=payload.content,
     )
@@ -804,6 +805,25 @@ def update_announcement(db: Session, payload: schemas.AnnouncementUpdate) -> Opt
     db.commit()
     db.refresh(anmt)
     return anmt
+
+
+def delete_announcement(db: Session, announcement_id: str) -> bool:
+    """Delete an announcement by its ID.
+    
+    Args:
+        db: Database session
+        announcement_id: ID of the announcement to delete
+        
+    Returns:
+        True if the announcement was found and deleted, False otherwise
+    """
+    anmt = db.query(models.Announcement).filter(models.Announcement.announcement_id == announcement_id).first()
+    if not anmt:
+        return False
+    
+    db.delete(anmt)
+    db.commit()
+    return True
 
 
 # ───────────── custom group data queries ───────────────

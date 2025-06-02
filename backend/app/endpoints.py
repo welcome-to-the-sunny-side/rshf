@@ -12,6 +12,7 @@ from sqlalchemy import func
 
 from app import crud, database, models, schemas
 from typing import List, Optional
+from typing import Union
 
 router = APIRouter(prefix="/api")
 
@@ -1106,10 +1107,38 @@ def change_membership_role(
     )
 
     if payload.new_role == "kicked":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Use remove_user_from_group endpoint instead"
+        # Get the membership before removing it so we can return its data
+        membership = crud.get_membership(
+            db=db,
+            user_id=payload.user_id,
+            group_id=payload.group_id
         )
+        
+        if not membership:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Membership not found"
+            )
+            
+        # Create a response object with the membership data before removing it
+        response = schemas.GroupMembershipOut(
+            user_id=membership.user_id,
+            group_id=membership.group_id,
+            role="kicked",  # We're using "kicked" as the role in response
+            user_group_rating=membership.user_group_rating,
+            user_group_max_rating=membership.user_group_max_rating,
+            cf_handle=membership.cf_handle,
+            timestamp=membership.timestamp
+        )
+        
+        # Now remove the membership
+        crud.remove_membership(
+            db=db,
+            user_id=payload.user_id,
+            group_id=payload.group_id
+        )
+        
+        return response
     
     # Update the membership role
     updated_membership = crud.update_membership_role(
@@ -1285,6 +1314,70 @@ def contest_group_counts(
     # Return the group's counts from the group_views dictionary
     return contest.group_views.get(group_id)
 
+
+@router.post("/join_group", response_model=Union[schemas.GroupMembershipOut, schemas.RequestOut])
+def join_group(
+    payload: schemas.GroupMembershipAdd,
+    db: Session = Depends(get_db),
+    current: models.User = Depends(get_current_user),
+):
+    """
+    Join a group or create a join request based on group privacy and user history.
+    If group is public and user was never kicked, directly adds membership.
+    If group is private or user was kicked before, creates a join request.
+    
+    Args:
+        payload: GroupMembershipAdd object containing user_id and group_id
+        db: Database session
+        current: Current authenticated user
+        
+    Returns:
+        Either the created membership or the created request
+        
+    Raises:
+        HTTPException: If validation fails
+    """
+    # Verify the current user is the same as the one in the payload
+    if current.user_id != payload.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only join groups for yourself"
+        )
+    
+    # Check if group exists
+    group = crud.get_group(db, payload.group_id)
+    if not group:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Group not found"
+        )
+    
+    # Check if user already has a membership in the group
+    existing_membership = crud.get_membership(db, payload.user_id, payload.group_id)
+    if existing_membership:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="You are already a member of this group"
+        )
+    
+    # Check if user was ever kicked from this group
+    was_kicked = db.query(models.Report).filter(
+        models.Report.group_id == payload.group_id,
+        models.Report.respondent_user_id == payload.user_id,
+        models.Report.resolved == True,
+        models.Report.accepted == True  # Report was accepted = user was kicked
+    ).first() is not None
+    
+    # If group is public and user was never kicked, directly add membership
+    if not group.is_private and not was_kicked:
+        return crud.add_membership(db, payload)
+    
+    # Otherwise create a join request
+    request_payload = schemas.RequestCreate(
+        user_id=payload.user_id,
+        group_id=payload.group_id
+    )
+    return crud.create_request(db, request_payload)
 
 @router.post("/create_request", response_model=schemas.RequestOut)
 def create_request(
@@ -1499,3 +1592,54 @@ def get_requests_count(
         resolver_cf_handle=resolver_cf_handle
     )
     return schemas.CountResponse(count=count)
+
+
+@router.post("/delete_announcement", status_code=status.HTTP_200_OK)
+def delete_announcement(
+    payload: schemas.AnnouncementDelete,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """
+    Delete an announcement by its ID.
+    
+    Args:
+        payload: AnnouncementDelete schema containing the announcement_id
+        db: Database session
+        current_user: Current authenticated user
+        
+    Returns:
+        Success message or appropriate error
+        
+    Raises:
+        HTTPException: If the announcement doesn't exist or the user doesn't have sufficient privileges
+    """
+    # Get the announcement to check the group_id
+    announcement = db.query(models.Announcement).filter(
+        models.Announcement.announcement_id == payload.announcement_id
+    ).first()
+    
+    if not announcement:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Announcement not found"
+        )
+    
+    # Check if the user is at least a moderator in the group
+    membership = crud.get_membership(db, current_user.user_id, announcement.group_id)
+    if not membership or membership.role not in [models.Role.moderator, models.Role.admin]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You must be at least a moderator in the group to delete announcements"
+        )
+    
+    # Delete the announcement
+    result = crud.delete_announcement(db, payload.announcement_id)
+    
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete announcement"
+        )
+    
+    return {"message": "Announcement deleted successfully"}

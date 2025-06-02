@@ -389,7 +389,14 @@ def seed():
     def build_announcements(num=10):
         banner("building announcements")
         anns = [
-            Announcement(announcement_id=f"anmt{i}", group_id="main", title=faker.sentence(nb_words=6), content=faker.text(max_nb_chars=100))
+            Announcement
+            (
+                announcement_id=f"anmt{i}", 
+                group_id="main", 
+                user_id=random.choice(SPECIAL_USERS), 
+                title=faker.sentence(nb_words=6), 
+                content='https://codeforces.com/blog/entry/143422'
+            )
             for i in range(num)
         ]
         print(f"   total announcements: {len(anns)}")

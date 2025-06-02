@@ -284,6 +284,7 @@ class ReportRangeFetchResponse(BaseModel):
 
 # ───────────── announcements ─────────────
 class AnnouncementCreate(BaseModel):
+    user_id: str
     group_id: str
     title: str
     content: str
@@ -297,9 +298,13 @@ class AnnouncementUpdate(BaseModel):
 class AnnouncementOut(BaseModel):
     announcement_id: str
     group_id: str
-    timestamp: datetime
     title: str
     content: str
+    timestamp: datetime
+
+
+class AnnouncementDelete(BaseModel):
+    announcement_id: str
 
     class Config:
         from_attributes = True
