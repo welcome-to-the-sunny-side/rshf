@@ -15,6 +15,10 @@ const nonMemberDisplay = document.getElementById('non-member-display');
 const inGroupDisplay = document.getElementById('in-group-display');
 const registerLink = document.getElementById('register-link');
 
+// New DOM Elements for Ratings Refresh
+const refreshRatingsBtn = document.getElementById('refreshRatingsBtn');
+const refreshStatusEl = document.getElementById('refreshStatus');
+
 // Constants
 const BACKEND_URL = 'http://localhost:8000';
 
@@ -24,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
   registerLink.href = `${BACKEND_URL}/register`;
   
   // Check authentication state
-  checkAuthState();
+  checkAuthState(); // This will also call updateRefreshStatusDisplay if user is logged in
   
   // Set up event listeners
   loginForm.addEventListener('submit', handleLogin);
@@ -32,6 +36,25 @@ document.addEventListener('DOMContentLoaded', () => {
   setGroupButton.addEventListener('click', handleGroupChange);
   nonMemberDisplay.addEventListener('change', handleDisplayChange);
   inGroupDisplay.addEventListener('change', handleDisplayChange);
+
+  // Event listener for the new refresh button
+  if (refreshRatingsBtn) {
+    refreshRatingsBtn.addEventListener('click', handleForceRefreshRatings);
+  }
+
+  // Initial call to update refresh status when popup opens
+  // This is also called within checkAuthState for logged-in users, but good to have for non-logged in state too if section is visible
+  updateRefreshStatusDisplay(); 
+});
+
+// Listen for messages from background script (e.g., when ratings are updated automatically)
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'ratingsUpdated') {
+    console.log('Popup received ratingsUpdated message from background.');
+    updateRefreshStatusDisplay(message.fileTimestamp, message.refreshedAt);
+  }
+  // Keep 'return true' if you need to send an async response from here, otherwise false or undefined.
+  // For this listener, we are just reacting, so no async response needed.
 });
 
 // Authentication status check
@@ -205,6 +228,10 @@ function showLoginView() {
   // Clear login form
   loginForm.reset();
   loginError.textContent = '';
+  // Hide refresh section if it's part of mainView, or manage its visibility separately
+  if (document.getElementById('ratings-refresh-section')) {
+      document.getElementById('ratings-refresh-section').style.display = 'none';
+  }
 }
 
 function showMainView(user) {
@@ -215,4 +242,55 @@ function showMainView(user) {
   userDetails.textContent = user.cf_handle ? 
     `Codeforces handle: ${user.cf_handle}` : 
     'No Codeforces handle linked';
+
+  // Show refresh section and update its status
+  if (document.getElementById('ratings-refresh-section')) {
+      document.getElementById('ratings-refresh-section').style.display = 'block';
+  }
+  updateRefreshStatusDisplay();
+}
+
+// --- New Functions for Ratings Refresh Display ---
+function formatTimestamp(timestamp) {
+  if (!timestamp) return 'N/A';
+  return new Date(timestamp).toLocaleString();
+}
+
+function updateRefreshStatusDisplay(fileTs, refreshedAtTs) {
+  if (!refreshStatusEl) return;
+
+  if (fileTs && refreshedAtTs) {
+    // Called with specific timestamps (e.g., after a refresh)
+    refreshStatusEl.textContent = `Data from: ${formatTimestamp(fileTs)}, Checked: ${formatTimestamp(refreshedAtTs)}`;
+  } else {
+    // Fetch current timestamps from storage
+    chrome.runtime.sendMessage({ action: 'getRatingsTimestamps' }, (response) => {
+      if (response && response.success) {
+        refreshStatusEl.textContent = `Data from: ${formatTimestamp(response.fileTimestamp)}, Checked: ${formatTimestamp(response.lastRefreshedAt)}`;
+      } else {
+        refreshStatusEl.textContent = 'Last refreshed: Unknown';
+        if (response && response.error) console.error('Error getting timestamps:', response.error);
+      }
+    });
+  }
+}
+
+function handleForceRefreshRatings() {
+  if (!refreshRatingsBtn || !refreshStatusEl) return;
+
+  refreshStatusEl.textContent = 'Refreshing...';
+  refreshRatingsBtn.disabled = true;
+
+  chrome.runtime.sendMessage({ action: 'forceRefreshRatings' }, (response) => {
+    if (response && response.success) {
+      // Timestamps will be updated by the 'ratingsUpdated' message listener or by calling updateRefreshStatusDisplay directly
+      // updateRefreshStatusDisplay(response.fileTimestamp, response.refreshedAt);
+      // No, background now sends 'ratingsUpdated' which is handled by the listener.
+      // For immediate feedback after click, we can update here too.
+      refreshStatusEl.textContent = `Refreshed! Data from: ${formatTimestamp(response.fileTimestamp)}, Checked: ${formatTimestamp(response.refreshedAt)}`;
+    } else {
+      refreshStatusEl.textContent = `Error refreshing: ${response.error || 'Unknown error'}`;
+    }
+    refreshRatingsBtn.disabled = false;
+  });
 }

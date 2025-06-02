@@ -5,7 +5,8 @@
   "description": "Replaces Codeforces ratings with RSHF alternative rating system",
   "permissions": [
     "storage",
-    "activeTab"
+    "activeTab",
+    "alarms"
   ],
   "host_permissions": [
     "http://localhost:8000/*",
