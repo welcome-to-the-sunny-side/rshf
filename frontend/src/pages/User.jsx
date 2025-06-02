@@ -131,7 +131,12 @@ export default function User() {
               1  // report_accuracy_total - placeholder
             ];
           });
-          
+          //first sort the groups by group_id, and then place main as the first group if it exists
+          formattedGroups.sort((a, b) => {
+            if (a[0] === 'main') return -1;
+            if (b[0] === 'main') return 1;
+            return a[0].localeCompare(b[0]);
+          });
           setGroups(formattedGroups);
         }
         
@@ -206,7 +211,6 @@ export default function User() {
           }
         });
         
-        // Let's try different date formats for debugging
         const formattedRatingData = response.data.map(participation => {
           // Check if contest exists and has start_time_posix
           if (!participation.contest || typeof participation.contest.start_time_posix === 'undefined') {
@@ -298,6 +302,7 @@ export default function User() {
       )}
       
       {/* Loading indicator */}
+      <UserNavBar username={username} isOwnProfile={isOwnProfile} />
       {loading ? (
         <div className="api-feedback-container loading-message">
           {API_MESSAGES.LOADING}
@@ -308,8 +313,6 @@ export default function User() {
         </div>
       ) : (
         <>
-          {/* Updated floating button box with Links */}
-          <UserNavBar username={username} isOwnProfile={isOwnProfile} />
           
           {/* Two content boxes side by side */}
           <div className={styles.contentBoxRow}>
@@ -426,12 +429,13 @@ export default function User() {
             <div className={`contentBox ${styles.contentBoxRight}`}>
               {/* Group dropdown moved to top of right box */}
               <div className={`${styles.groupRatingRow}`} style={{ marginBottom: '15px' }}>
-                <h3 className="standardTextFont" style={{ margin: 0, marginRight: '10px' }}>Group: </h3>
+                <h3 className="standardTextFont" style={{ margin: 0, marginRight: '10px', marginTop: '-10px' }}>Group: </h3>
                 <DropdownMenu
   value={selectedGroupIdx}
   onChange={handleGroupChange}
   disabled={groups.length === 0}
   className="standardTextFont"
+  style={{ marginTop: '-10px' }}
 >
   {groups.map((group, idx) => (
     <option key={group[0] + idx} value={idx}>{group[0]}</option>
@@ -461,7 +465,7 @@ export default function User() {
           </div>
           
           {/* Rating Graph box (full width) */}
-          <div className="contentBox standardTextFont" style={{ padding: '0.1rem' }}>
+          <div className="contentBox standardTextFont" style={{ padding: '0.1rem 0.1rem 0.1rem 0.1rem ' }}>
             {loadingRatingData ? (
               <div className="api-feedback-container loading-message">
                 {API_MESSAGES.LOADING}
@@ -470,12 +474,8 @@ export default function User() {
               <div className="api-feedback-container error-message">
                 {API_MESSAGES.ERROR}
               </div>
-            ) : currentRatingHistory.length > 0 ? (
-              <RatingGraph ratingHistory={currentRatingHistory} />
             ) : (
-              <div className="api-feedback-container no-data-message">
-                No rating history available for this group.
-              </div>
+              <RatingGraph ratingHistory={currentRatingHistory} />
             )}
           </div>
         </>

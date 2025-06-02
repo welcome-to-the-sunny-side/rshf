@@ -41,7 +41,6 @@ class UserLogin(BaseModel):
 
 
 class UserUpdate(BaseModel):
-    cf_handle: Optional[str] = None
     email_id: Optional[str] = None
     password: Optional[str] = None
     role:     Optional[Role] = None
@@ -289,7 +288,6 @@ class AnnouncementCreate(BaseModel):
     title: str
     content: str
 
-
 class AnnouncementUpdate(BaseModel):
     announcement_id: str
     title: Optional[str] = None
@@ -321,7 +319,6 @@ class CustomMembershipData(BaseModel):
 class ExtensionQuery1Request(BaseModel):
     group_id: str
     cf_handles: List[str]
-
 
 class ExtensionQuery1Response(BaseModel):
     ratings: List[Optional[int]]

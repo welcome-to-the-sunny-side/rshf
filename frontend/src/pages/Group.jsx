@@ -106,7 +106,7 @@ export default function Group() {
             const membership = membershipResponse.data;
             setUserRole(membership.role);
             setUserRating(membership.user_group_rating);
-            setUserMaxRating(Math.max(membership.user_group_rating, membership.user_group_rating + 75));
+            setUserMaxRating(membership.user_group_max_rating);
             setJoinDate(fetchedGroup.timestamp);
           } catch (membershipError) {
             // 404 error means user is not a member of this group
@@ -263,15 +263,11 @@ export default function Group() {
     <div className="api-feedback-container error-message">
       {API_MESSAGES.ERROR}
     </div>
-  ) : participationData.length > 0 ? (
+  ) : (
     <ParticipationGraph 
       participationData={participationData} 
       groupName={groupId}
     />
-  ) : (
-    <div className="api-feedback-container no-data-message">
-      {API_MESSAGES.NO_DATA}
-    </div>
   );
   
   const showModViewButton = (userRole === "moderator" || userRole === "admin");

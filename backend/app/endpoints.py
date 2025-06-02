@@ -231,14 +231,14 @@ def get_user(
     if user_id != current.user_id:
         user.email_id = None
 
-    print(f"DEBUG: Endpoint /user: Fetched user {user.user_id}, role from DB: {user.role}") # DEBUG
+    # print(f"DEBUG: Endpoint /user: Fetched user {user.user_id}, role from DB: {user.role}") # DEBUG
     return user
 
 
 @router.put("/user", response_model=schemas.UserOut)
 def update_user(
+    payload: schemas.UserUpdate,
     user_id: str = Query(...),
-    payload: schemas.UserUpdate = Depends(),
     db: Session = Depends(get_db),
     current: models.User = Depends(get_current_user),
 ):
@@ -248,7 +248,6 @@ def update_user(
     if not updated:
         raise HTTPException(404, "user not found")
     return updated
-
 
 # ---------- group endpoints ----------
 @router.post("/group/register", response_model=schemas.GroupOut)

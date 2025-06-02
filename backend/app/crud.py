@@ -64,8 +64,6 @@ def update_user(db: Session, user_id: str, payload: schemas.UserUpdate) -> Optio
     user = get_user(db, user_id)
     if not user:
         return None
-    if payload.cf_handle is not None:
-        user.cf_handle = payload.cf_handle
     if payload.password is not None:
         user.hashed_password = hash_password(payload.password)
     if payload.role is not None:
@@ -219,10 +217,19 @@ def remove_membership(db: Session, user_id: str, group_id: str) -> bool:
     )
     if not m:
         return False
+    # Check if the user is an admin
+    if m.role == models.Role.admin:
+        # Count number of admins in the group
+        admin_count = db.query(models.GroupMembership).filter(
+            models.GroupMembership.group_id == group_id,
+            models.GroupMembership.role == models.Role.admin
+        ).count()
+        if admin_count <= 1:
+            # Prevent removal if this is the last admin
+            raise Exception("Cannot remove the last admin from the group.")
     db.delete(m)
     db.commit()
     return True
-
 
 def get_membership(db: Session, user_id: str, group_id: str) -> Optional[models.GroupMembership]:
     return (
@@ -231,7 +238,6 @@ def get_membership(db: Session, user_id: str, group_id: str) -> Optional[models.
         .first()
     )
     
-
 def update_membership_role(db: Session, user_id: str, group_id: str, new_role: models.Role) -> Optional[models.GroupMembership]:
     """
     Update the role of a user in a group.
@@ -762,7 +768,14 @@ def get_reports_range_fetch(
 # ───────────── announcements ─────────────
 
 def create_announcement(db: Session, payload: schemas.AnnouncementCreate) -> models.Announcement:
-    anmt = models.Announcement(**payload.model_dump())
+    count = db.query(func.count(models.Announcement.announcement_id)).scalar()
+    announcement_id = f"a{count + 1}"
+    anmt = models.Announcement(
+        announcement_id=announcement_id,
+        group_id=payload.group_id,
+        title=payload.title,
+        content=payload.content,
+    )
     db.add(anmt)
     db.commit()
     db.refresh(anmt)

@@ -1,3 +1,14 @@
+.infoBox {
+  background: #e6f7ff;
+  border: 1px solid #91d5ff;
+  padding: 0.75rem;
+  border-radius: 6px;
+  color: #005480;
+  margin-bottom: 1rem;
+  font-family: inherit;
+  font-size: inherit;
+}
+
 .container {
   width: 100%;
   margin: 0;

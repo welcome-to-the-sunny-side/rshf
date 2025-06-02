@@ -104,10 +104,18 @@ export default function RatingGraph({ ratingHistory }) {
 
   const data = formatData();
 
-  const ratings = data.map(d => d.rating);
-  // minRating/maxRating will be based on actual data due to early return for data.length === 0
-  const minRating = Math.min(...ratings);
-  const maxRating = Math.max(...ratings);
+  // If no data, use default y-axis domain and ticks
+  let ratings = data.map(d => d.rating);
+  let minRating, maxRating;
+  if (ratings.length > 0) {
+    minRating = Math.min(...ratings);
+    maxRating = Math.max(...ratings);
+  } else {
+    // Default rating bounds (e.g., 0 to 5000)
+    minRating = 0;
+    maxRating = 4500;
+    ratings = [minRating, maxRating];
+  }
 
   // Initial data-driven y-axis view boundaries
   const yAxisViewMin = Math.max(0, Math.floor(0.5 * minRating));
@@ -198,10 +206,6 @@ export default function RatingGraph({ ratingHistory }) {
     return null;
   };
 
-  // If no data available, show message
-  if (!data || data.length === 0) {
-    return <div className={styles.ratingChart}>No rating history available.</div>;
-  }
 
   // Use ratingGraphColors for colored backgrounds (inclusive yaxis ranges)
   const ratingAreas = ratingGraphColors.map((band, index) => {
@@ -315,6 +319,20 @@ export default function RatingGraph({ ratingHistory }) {
             activeDot={ClickableDot}
             filter="url(#yellowLineShadow)"
           />
+          {/* Show a subtle message if no data points */}
+          {data.length === 0 && (
+            <text
+              x="50%"
+              y="50%"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fill="#888"
+              fontSize="1.2rem"
+              opacity="0.7"
+            >
+                No rating data yet
+            </text>
+          )}
         </LineChart>
       </ResponsiveContainer>
     </div>

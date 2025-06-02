@@ -19,8 +19,8 @@
   background-color: #ffebee;
   color: #c62828;
   border-radius: 4px;
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.8rem;
 }
 
 .api-success {
@@ -28,8 +28,8 @@
   background-color: #e8f5e9;
   color: #2e7d32;
   border-radius: 4px;
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.8rem;
 }
 
 .api-no-data {
@@ -38,6 +38,6 @@
 
 .api-field-error {
   color: #c62828;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   margin-top: 0.25rem;
 }

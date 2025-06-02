@@ -358,6 +358,20 @@ h1 {
   background-color: var(--button-yellow-hover);
 }
 
+.global-button.grey {
+  background-color: #bdbdbd;
+  color: #eee;
+  cursor: not-allowed;
+  pointer-events: none;
+  box-shadow: none;
+}
+
+.global-button.grey:hover {
+  background-color: #bdbdbd;
+  color: #eee;
+  box-shadow: none;
+}
+
 /* Small variant for approve/deny buttons */
 .global-button.small {
   padding: 6px 12px;

@@ -3,96 +3,165 @@ import { useParams, Link } from 'react-router-dom';
 import GroupNavBar from '../components/GroupNavBar';
 import ContentBoxWithTitle from '../components/ContentBoxWithTitle';
 import styles from './Group.module.css';
+import infoboxStyles from '../components/ContentBoxWithTitle.module.css';
 import formInputStyles from '../components/FormInput.module.css';
 import { DropdownMenu } from '../components';
+import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
+import loginStyles from './Login.module.css';
 
 export default function ModView() {
   const { groupId } = useParams();
-  
+  const { token } = useAuth();
+
   // References for the content boxes to measure heights
   const requestsBoxRef = useRef(null);
   const statusBoxRef = useRef(null);
   const recomputeBoxRef = useRef(null);
-  
-  // Since this is already the mod view, we want to show the mod view button as active
+
+  // UI state
   const showModViewButton = true;
-  
-  // Dummy data for pending counts - in a real app, this would come from API
-  const pendingRequestsCount = 7;
-  
-  // State for general settings
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [pendingRequestsLoading, setPendingRequestsLoading] = useState(true);
+  const [pendingRequestsError, setPendingRequestsError] = useState('');
+
+  // General settings
   const [groupDescription, setGroupDescription] = useState('');
-  const [groupType, setGroupType] = useState('anyone can join');
-  
-  // State for announcement form
+  const [groupType, setGroupType] = useState('public');
+  const [groupLoading, setGroupLoading] = useState(true);
+  const [groupError, setGroupError] = useState('');
+  const [groupSuccess, setGroupSuccess] = useState('');
+
+  // Announcement
   const [announcementTitle, setAnnouncementTitle] = useState('');
-  const [announcementLink, setAnnouncementLink] = useState('');
-  
-  // State for user status change form
+  const [announcementContent, setAnnouncementContent] = useState('');
+  const [announcementLoading, setAnnouncementLoading] = useState(false);
+  const [announcementError, setAnnouncementError] = useState('');
+  const [announcementSuccess, setAnnouncementSuccess] = useState('');
+
+  // Membership status
   const [username, setUsername] = useState('');
-  const [newStatus, setNewStatus] = useState('Member');
-  
-  // State for recompute ratings form
+  const [newStatus, setNewStatus] = useState('user');
+  const [statusLoading, setStatusLoading] = useState(false);
+  const [statusError, setStatusError] = useState('');
+  const [statusSuccess, setStatusSuccess] = useState('');
+
+  // Recompute
   const [contestId, setContestId] = useState('');
-  
-  // State to store the max height of the boxes
+
+  // Box height
   const [boxHeight, setBoxHeight] = useState(null);
-  
-  // Fetch current group settings (in a real app, this would come from API)
+
+  // Fetch group info
   useEffect(() => {
-    // Simulate fetching group data
-    // In a real app, you would fetch this from your backend
     const fetchGroupData = async () => {
-      // Simulating API call with dummy data
-      setTimeout(() => {
-        setGroupDescription('A group dedicated to algorithm studies and competitive programming.');
-        setGroupType('anyone can join');
-      }, 500);
+      setGroupLoading(true);
+      setGroupError('');
+      setGroupSuccess('');
+      try {
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const res = await axios.get('/api/groups', { headers });
+        const group = res.data.find(g => g.group_id === groupId);
+        if (!group) {
+          setGroupError('Group not found.');
+        } else {
+          setGroupDescription(group.group_description || '');
+          setGroupType(group.is_private ? 'private' : 'public');
+        }
+      } catch (err) {
+        setGroupError('Failed to fetch group info.');
+      } finally {
+        setGroupLoading(false);
+      }
     };
-    
-    fetchGroupData();
-  }, [groupId]);
-  
-  // Handle group description update
-  const handleDescriptionUpdate = () => {
-    console.log('Updating group description to:', groupDescription);
-    // In a real app, this would call an API to update the group description
-    alert('Group description updated successfully!');
-  };
-  
-  // Handle group type update
-  const handleGroupTypeUpdate = () => {
-    console.log('Updating group type to:', groupType);
-    // In a real app, this would call an API to update the group type
-    alert('Group type updated successfully!');
-  };
-  
-  // Handle announcement creation (just a placeholder function)
-  const handleCreateAnnouncement = () => {
-    console.log('Creating announcement:', { title: announcementTitle, link: announcementLink });
-    // In a real app, this would call an API to create the announcement
-    alert('Announcement created!');
-    setAnnouncementTitle('');
-    setAnnouncementLink('');
+    if (groupId && token) fetchGroupData();
+  }, [groupId, token]);
+
+  // Fetch pending requests count
+  useEffect(() => {
+    const fetchPendingRequestsCount = async () => {
+      setPendingRequestsLoading(true);
+      setPendingRequestsError('');
+      try {
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        // resolved=false for pending requests
+        const res = await axios.get(`/api/requests_count?group_id=${encodeURIComponent(groupId)}&resolved=false`, { headers });
+        setPendingRequestsCount(res.data.count ?? 0);
+      } catch (err) {
+        setPendingRequestsError('Failed to fetch pending requests count.');
+        setPendingRequestsCount(0);
+      } finally {
+        setPendingRequestsLoading(false);
+      }
+    };
+    if (groupId && token) fetchPendingRequestsCount();
+  }, [groupId, token]);
+
+  // Update group description/type
+  const handleGroupUpdate = async (field) => {
+    setGroupLoading(true);
+    setGroupError('');
+    setGroupSuccess('');
+    try {
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const payload = {
+        group_id: groupId,
+        group_description: field === 'description' ? groupDescription : undefined,
+        is_private: field === 'type' ? (groupType === 'private') : undefined
+      };
+      await axios.put('/api/group', payload, { headers });
+      setGroupSuccess('Group updated successfully!');
+    } catch (err) {
+      setGroupError('Failed to update group.');
+    } finally {
+      setGroupLoading(false);
+    }
   };
 
-  // Handle user status change (placeholder function)
-  const handleStatusChange = () => {
-    console.log('Changing status for user:', { username, newStatus });
-    // In a real app, this would call an API to change the user's status
-    alert(`Status changed to ${newStatus} for ${username}!`);
-    setUsername('');
-    setNewStatus('Member');
+  // Handle announcement creation
+  const handleCreateAnnouncement = async () => {
+    setAnnouncementLoading(true);
+    setAnnouncementError('');
+    setAnnouncementSuccess('');
+    try {
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      await axios.post('/api/announcement', {
+        group_id: groupId,
+        title: announcementTitle,
+        content: announcementContent
+      }, { headers });
+      setAnnouncementSuccess('Announcement created!');
+      setAnnouncementTitle('');
+      setAnnouncementContent('');
+    } catch (err) {
+      setAnnouncementError('Failed to create announcement.');
+    } finally {
+      setAnnouncementLoading(false);
+    }
   };
-  
-  // Handle recompute ratings (placeholder function)
-  const handleRecomputeRatings = () => {
-    console.log('Recomputing ratings for contest:', { contestId });
-    // In a real app, this would call an API to trigger recomputation
-    alert(`Rating recomputation triggered for contest ${contestId}!`);
-    setContestId('');
+
+  // Handle user status change
+  const handleStatusChange = async () => {
+    setStatusLoading(true);
+    setStatusError('');
+    setStatusSuccess('');
+    try {
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      await axios.put('/api/change_membership_status', {
+        user_id: username,
+        group_id: groupId,
+        new_role: newStatus
+      }, { headers });
+      setStatusSuccess(`Status changed to ${newStatus} for ${username}!`);
+      setUsername('');
+      setNewStatus('user');
+    } catch (err) {
+      setStatusError('Failed to change user status.');
+    } finally {
+      setStatusLoading(false);
+    }
   };
-  
+
   // Use an effect to measure and set the heights of the boxes
   useEffect(() => {
     const updateHeights = () => {
@@ -132,10 +201,18 @@ export default function ModView() {
       <GroupNavBar groupId={groupId} showModViewButton={showModViewButton} />
       
       {/* General Settings box */}
-      <ContentBoxWithTitle title="General Settings" backgroundColor="rgb(230, 240, 255)">
+      <ContentBoxWithTitle title="General Settings" backgroundColor="rgb(230, 240, 255)" contentPadding="0.5rem 1rem 0rem 1rem">
         <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto', padding: '5px' }}>
+          {/* Feedback Message (one only, above form) */}
+          {groupError && (
+            <div className="api-error">{groupError}</div>
+          )}
+          {!groupError && groupSuccess && (
+            <div className="api-success">{groupSuccess}</div>
+          )}
+
           {/* Group Description */}
-          <div style={{ marginBottom: '20px' }}>
+          <div style={{ marginBottom: '15px' }}>
             <label htmlFor="group-description" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
               Group Description:
             </label>
@@ -154,8 +231,9 @@ export default function ModView() {
                 }}
               />
               <button
-                onClick={handleDescriptionUpdate}
+                onClick={() => handleGroupUpdate('description')}
                 className="global-button green"
+                disabled={groupLoading}
               >
                 Update
               </button>
@@ -163,23 +241,25 @@ export default function ModView() {
           </div>
           
           {/* Group Type */}
-          <div style={{ marginBottom: '20px' }}>
+          <div style={{ marginBottom: '0px' }}>
             <label htmlFor="group-type" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
               Group Type:
             </label>
             <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
               <DropdownMenu
-                id="group-type"
-                value={groupType}
-                onChange={(e) => setGroupType(e.target.value)}
-                className="standardTextFont"
-              >
-                <option value="anyone can join">Anyone Can Join</option>
-                <option value="restricted membership">Restricted Membership</option>
-              </DropdownMenu>
+  id="group-type"
+  value={groupType}
+  onChange={(e) => setGroupType(e.target.value)}
+  className="standardTextFont"
+>
+  <option value={groupType}>{groupType}</option>
+  {groupType !== 'public' && <option value="public">public</option>}
+  {groupType !== 'private' && <option value="private">private</option>}
+</DropdownMenu>
               <button
-                onClick={handleGroupTypeUpdate}
+                onClick={() => handleGroupUpdate('type')}
                 className="global-button green"
+                disabled={groupLoading}
               >
                 Update
               </button>
@@ -189,8 +269,15 @@ export default function ModView() {
       </ContentBoxWithTitle>
       
       {/* Create Announcement box */}
-      <ContentBoxWithTitle title="Create Announcement" backgroundColor="rgb(240, 240, 255)">
+      <ContentBoxWithTitle title="Create Announcement" backgroundColor="rgb(240, 240, 255)" contentPadding="0.5rem 1rem 0rem 1rem">
         <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto', padding: '5px' }}>
+          {/* Feedback Message (one only, above form) */}
+          {announcementError && (
+            <div className="api-error">{announcementError}</div>
+          )}
+          {announcementSuccess && (
+            <div className="api-success">{announcementSuccess}</div>
+          )}
           <div style={{ marginBottom: '15px' }}>
             <label htmlFor="announcement-title" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
               Announcement Title:
@@ -200,38 +287,31 @@ export default function ModView() {
               type="text"
               value={announcementTitle}
               onChange={(e) => setAnnouncementTitle(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '8px',
-                borderRadius: '4px',
-                border: '1px solid #ccc'
-              }}
+              className={formInputStyles.formInput}
+              style={{ width: '100%' }}
             />
           </div>
-          
-          <div style={{ marginBottom: '20px' }}>
+
+          <div style={{ marginBottom: '15px' }}>
             <label htmlFor="announcement-link" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
               Announcement Link:
             </label>
             <input
               id="announcement-link"
               type="text"
-              value={announcementLink}
-              onChange={(e) => setAnnouncementLink(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '8px',
-                borderRadius: '4px',
-                border: '1px solid #ccc'
-              }}
+              value={announcementContent}
+              onChange={(e) => setAnnouncementContent(e.target.value)}
+              className={formInputStyles.formInput}
+              style={{ width: '100%' }}
             />
           </div>
-          
+
           <button
             onClick={handleCreateAnnouncement}
             className="global-button blue"
+            disabled={announcementLoading}
           >
-            Create
+            Create Announcement
           </button>
         </div>
       </ContentBoxWithTitle>
@@ -239,7 +319,7 @@ export default function ModView() {
       {/* Requests, Change Status, and Recompute Ratings Boxes - side by side */}
       <div style={{ display: 'flex', gap: '20px', alignItems: 'stretch' }}>
         {/* Requests Box */}
-        <ContentBoxWithTitle title="Requests" backgroundColor="rgb(230, 255, 230)" style={{ flex: '1 0 33.33%' }}>
+        <ContentBoxWithTitle title="Requests" backgroundColor="rgb(230, 255, 230)" style={{ flex: '1 0 33.33%' }} contentPadding="0.5rem 1rem 0rem 1rem">
           <div 
             ref={requestsBoxRef} 
             className="contentBox standardTextFont" 
@@ -254,7 +334,14 @@ export default function ModView() {
             }}
           >
             <div className="standardTextFont" style={{ marginBottom: '15px' }}>
-              <strong>Pending Requests:</strong> {pendingRequestsCount}
+              <strong>Pending Requests:</strong>{' '}
+              {pendingRequestsLoading ? (
+                <span style={{ color: '#888' }}>Loading...</span>
+              ) : pendingRequestsError ? (
+                <span className="api-error">{pendingRequestsError}</span>
+              ) : (
+                pendingRequestsCount
+              )}
             </div>
             <div>
               <Link 
@@ -268,7 +355,7 @@ export default function ModView() {
         </ContentBoxWithTitle>
 
         {/* Change Status Box */}
-        <ContentBoxWithTitle title="Change Status" backgroundColor="rgb(230, 255, 230)" style={{ flex: '1 0 33.33%' }}>
+        <ContentBoxWithTitle title="Change Status" backgroundColor="rgb(230, 255, 230)" style={{ flex: '1 0 33.33%' }} contentPadding="0.5rem 1rem 0rem 1rem">
           <div 
             ref={statusBoxRef} 
             className="contentBox standardTextFont" 
@@ -278,10 +365,19 @@ export default function ModView() {
               padding: '5px',
               height: boxHeight ? `${boxHeight}px` : 'auto',
               display: 'flex',
-              flexDirection: 'column'
+              flexDirection: 'column',
+              minHeight: 0,
+              flex: 1
             }}
           >
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+              {/* Feedback Message (one only, above form) */}
+              {statusError && (
+                <div className="api-error">{statusError}</div>
+              )}
+              {statusSuccess && (
+                <div className="api-success">{statusSuccess}</div>
+              )}
               <div style={{ marginBottom: '15px' }}>
                 <label htmlFor="username" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
                   Username:
@@ -294,27 +390,27 @@ export default function ModView() {
                   className={formInputStyles.formInput}
                 />
               </div>
-              
               <div style={{ marginBottom: '20px' }}>
                 <label htmlFor="new-status" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
                   New Status:
                 </label>
                 <DropdownMenu
-  id="new-status"
-  value={newStatus}
-  onChange={(e) => setNewStatus(e.target.value)}
->
-  <option value="Moderator">Moderator</option>
-  <option value="Member">Member</option>
-  <option value="Outsider">Outsider</option>
-</DropdownMenu>
+                  id="new-status"
+                  value={newStatus}
+                  onChange={(e) => setNewStatus(e.target.value)}
+                >
+                  <option value="admin">admin</option>
+                  <option value="moderator">moderator</option>
+                  <option value="user">user</option>
+                  <option value="outsider">kicked</option>
+                </DropdownMenu>
               </div>
             </div>
-            
-            <div>
+            <div style={{ marginTop: 'auto' }}>
               <button
                 onClick={handleStatusChange}
                 className="global-button green"
+                disabled={statusLoading}
               >
                 Make Changes
               </button>
@@ -323,7 +419,7 @@ export default function ModView() {
         </ContentBoxWithTitle>
 
         {/* Recompute Ratings Box */}
-        <ContentBoxWithTitle title="Recompute Ratings" backgroundColor="rgb(230, 255, 230)" style={{ flex: '1 0 33.33%' }}>
+        <ContentBoxWithTitle title="Recompute Ratings" backgroundColor="rgb(230, 255, 230)" style={{ flex: '1 0 33.33%' }} contentPadding="0.5rem 1rem 0rem 1rem">
           <div 
             ref={recomputeBoxRef} 
             className="contentBox standardTextFont" 
@@ -337,7 +433,10 @@ export default function ModView() {
             }}
           >
             <div style={{ flex: 1 }}>
-              <div style={{ marginBottom: '15px' }}>
+            <div className={infoboxStyles.infoBox}>
+                Note: You can recompute rating changes only once per contest!
+              </div>
+              <div style={{ marginTop: '-0.5rem', marginBottom: '0px' }}>
                 <label htmlFor="contest-id" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
                   Contest ID:
                 </label>
@@ -348,17 +447,14 @@ export default function ModView() {
                   onChange={(e) => setContestId(e.target.value)}
                   className={formInputStyles.formInput}
                   placeholder="Enter Contest ID"
+                  disabled
                 />
               </div>
-              <p style={{ fontSize: '1.0em', fontStyle: 'italic', marginTop: '-10px', marginBottom: '15px' }}>
-                Note: You can recompute rating changes only once per contest!
-              </p>
             </div>
-            
             <div>
               <button
-                onClick={handleRecomputeRatings}
-                className="global-button green"
+                className="global-button grey"
+                disabled
               >
                 Recompute
               </button>

@@ -13,7 +13,9 @@ import styles from './DropdownMenu.module.css';
  */
 const DropdownMenu = ({ value, onChange, disabled, children, className = '', ...rest }) => {
   const [open, setOpen] = useState(false);
+  const [minWidth, setMinWidth] = useState(undefined);
   const wrapperRef = useRef(null);
+  const measureRef = useRef(null);
 
   // Convert children (option elements) to array of { value, label }
   const options = React.Children.toArray(children)
@@ -21,6 +23,19 @@ const DropdownMenu = ({ value, onChange, disabled, children, className = '', ...
     .map(child => ({ value: child.props.value, label: child.props.children }));
 
   const selected = options.find(opt => String(opt.value) === String(value));
+
+  // Find the longest label (as string)
+  const longestLabel = options.reduce((max, opt) => {
+    const labelStr = String(opt.label);
+    return labelStr.length > max.length ? labelStr : max;
+  }, selected ? String(selected.label) : '');
+
+  // Measure the width of the longest label
+  useEffect(() => {
+    if (measureRef.current) {
+      setMinWidth(measureRef.current.offsetWidth + 36); // add padding & icon width
+    }
+  }, [longestLabel, options.length]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -63,6 +78,24 @@ const DropdownMenu = ({ value, onChange, disabled, children, className = '', ...
       ref={wrapperRef}
       {...rest}
     >
+      {/* Hidden span for measuring the longest label */}
+      <span
+        ref={measureRef}
+        style={{
+          position: 'absolute',
+          visibility: 'hidden',
+          height: 'auto',
+          width: 'auto',
+          whiteSpace: 'nowrap',
+          fontSize: '0.8rem',
+          fontWeight: 400,
+          padding: '6px 28px 6px 16px',
+          fontFamily: 'inherit',
+        }}
+        aria-hidden="true"
+      >
+        {longestLabel}
+      </span>
       <button
         type="button"
         className={styles.dropdownMenu}
@@ -70,6 +103,7 @@ const DropdownMenu = ({ value, onChange, disabled, children, className = '', ...
         disabled={disabled}
         aria-haspopup="listbox"
         aria-expanded={open}
+        style={minWidth ? { minWidth } : {}}
       >
         <span className={styles.dropdownSelected}>{selected ? selected.label : ''}</span>
         <span className={styles.dropdownIcon} aria-hidden="true">

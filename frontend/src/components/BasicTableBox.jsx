@@ -18,7 +18,10 @@ export default function BasicTableBox({
           <thead>
             <tr>
               {columns.map((column, index) => (
-                <th key={index} className={sortable ? styles.sortableColumn : ''}>
+                <th
+                  key={index}
+                  className={sortable ? `${styles.sortableColumn} ${styles.tableCellEllipsis}` : styles.tableCellEllipsis}
+                >
                   {column}
                 </th>
               ))}
@@ -39,7 +42,7 @@ export default function BasicTableBox({
               data.map((row, rowIndex) => (
                 <tr key={rowIndex} className={rowIndex % 2 === 0 ? styles.rowEven : styles.rowOdd}>
                   {row.map((cell, colIndex) => (
-                    <td key={colIndex}>{cell}</td>
+                    <td key={colIndex} className={styles.tableCellEllipsis}>{cell}</td>
                   ))}
                 </tr>
               ))

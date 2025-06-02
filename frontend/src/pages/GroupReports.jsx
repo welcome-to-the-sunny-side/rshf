@@ -441,23 +441,19 @@ return (
     <GroupNavBar groupId={groupId} showModViewButton={showModViewButton} />
 
     {isLoggedInUserMember && (
-      <ContentBoxWithTitle title="Create New Report" className={styles.formWrapper}>
-        <div style={{ padding: '20px' }}>
+      <ContentBoxWithTitle title="Create New Report" className={styles.formWrapper} contentPadding="0.5rem 1rem 0rem 1rem">
+        <div style={{ padding: '5px' }}>
           {/* Feedback messages */}
           {submitSuccess && (
-            <div className="api-feedback-container api-success" style={{ marginBottom: '15px' }}>
-              Report submitted successfully!
-            </div>
+            <div className="api-success">Report created successfully!</div>
           )}
           {submitError && (
-            <div className="api-feedback-container api-error" style={{ marginBottom: '15px' }}>
-              {submitError}
-            </div>
+            <div className="api-error">{submitError}</div>
           )}
           {/* Form fields */}
           <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto', padding: '0' }}>
             {/* Respondent Username */}
-            <div style={{ marginBottom: '20px' }}>
+            <div style={{ marginBottom: '15px' }}>
               <label htmlFor="respondent" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
                 Respondent Username:
               </label>
@@ -473,7 +469,7 @@ return (
               </div>
             </div>
             {/* Contest ID */}
-            <div style={{ marginBottom: '20px' }}>
+            <div style={{ marginBottom: '15px' }}>
               <label htmlFor="contest-ids" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
                 Contest ID:
               </label>
@@ -485,12 +481,12 @@ return (
                   onChange={(e) => setContestIds(e.target.value)}
                   disabled={submitLoading}
                   className={formInputStyles.formInput}
-                  placeholder="e.g. 1234,5678 (optional)"
+                  placeholder=""
                 />
               </div>
             </div>
             {/* Report Text */}
-            <div style={{ marginBottom: '20px' }}>
+            <div style={{ marginBottom: '15px' }}>
               <label htmlFor="report-text" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
                 Report (Max 500 characters):
               </label>
@@ -501,7 +497,14 @@ return (
                   onChange={(e) => setReportText(e.target.value)}
                   disabled={submitLoading}
                   maxLength={500}
-                  className={formInputStyles.formTextarea}
+                  style={{
+                    flex: '1',
+                    padding: '8px',
+                    borderRadius: '4px',
+                    border: '1px solid #ccc',
+                    minHeight: '80px',
+                    resize: 'vertical'
+                  }}
                 />
               </div>
             </div>

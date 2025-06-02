@@ -98,8 +98,8 @@ export default function UserGroups() {
         columns={columns}
         data={displayData}
         noDataMessage={noDataMessage}
-        initialSortColumnIndex={1} // Sort by rating initially
-        initialSortDirection="desc" // Highest ratings first
+        initialSortColumnIndex={0}
+        initialSortDirection="asc"
       />
     </div>
   );

@@ -208,40 +208,88 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
+import { useState } from 'react';
+
 export default function ParticipationGraph({ participationData, groupName }) {
-  if (!participationData || participationData.length === 0) {
-    return <div className={styles.participationChart}>No participation data available.</div>;
-  }
+
+  // --- BEGIN: Tooltip Hover Logic (copied from RatingGraph.jsx style) ---
+  const [currentTooltipData, setCurrentTooltipData] = useState(null);
+  const HOVER_RADIUS = 15; // pixels; adjust as needed
 
   // Prepare data for Recharts: convert date strings to timestamps
-  const chartData = participationData.map(p => ({
-    ...p,
-    timestamp: Date.parse(p.date),
-    group_id: groupName, // Add group ID for links
-  })).sort((a, b) => a.timestamp - b.timestamp); // Ensure data is sorted by time
+  const chartData = participationData && participationData.length > 0
+    ? participationData.map(p => ({
+        ...p,
+        timestamp: Date.parse(p.date),
+        group_id: groupName, // Add group ID for links
+      })).sort((a, b) => a.timestamp - b.timestamp)
+    : [];
 
   // Find max values for Y-axis
-  const maxParticipation = Math.max(...chartData.map(p => p.participation), 0);
-  const maxStrength = Math.max(...chartData.map(p => p.strength), 0);
+  const maxParticipation = chartData.length > 0 ? Math.max(...chartData.map(p => p.participation)) : 0;
+  const maxStrength = chartData.length > 0 ? Math.max(...chartData.map(p => p.strength)) : 0;
   const currentMaxDataValue = Math.max(maxParticipation, maxStrength);
   const padding = Math.max(10, currentMaxDataValue * 0.1); // Add 5% padding, or at least 10
   const yMaxWithPadding = Math.ceil((currentMaxDataValue + padding) / 10) * 10; // Round to nearest 10
   const yMax = Math.max(100, yMaxWithPadding); // Ensure yMax is at least 100
 
-  // Determine X-axis min/max timestamps
-  const minTimestamp = chartData[0].timestamp;
-  const maxTimestamp = chartData[chartData.length - 1].timestamp;
+  // Determine X-axis min/max timestamps safely
+  const now = Date.now();
+  const minTimestamp = chartData.length > 0 ? chartData[0].timestamp : now;
+  const maxTimestamp = chartData.length > 0 ? chartData[chartData.length - 1].timestamp : now;
 
-  // Generate ticks for January 1st of each year
-  const yearlyTicks = generateYearlyTicks(minTimestamp, maxTimestamp);
+  // Generate ticks for January 1st of each year safely
+  const yearlyTicks = chartData.length > 0 ? generateYearlyTicks(minTimestamp, maxTimestamp) : [now];
+
+  // --- END: Tooltip Hover Logic ---
+
+  // If no data, set sensible defaults for axis domains, ticks, and yMax
+  let chartDataSafe = chartData.length > 0 ? chartData : [{ timestamp: now, participation: null, strength: null }];
+  let yMaxSafe = yMax;
+  if (chartData.length === 0) {
+    yMaxSafe = 100; // Default y-axis max for empty data
+  }
+  let yearlyTicksSafe = yearlyTicks && yearlyTicks.length > 0 ? yearlyTicks : [now];
 
   return (
     <div className={styles.participationChart}>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
-          data={chartData}
+          data={chartDataSafe}
           margin={{
             top: 5, right: 30, left: 10, bottom: 5,
+          }}
+          onMouseMove={(chartState) => {
+            if (chartState.isTooltipActive && chartState.activePayload && chartState.activePayload.length > 0) {
+              const pointCoordinate = chartState.activeCoordinate; // { x, y } of the data point on chart
+              const mouseCoordinate = { x: chartState.chartX, y: chartState.chartY }; // Mouse position on chart
+
+              if (!pointCoordinate || typeof pointCoordinate.x !== 'number' || typeof pointCoordinate.y !== 'number') {
+                if (currentTooltipData) setCurrentTooltipData(null);
+                return;
+              }
+
+              const distance = Math.sqrt(
+                Math.pow(mouseCoordinate.x - pointCoordinate.x, 2) +
+                Math.pow(mouseCoordinate.y - pointCoordinate.y, 2)
+              );
+
+              if (distance < HOVER_RADIUS) {
+                setCurrentTooltipData({
+                  active: true,
+                  payload: chartState.activePayload,
+                  label: chartState.activeLabel,
+                  coordinate: pointCoordinate,
+                });
+              } else {
+                if (currentTooltipData) setCurrentTooltipData(null);
+              }
+            } else {
+              if (currentTooltipData) setCurrentTooltipData(null);
+            }
+          }}
+          onMouseLeave={() => {
+            setCurrentTooltipData(null);
           }}
         >
           <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -251,13 +299,20 @@ export default function ParticipationGraph({ participationData, groupName }) {
             domain={['dataMin', 'dataMax']}
             tickFormatter={formatDateTick}
             scale="time"
-            ticks={yearlyTicks}
+            ticks={yearlyTicksSafe}
           />
           <YAxis
-            domain={[0, yMax]}
+            domain={[0, yMaxSafe]}
           />
 
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip
+            active={!!(currentTooltipData && currentTooltipData.active)}
+            payload={currentTooltipData ? currentTooltipData.payload : undefined}
+            label={currentTooltipData ? currentTooltipData.label : undefined}
+            coordinate={currentTooltipData ? currentTooltipData.coordinate : undefined}
+            content={<CustomTooltip />}
+            cursor={false}
+          />
 
           {/* Background reference area for the entire chart */}
           <ReferenceArea
@@ -302,8 +357,23 @@ export default function ParticipationGraph({ participationData, groupName }) {
             connectNulls={true}
             style={{ filter: 'drop-shadow(0px 1px 2px rgba(0,0,0,0.5))' }}
           />
+
+          {/* Show a subtle message if no data points */}
+          {(!chartData || chartData.length === 0) && (
+            <text
+              x="50%"
+              y="50%"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fill="#888"
+              fontSize="1.2rem"
+              opacity="0.7"
+            >
+              No participation data yet
+            </text>
+          )}
         </LineChart>
       </ResponsiveContainer>
     </div>
   );
-} 
+}
