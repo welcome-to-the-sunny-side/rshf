@@ -310,7 +310,6 @@ async function processProfileBox(settings, group_display_name) {
     // Remove any previous RSHF elements
     const existingRshfLi = profileBox.querySelector('.rshf-rating-li');
     if (existingRshfLi) existingRshfLi.remove();
-
     if (!rshfSelectedGroupData || !rshfSelectedGroupData[username]) {
         // User not found in memory data - apply non-member styling
         console.log('RSHF: User not in group (checked in memory), applying non-member styling');
@@ -349,6 +348,7 @@ async function processProfileBox(settings, group_display_name) {
       const rating = rshfSelectedGroupData[username][1];
       const maxRating = rshfSelectedGroupData[username][2];
       const groupName = group_display_name;
+      console.log(rshfSelectedGroupData[username]);
 
       console.log(`RSHF: User ${username} has rating ${rating} and max rating ${maxRating} in group ${groupName}`);
       

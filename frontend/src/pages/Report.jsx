@@ -190,7 +190,7 @@ export default function Report() {
             <strong>Report Date:</strong> {formatDate(reportData.timestamp)}
           </div>
           
-          <div className={styles.aboutBox} style={{ marginTop: '0px', marginBottom: '0px' }}>
+          <div className={styles.aboutBox} style={{ marginTop: '5px' }}>
             <h4 style={{ margin: '0 0 8px 0' }}>Report Details:</h4>
             <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{reportData.report_description}</p>
           </div>

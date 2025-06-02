@@ -8,6 +8,7 @@ const RATINGS_DATA_URL = 'https://pub-e98285daadd4482fb56021ad394144c1.r2.dev/ex
 const STORAGE_KEY_RATINGS_DATA = 'rshfRatingsData';
 const STORAGE_KEY_RATINGS_FILE_TIMESTAMP = 'rshfRatingsFileTimestamp'; // Timestamp from the data file
 const STORAGE_KEY_LAST_REFRESHED_AT = 'rshfLastRefreshedAt'; // Local timestamp of last successful refresh
+const STORAGE_KEY_DATA_FORMAT = 'rshfDataFormat'; // Format of the data for each user entry
 const REFRESH_INTERVAL_SECONDS = 6 * 60 * 60;
 const REFRESH_ALARM_NAME = 'rshfRatingsRefreshAlarm';
 
@@ -43,29 +44,53 @@ chrome.storage.local.get(['token', 'user', 'selectedGroup'], (result) => {
 
 // --- New Ratings Data Fetching and Management ---
 
-async function fetchAndStoreRatings() {
+async function fetchAndStoreRatings(forceBypass = true) {
   console.log('RSHF Extension: Attempting to fetch and store ratings data...');
+  
   try {
-    const response = await fetch(RATINGS_DATA_URL);
+    // Skip validation - directly fetch new data
+
+    // Add a cache-busting parameter to avoid browser caching
+    const cacheBustUrl = `${RATINGS_DATA_URL}?_cache=${Date.now()}`;
+    const response = await fetch(cacheBustUrl, {
+      cache: 'no-store', // Force network request, bypass cache completely
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
+    
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
+    
     const compressedData = await response.arrayBuffer();
     
     // Decompress using pako
     const decompressedDataString = pako.inflate(compressedData, { to: 'string' });
     const parsedData = JSON.parse(decompressedDataString);
-
-    if (!parsedData || typeof parsedData.data !== 'object' || !parsedData.timestamp) {
-      throw new Error('Invalid data structure received from ratings URL.');
+    
+    // Just log groups for informational purposes without validation
+    if (parsedData.data) {
+      const groups = Object.keys(parsedData.data);
+      console.log(`RSHF Extension: Found ${groups.length} groups in data:`, groups.join(', '));
     }
 
     const dataToStore = {
       [STORAGE_KEY_RATINGS_DATA]: parsedData.data,
       [STORAGE_KEY_RATINGS_FILE_TIMESTAMP]: parsedData.timestamp,
-      [STORAGE_KEY_LAST_REFRESHED_AT]: Date.now()
+      [STORAGE_KEY_LAST_REFRESHED_AT]: Date.now(),
+      [STORAGE_KEY_DATA_FORMAT]: parsedData.data_format
     };
 
+    // Only remove ratings-related keys, not token/user info
+    await chrome.storage.local.remove([
+      STORAGE_KEY_RATINGS_DATA,
+      STORAGE_KEY_RATINGS_FILE_TIMESTAMP,
+      STORAGE_KEY_LAST_REFRESHED_AT,
+      STORAGE_KEY_DATA_FORMAT
+    ]);
     await chrome.storage.local.set(dataToStore);
     console.log('RSHF Extension: Ratings data fetched, stored, and timestamps updated successfully.');
     return { success: true, fileTimestamp: parsedData.timestamp, refreshedAt: dataToStore[STORAGE_KEY_LAST_REFRESHED_AT] };
@@ -78,9 +103,10 @@ async function fetchAndStoreRatings() {
 }
 
 async function triggerRefresh(isInitialSetup = false) {
-  const result = await fetchAndStoreRatings();
+  // For initial setup or manual refresh, pass true to forceBypass to ensure a clean fetch
+  const result = await fetchAndStoreRatings(isInitialSetup || true);
   if (result.success) {
-    // Optionally, notify other parts of the extension (e.g., popup) that data was updated
+    // Notify other parts of the extension (e.g., popup) that data was updated
     chrome.runtime.sendMessage({ action: 'ratingsUpdated', ...result }).catch(e => console.log("Error sending ratingsUpdated message, popup likely closed"));
   }
   return result;
