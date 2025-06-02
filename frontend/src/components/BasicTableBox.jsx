@@ -20,7 +20,7 @@ export default function BasicTableBox({
               {columns.map((column, index) => (
                 <th
                   key={index}
-                  className={sortable ? `${styles.sortableColumn} ${styles.tableCellEllipsis}` : styles.tableCellEllipsis}
+                  className={sortable ? styles.sortableColumn : ''}
                 >
                   {column}
                 </th>

@@ -24,7 +24,7 @@ const RANK_BANDS = [
   { y1: 2300, y2: 2400, color: RANK_COLORS.intmaster },
   { y1: 2400, y2: 2600, color: RANK_COLORS.grandmaster },
   { y1: 2600, y2: 3000, color: RANK_COLORS.intgrandmaster },
-  { y1: 3000,          color: RANK_COLORS.legend } // y2 determined dynamically
+  { y1: 3000, y2: 5000, color: RANK_COLORS.legend } // y2 determined dynamically
 ];
 
 // RANK CLASSES - Maps to Codeforces CSS classes
@@ -97,9 +97,11 @@ function getRatingInfo(rating) {
   };
 }
 
-// Cache for storing username ratings
-let ratingCache = {};
-const CACHE_REFRESH_THRESHOLD = 5 * 60 * 1000; // 5 minutes in milliseconds
+// Global variables for RSHF ratings data
+let rshfAllGroupsData = null;
+let rshfSelectedGroupData = null; // Data for the currently selected group
+let rshfDataFileTimestamp = null; // Timestamp from the data file itself
+let currentSelectedGroupId = null;
 
 // Initialize content script
 (function() {
@@ -109,414 +111,337 @@ const CACHE_REFRESH_THRESHOLD = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 // Main initialization function
 async function initializeExtension() {
-  // Check if we're on a Codeforces page
   if (!window.location.hostname.includes('codeforces.com')) {
     return;
   }
 
-  // Get authentication and settings from background
   const authState = await getAuthState();
-  
-  // Only proceed if user is authenticated and a group is selected
   if (!authState.isAuthenticated) {
-    console.log('User not authenticated. Login required.');
-    // Add an extension icon to show that the extension is installed but not active
+    console.log('RSHF: User not authenticated.');
     addExtensionStatusIndicator('not-logged-in');
     return;
   }
   
-  if (!authState.selectedGroup) {
-    console.log('No group selected. Select a group in extension popup.');
-    // Add an extension icon to show that the extension is installed but no group is selected
+  if (!authState.selectedGroup || !authState.selectedGroup.group_id) {
+    console.log('RSHF: No group selected.');
     addExtensionStatusIndicator('no-group-selected');
     return;
   }
+  currentSelectedGroupId = authState.selectedGroup.group_id;
 
-  // Load extension settings
-  const settings = await getStoredSettings();
+  // Load RSHF ratings data from chrome.storage.local
+  const storedData = await new Promise(resolve => {
+    chrome.storage.local.get(['rshfRatingsData', 'rshfRatingsFileTimestamp'], result => resolve(result));
+  });
+
+  if (storedData.rshfRatingsData) {
+    rshfAllGroupsData = storedData.rshfRatingsData;
+    rshfDataFileTimestamp = storedData.rshfRatingsFileTimestamp;
+    if (currentSelectedGroupId && rshfAllGroupsData[currentSelectedGroupId]) {
+      rshfSelectedGroupData = rshfAllGroupsData[currentSelectedGroupId];
+    } else {
+      console.warn(`RSHF: Selected group data for '${currentSelectedGroupId}' not found in local ratings file.`);
+      rshfSelectedGroupData = {}; // Avoid errors, treat as empty group
+    }
+  } else {
+    console.warn('RSHF: Ratings data not found in local storage. Please refresh data via popup.');
+    // Potentially show a different status or try to trigger a refresh if robust error handling is needed.
+    // For now, proceed with empty data; replacements won't happen.
+    rshfAllGroupsData = {};
+    rshfSelectedGroupData = {};
+  }
   
-  // Process the page
-  processPage(authState, settings);
+  const settings = await getStoredSettings();
+  addExtensionStatusIndicator('active');
+  processPage(settings, authState.selectedGroup.group_name); // Pass group_name for display purposes
 }
 
 // Add a small indicator to show the extension status
 function addExtensionStatusIndicator(status) {
-  // Create a small floating indicator
-  const indicator = document.createElement('div');
-  indicator.className = 'rshf-status-indicator';
-  indicator.style.position = 'fixed';
-  indicator.style.bottom = '10px';
-  indicator.style.right = '10px';
-  indicator.style.padding = '5px 10px';
-  indicator.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-  indicator.style.color = 'white';
-  indicator.style.borderRadius = '4px';
-  indicator.style.fontSize = '12px';
-  indicator.style.zIndex = '9999';
-  indicator.style.cursor = 'pointer';
-  
-  // Set message based on status
-  if (status === 'not-logged-in') {
-    indicator.textContent = 'RSHF: Not logged in';
-    indicator.title = 'Click to log in to RSHF extension';
-  } else if (status === 'no-group-selected') {
-    indicator.textContent = 'RSHF: No group selected';
-    indicator.title = 'Click to select a group in RSHF extension';
+  let indicator = document.getElementById('rshf-status-indicator');
+  if (!indicator) {
+    indicator = document.createElement('div');
+    indicator.id = 'rshf-status-indicator';
+    document.body.appendChild(indicator);
+
+    // Add styles for the indicator
+    const style = document.createElement('style');
+    style.textContent = `
+      #rshf-status-indicator {
+        position: fixed;
+        bottom: 10px;
+        right: 10px;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-size: 12px;
+        z-index: 9999;
+        cursor: pointer;
+        transition: opacity 0.3s ease-in-out;
+      }
+      #rshf-status-indicator.active {
+        background-color: #4CAF50; /* Green */
+        color: white;
+      }
+      #rshf-status-indicator.not-logged-in, 
+      #rshf-status-indicator.no-group-selected {
+        background-color: #f44336; /* Red */
+        color: white;
+      }
+      #rshf-status-indicator:hover {
+        opacity: 0.8;
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Add click listener to open popup
+    indicator.addEventListener('click', () => {
+      chrome.runtime.sendMessage({ action: 'openPopup' });
+    });
   }
-  
-  // Open extension popup when clicked
-  indicator.addEventListener('click', () => {
-    chrome.runtime.sendMessage({ action: 'openPopup' });
-  });
-  
-  // Add to page
-  document.body.appendChild(indicator);
+
+  indicator.className = status; // Reset classes and apply current status
+  switch (status) {
+    case 'active':
+      indicator.textContent = 'RSHF Active';
+      break;
+    case 'not-logged-in':
+      indicator.textContent = 'RSHF: Login Required';
+      break;
+    case 'no-group-selected':
+      indicator.textContent = 'RSHF: Select Group';
+      break;
+    default:
+      indicator.textContent = 'RSHF';
+      break;
+  }
 }
 
 // Process Codeforces page to replace ratings
-async function processPage(authState, settings) {
-  // Load cached ratings from storage
-  await loadRatingCache();
-
-  // Get all rated users on the page
-  const ratedUserElements = document.querySelectorAll('.rated-user');
-  if (ratedUserElements.length === 0) {
-    return;
+async function processPage(settings, group_display_name) { // Added group_display_name
+  const userElements = document.querySelectorAll(
+    '.rated-user'
+  );
+  
+  if (userElements.length === 0 || !rshfSelectedGroupData) {
+    return; 
   }
-
-  // Extract usernames from elements
-  const usernames = extractUsernames(ratedUserElements);
+  // No need to extract usernames or fetch, data is already loaded
+  replaceRatings(userElements, settings);
+  processProfileSidebar(settings, group_display_name);
   
-  // Determine which usernames need to be fetched from the API
-  const usernamesToFetch = determineUsernamesToFetch(usernames);
-  
-  // Fetch ratings if there are usernames to fetch
-  if (usernamesToFetch.length > 0) {
-    await fetchAndCacheRatings(usernamesToFetch, authState.selectedGroup);
-  }
-  
-  // Replace ratings on the page
-  replaceRatings(ratedUserElements, settings);
-  
-  // Handle profile sidebar if it exists
-  processProfileSidebar(settings, authState.selectedGroup.group_name);
-  
-  // Handle profile box on profile page if it exists
   if (window.location.pathname.startsWith('/profile/')) {
-    processProfileBox(settings, authState.selectedGroup.group_name);
+    processProfileBox(settings, group_display_name);
   }
 }
 
 // Process profile sidebar to replace rating
-async function processProfileSidebar(settings, group_name) {
-  // Find the profile sidebar
-  const sidebar = document.querySelector('.personal-sidebar');
-  if (!sidebar) {
-    return; // No sidebar found
-  }
-  
-  // Find the rating element in the sidebar
-  const ratingElement = sidebar.querySelector('ul.propertyLinks li span.user-orange, ul.propertyLinks li span.user-red, ul.propertyLinks li span.user-blue, ul.propertyLinks li span.user-green, ul.propertyLinks li span.user-gray, ul.propertyLinks li span.user-violet, ul.propertyLinks li span.user-cyan, ul.propertyLinks li span.user-legendary');
-  if (!ratingElement) {
-    return; // No rating element found
-  }
-  
-  // Find the username from the sidebar
-  const userElement = sidebar.querySelector('.rated-user');
-  if (!userElement) {
-    return; // No username element found
-  }
-  
-  const username = userElement.textContent.trim();
-  
-  // Check if we have a cached rating for this user
-  if (ratingCache[username]) {
-    // User is in the cache
-    if (ratingCache[username].rating !== null) {
-      // User is IN the group
-      if (settings.inGroupDisplay === 'rshf') {
-        // Update the rating display in the sidebar with RSHF rating
-        updateSidebarRating(ratingElement, ratingCache[username].rating, group_name);
-      } else {
-        // 'official_cf' is selected for in-group, so do nothing to the sidebar rating
-      }
+async function processProfileSidebar(settings, group_display_name) {
+  // Find the sidebar rating element robustly
+  const sidebarLi = Array.from(document.querySelectorAll('.personal-sidebar ul.propertyLinks li')).find(li => li.textContent.includes('Rating:'));
+  const sidebarRatingSpan = sidebarLi ? sidebarLi.querySelector('span[class^="user-"]') : null;
+  const sidebarUserLink = document.querySelector('.personal-sidebar .for-avatar a.rated-user');
+
+  if (!sidebarRatingSpan || !sidebarUserLink || !rshfSelectedGroupData) return;
+
+  const username = sidebarUserLink.textContent.trim();
+  const userData = rshfSelectedGroupData[username]; // Format: [cf_handle, rating]
+
+  if (userData && userData[1] !== undefined && userData[1] !== null) {
+    const rating = userData[1];
+    const maxRating = userData[2];
+    if (settings.inGroupDisplay === 'official_cf') {
+      // Keep official CF rating
     } else {
-      // User is NOT in the group (rating is null)
-      // Handle non-group member styling for the sidebar
-      handleSidebarNonGroupMember(ratingElement, userElement, settings.nonMemberDisplay);
+      // Replace rating, color, class, and add tooltip
+      removeRatingClasses(sidebarRatingSpan);
+      const ratingInfo = getRatingInfo(rating);
+      sidebarRatingSpan.textContent = rating;
+      sidebarRatingSpan.classList.add(ratingInfo.cssClass);
+      sidebarRatingSpan.style.color = ratingInfo.color;
+      sidebarRatingSpan.setAttribute('data-rshf-tooltip', `RSHF Rating: ${rating} (${ratingInfo.name}) (Group: ${group_display_name})`);
     }
   } else {
-    // User not in cache, might be a good idea to log or handle this case
-    // For now, we do nothing if the user isn't in our cache for the sidebar
+    // Not in group: apply non-member styling
+    switch (settings.nonMemberDisplay) {
+      case 'transparent':
+        sidebarUserLink.classList.add('rshf-non-member-transparent');
+        sidebarRatingSpan.classList.add('rshf-non-member-transparent');
+        break;
+      case 'strike-through':
+        // Apply strike-through class without changing colors or other styles
+        // This matches the original behavior shown in the example
+        sidebarUserLink.classList.add('rshf-strike-through');
+        sidebarRatingSpan.classList.add('rshf-strike-through');
+        break;
+      case 'newbie':
+        removeRatingClasses(sidebarRatingSpan);
+        sidebarRatingSpan.classList.add(RANK_CLASSES.newbie);
+        sidebarRatingSpan.style.color = RANK_COLORS.newbie;
+        break;
+      case 'plain':
+      default:
+        break;
+    }
   }
 }
+
 
 // Process the profile box on the profile page
-async function processProfileBox(settings, group_name) {
-  // Find the profile box
-  const profileBox = document.querySelector('.userbox');
-  if (!profileBox) {
-    return; // No profile box found
-  }
+async function processProfileBox(settings, group_display_name) {
+  const profileBox = document.querySelector('.info');
+  if (!profileBox) return;
   
-  // Find the username element
-  const usernameElement = profileBox.querySelector('.rated-user');
-  if (!usernameElement) {
-    return; // No username element found
-  }
+  // Find all the relevant elements
+  const mainUserHandleElement = profileBox.querySelector('h1 a.rated-user');
+  const userRankSpan = profileBox.querySelector('.user-rank span');
+  const ratingLiElement = Array.from(profileBox.querySelectorAll('ul li')).find(li => 
+    li.textContent.includes('Contest rating:'));
+  const ratingSpanElement = ratingLiElement?.querySelector('span[class^="user-"]');
   
-  const username = usernameElement.textContent.trim();
+  if (!mainUserHandleElement) return;
   
-  // Check if we have a cached rating for this user
-  if (!ratingCache[username]) {
-    return; // No cached rating for this user
-  }
+  // Get the username
+  const username = mainUserHandleElement.textContent.trim();
   
-  if (ratingCache[username].rating === null) {
-    // User is NOT in the group (rating is null)
-    // Handle non-group member styling for profile elements
-    applyNonGroupMemberStylingToProfile(profileBox, settings.nonMemberDisplay);
-    return; // Styling for non-member is done, no further RSHF processing needed for profile box.
-  }
+  // Only on /profile pages: fetch data from API
+  if (window.location.pathname.startsWith('/profile/')) {
+    console.log(`RSHF: Processing profile for ${username}`);
+    
+    // Remove any previous RSHF elements
+    const existingRshfLi = profileBox.querySelector('.rshf-rating-li');
+    if (existingRshfLi) existingRshfLi.remove();
 
-  // User IS in the group (rating is not null)
-  if (settings.inGroupDisplay === 'official_cf') {
-    // 'official_cf' is selected for in-group members, so do nothing to the profile box.
-    // Let it display the original Codeforces data.
+    if (!rshfSelectedGroupData || !rshfSelectedGroupData[username]) {
+        // User not found in memory data - apply non-member styling
+        console.log('RSHF: User not in group (checked in memory), applying non-member styling');
+        const maxRatingSpans = ratingLiElement?.querySelectorAll('.smaller span');
+        //Apply class to non-group members according to settings, using no hardcoded values
+        switch (settings.nonMemberDisplay) {
+            case 'transparent':
+              mainUserHandleElement.classList.add('rshf-non-member-transparent');
+              if (userRankSpan) userRankSpan.classList.add('rshf-non-member-transparent');
+              if (ratingSpanElement) ratingSpanElement.classList.add('rshf-non-member-transparent');
+              // Also strike-through the max rating spans if present
+              if (maxRatingSpans) maxRatingSpans.forEach(span => span.classList.add('rshf-non-member-transparent'));
+              break;
+            case 'strike-through':
+              mainUserHandleElement.classList.add('rshf-strike-through');
+              if (userRankSpan) userRankSpan.classList.add('rshf-strike-through');
+              if (ratingSpanElement) ratingSpanElement.classList.add('rshf-strike-through');
+              // Also strike-through the max rating spans if present
+              if (maxRatingSpans) maxRatingSpans.forEach(span => span.classList.add('rshf-strike-through'));
+              break;
+            case 'newbie':
+              removeRatingClasses(mainUserHandleElement);
+              mainUserHandleElement.classList.add(RANK_CLASSES.newbie);
+              if (userRankSpan) userRankSpan.classList.add(RANK_CLASSES.newbie);
+              if (ratingSpanElement) ratingSpanElement.classList.add(RANK_CLASSES.newbie);
+              // Also strike-through the max rating spans if present
+              if (maxRatingSpans) maxRatingSpans.forEach(span => span.classList.add('user-gray'));
+              break;
+            case 'plain':
+            default:
+              break;
+          }
+          return;
+        }
+    
+      const rating = rshfSelectedGroupData[username][1];
+      const maxRating = rshfSelectedGroupData[username][2];
+      const groupName = group_display_name;
+
+      console.log(`RSHF: User ${username} has rating ${rating} and max rating ${maxRating} in group ${groupName}`);
+      
+      const ratingInfo = getRatingInfo(rating);
+
+      if (settings.inGroupDisplay !== 'official_cf') {
+        removeRatingClasses(userRankSpan);
+        userRankSpan.textContent = ratingInfo.name;
+        userRankSpan.classList.add(ratingInfo.cssClass);
+        userRankSpan.style.color = ratingInfo.color;
+      }
+      
+      // 4. Add a new list item for RSHF Rating (simple HTML matching the original example)
+      let rshfLi = document.createElement('li');
+      rshfLi.classList.add('rshf-rating-li');
+      
+      // Build HTML exactly matching the example format, with a link to the group
+      let rshfHtml = `
+        <img style="vertical-align:middle;margin-right:0.5em;" src="//codeforces.org/s/45865/images/icons/rating-24x24.png">
+        RSHF Rating [<a href="https://rshf.net/group/${groupName}" target="_blank">${groupName}</a>]: 
+        <span style="font-weight:bold;" class="${ratingInfo.cssClass}">${rating}</span>
+      `;
+      
+      // Add max rating if available - format exactly like the example
+      const maxRatingInfo = getRatingInfo(maxRating);
+      rshfHtml += ` <span class="smaller">(max. <span style="font-weight:bold;" class="${maxRatingInfo.cssClass}">${maxRatingInfo.name}, </span> <span style="font-weight:bold;" class="${maxRatingInfo.cssClass}">${maxRating}</span>)</span>`;
+      
+      rshfLi.innerHTML = rshfHtml;
+      
+      // Modify the CF rating label text
+      if (ratingLiElement) {
+        // Get all text nodes in the rating element
+        const textNodes = Array.from(ratingLiElement.childNodes)
+          .filter(node => node.nodeType === Node.TEXT_NODE);
+        
+        // Find the text node that contains "Contest rating:"
+        const ratingTextNode = textNodes.find(node => 
+          node.textContent.includes('Contest rating:'));
+          
+        if (ratingTextNode) {
+          // Replace "Contest rating:" with "CF Rating:"
+          ratingTextNode.textContent = ratingTextNode.textContent.replace(
+            'Contest rating:', 'CF Rating:');
+        }
+      }
+      
+      // Insert before the contest rating li
+      if (ratingLiElement && ratingLiElement.parentNode) {
+        ratingLiElement.parentNode.insertBefore(rshfLi, ratingLiElement);
+      } else if (profileBox.querySelector('ul')) {
+        profileBox.querySelector('ul').appendChild(rshfLi);
+      }
     return;
   }
-
-  // Proceed with RSHF rating display for in-group members ('rshf' mode)
-  const rating = ratingCache[username].rating;
-  const ratingInfo = getRatingInfo(rating);
-  
-  // Update the rank in the profile box
-  const rankElement = profileBox.querySelector('.user-rank span');
-  if (rankElement) {
-    // Update the rank text and class
-    removeRatingClasses(rankElement);
-    rankElement.classList.add(ratingInfo.cssClass);
-    rankElement.textContent = ratingInfo.name + ' ';
-    rankElement.style.color = ratingInfo.color;
-    
-    // Add tooltip with RSHF rating information
-    rankElement.setAttribute('data-rshf-tooltip', `RSHF Rating: ${rating} (${ratingInfo.name})`);
-    rankElement.classList.add('rshf-tooltip');
-  }
-  
-  // Update the contest rating in the profile box (avoid max rating as requested)
-  const ratingElements = profileBox.querySelectorAll('li');
-  for (const li of ratingElements) {
-    if (li.textContent.includes('Contest rating:')) {
-      // Find the rating span
-      const ratingSpan = li.querySelector('span.user-orange, span.user-red, span.user-blue, span.user-green, span.user-gray, span.user-violet, span.user-cyan, span.user-legendary');
-      if (ratingSpan) {
-        // Update with RSHF rating
-        removeRatingClasses(ratingSpan);
-        ratingSpan.classList.add(ratingInfo.cssClass);
-        ratingSpan.textContent = rating.toString();
-        ratingSpan.style.color = ratingInfo.color;
-        
-        // Add tooltip
-        ratingSpan.setAttribute('data-rshf-tooltip', `RSHF Rating: ${rating} (${ratingInfo.name})`);
-        ratingSpan.classList.add('rshf-tooltip');
-        
-        // Remove the max rating part as requested
-        const smallerSpan = li.querySelector('.smaller');
-        if (smallerSpan) {
-          smallerSpan.style.display = 'none';
-        }
-      }
-      
-      // Change the label to indicate this is RSHF rating
-      const ratingText = li.innerHTML.split('Contest rating:')[0];
-      const ratingValue = li.innerHTML.split('Contest rating:')[1].split('<span class="smaller"')[0];
-      const groupLink = ` [<a href="https://rshf.net/group/${encodeURIComponent(group_name)}" target="_blank" style="text-decoration: none; color: #3B5998; font-weight: 500;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${group_name}</a>]`;
-
-      li.innerHTML = ratingText + 'RSHF Rating' + groupLink + ':' + ratingValue;
-      
-      // If there was a max rating section that we hid, add back any content after it
-      const smallerSpan = li.querySelector('.smaller');
-      if (smallerSpan) {
-        smallerSpan.style.display = 'none';
-      }
-    }
-  }
-}
-
-// Apply non-group member styling to profile box elements
-function applyNonGroupMemberStylingToProfile(profileBox, displayMode) {
-  // Find all elements that need styling
-  const rankElement = profileBox.querySelector('.user-rank span');
-  const usernameElement = profileBox.querySelector('.rated-user');
-  const ratingElements = profileBox.querySelectorAll('li');
-  
-  // Apply styling to rank
-  if (rankElement) {
-    handleNonGroupMember(rankElement, displayMode);
-  }
-  
-  // Username is already handled by the standard process
-  
-  // Handle contest rating
-  for (const li of ratingElements) {
-    if (li.textContent.includes('Contest rating:')) {
-      const ratingSpan = li.querySelector('span.user-orange, span.user-red, span.user-blue, span.user-green, span.user-gray, span.user-violet, span.user-cyan, span.user-legendary');
-      if (ratingSpan) {
-        handleNonGroupMember(ratingSpan, displayMode);
-        
-        // Hide max rating as requested
-        const smallerSpan = li.querySelector('.smaller');
-        if (smallerSpan) {
-          smallerSpan.style.display = 'none';
-        }
-      }
-    }
-  }
-}
-
-// Update the rating element in the sidebar
-function updateSidebarRating(ratingElement, rating, group_name = 'unknown') {
-  // Get rating info for this rating
-  const ratingInfo = getRatingInfo(rating);
-  
-  // Remove all existing rating classes
-  removeRatingClasses(ratingElement);
-  
-  // Add the appropriate class for the new rating
-  ratingElement.classList.add(ratingInfo.cssClass);
-  
-  // Update the text content with the new rating
-  ratingElement.textContent = rating.toString();
-  
-  // Set the color directly for additional assurance
-  ratingElement.style.color = ratingInfo.color;
-  
-  // Add tooltip with rating information
-  ratingElement.setAttribute('data-rshf-tooltip', `RSHF Rating: ${rating} (${ratingInfo.name})`);
-  ratingElement.classList.add('rshf-tooltip');
-  
-  // Find and update the "Rating:" label
-  const ratingLabel = ratingElement.parentElement;
-  if (ratingLabel && ratingLabel.innerHTML.includes('Rating:')) {
-    // Add an indicator that this is an RSHF rating with group name link
-    const labelText = ratingLabel.innerHTML.split('Rating:')[0];
-    const groupLink = ` [<a href="https://rshf.net/group/${encodeURIComponent(group_name)}" target="_blank" style="text-decoration: none; color: #3B5998; font-weight: 500;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${group_name}</a>]`;
-    const ratingSpan = `<span style="font-weight:bold;" class="${ratingInfo.cssClass}" title="RSHF Rating: ${rating} (${ratingInfo.name})">${rating}</span>`;
-    ratingLabel.innerHTML = labelText + 'RSHF Rating' + groupLink + ':&nbsp;' + ratingSpan;
-  }
-}
-
-// Handle users not in the group in the sidebar
-function handleSidebarNonGroupMember(ratingElement, userElement, displayMode) {
-  // Use the same handleNonGroupMember function that we use for regular rated-user elements
-  handleNonGroupMember(ratingElement, displayMode);
-  
-  // Also apply the same styling to the username element if it exists
-  if (userElement) {
-    handleNonGroupMember(userElement, displayMode);
-  }
-}
-
-// Extract usernames from DOM elements
-function extractUsernames(elements) {
-  const usernames = [];
-  elements.forEach(element => {
-    const username = element.textContent.trim();
-    if (username) {
-      usernames.push(username);
-    }
-  });
-  return usernames;
-}
-
-// Determine which usernames need to be fetched from the API
-function determineUsernamesToFetch(usernames) {
-  const now = Date.now();
-  const usernamesToFetch = [];
-  
-  usernames.forEach(username => {
-    // Add username to fetch list if:
-    // 1. It's not in the cache, or
-    // 2. It's in the cache but older than the threshold
-    if (!ratingCache[username] || 
-        (now - ratingCache[username].timestamp) > CACHE_REFRESH_THRESHOLD) {
-      usernamesToFetch.push(username);
-    }
-  });
-  
-  return usernamesToFetch;
-}
-
-// Fetch ratings from the API and update cache
-async function fetchAndCacheRatings(usernames, selectedGroup) {
-  try {
-    const response = await chrome.runtime.sendMessage({
-      action: 'fetchUserRatings',
-      usernames,
-      groupId: selectedGroup.group_id
-    });
-    
-    if (response.success && response.data) {
-      // Update cache with new ratings
-      response.data.forEach(item => {
-        ratingCache[item.username] = {
-          rating: item.rating,
-          timestamp: item.timestamp || Date.now()
-        };
-      });
-      
-      // Save updated cache to storage
-      saveRatingCache();
-    } else {
-      console.error('Failed to fetch ratings:', response.error);
-    }
-  } catch (error) {
-    console.error('Error fetching ratings:', error);
-  }
+  return;
 }
 
 // Replace ratings in the DOM elements
 function replaceRatings(elements, settings) {
+  if (!rshfSelectedGroupData) {
+    console.warn("RSHF: No selected group data available for replacing ratings.");
+    return;
+  }
+
   elements.forEach(element => {
+    // First clear any existing non-member styling
+    element.style.opacity = '';
+    
     const username = element.textContent.trim();
-    if (ratingCache[username]) {
-      // Check if the user has a rating (is in the group)
-      if (ratingCache[username].rating !== null) {
-        // If official CF ratings are selected for in-group members, do nothing
-        if (settings.inGroupDisplay === 'official_cf') {
-          // Optionally, ensure no RSHF tooltip is added or CF classes are preserved
-          // For now, we just skip the update, CF default styling remains.
-        } else {
-          // Replace the element's class and text based on the RSHF rating
-          updateElementWithNewRating(element, ratingCache[username].rating);
-        }
+    const userData = rshfSelectedGroupData[username]; // Format: [cf_handle, rating]
+
+    if (userData && userData[1] !== undefined && userData[1] !== null) {
+      // User is in the group
+      const rating = userData[1];
+      const maxRating = userData[2];
+      if (settings.inGroupDisplay === 'official_cf') {
+        // Keep official CF rating
       } else {
-        // Handle users not in the group based on nonMemberDisplay settings
-        handleNonGroupMember(element, settings.nonMemberDisplay);
+        updateElementWithNewRating(element, rating, maxRating);
       }
     } else {
-      // User not in cache - we don't have information yet
-      // Do nothing or apply a "loading" state if desired
+      // User is not in the group
+      handleNonGroupMember(element, settings.nonMemberDisplay);
     }
   });
 }
 
 // Update element with new rating information
-function updateElementWithNewRating(element, rating) {
-  // Remove existing Codeforces rating classes
+function updateElementWithNewRating(element, rating, maxRating = null) {
   removeRatingClasses(element);
-  
-  // Get rating information
   const ratingInfo = getRatingInfo(rating);
-  
-  // Add new rating class based on RSHF rating
   element.classList.add(ratingInfo.cssClass);
-  
-  // Set color directly as well (for additional assurance)
   element.style.color = ratingInfo.color;
-  
-  // Add tooltip with rating and rank information
   element.setAttribute('data-rshf-tooltip', `RSHF Rating: ${rating} (${ratingInfo.name})`);
   element.classList.add('rshf-tooltip');
 }
@@ -528,18 +453,18 @@ function handleNonGroupMember(element, displayMode) {
       element.style.opacity = '0.5';
       break;
     case 'strike-through':
+      // Make sure we're applying strike-through consistently
       element.classList.add('rshf-strike-through');
+      // For rated users, maintain their original color but with strike-through
+      // This ensures we match the original styling behavior
       break;
     case 'newbie':
-      // Remove existing rating classes
       removeRatingClasses(element);
-      // Apply newbie styling
       element.classList.add(RANK_CLASSES.newbie);
       element.style.color = RANK_COLORS.newbie;
       break;
     case 'plain':
     default:
-      // Do nothing, leave as is
       break;
   }
 }
@@ -556,8 +481,6 @@ function removeRatingClasses(element) {
     element.classList.remove(className);
   });
 }
-
-// This function has been replaced by the imported rating-utils.js module
 
 // Utility functions for storage and messaging
 async function getAuthState() {
@@ -577,19 +500,4 @@ async function getStoredSettings() {
       });
     });
   });
-}
-
-async function loadRatingCache() {
-  return new Promise(resolve => {
-    chrome.storage.local.get(['ratingCache'], result => {
-      if (result.ratingCache) {
-        ratingCache = result.ratingCache;
-      }
-      resolve();
-    });
-  });
-}
-
-function saveRatingCache() {
-  chrome.storage.local.set({ ratingCache });
 }
