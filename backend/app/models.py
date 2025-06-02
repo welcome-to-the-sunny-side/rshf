@@ -135,8 +135,6 @@ class Report(ModelBase):
     # roles before and after report resolution
     respondent_role_before = Column(Enum(Role), nullable=True)
     respondent_role_after = Column(Enum(Role), nullable=True, index=True)
-    reporter_role_before = Column(Enum(Role), nullable=True)
-    reporter_role_after = Column(Enum(Role), nullable=True)
 
     report_description = Column(String, nullable=False)
     resolved = Column(Boolean, nullable=False, default=False, index=True)

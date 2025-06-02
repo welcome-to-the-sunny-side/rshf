@@ -600,9 +600,7 @@ def resolve_report(
     if current.user_id != payload.resolver_user_id:
         raise HTTPException(403, "You are not the resolver for this report.")
 
-    # Fetch reporter and respondent roles (after resolution, as provided in payload)
-    reporter_role = payload.reporter_role_after
-    respondent_role = payload.respondent_role_after
+    # Fetch reporter and respondent roles (after resolution, as provided in payload
 
     reporter_membership = db.query(models.GroupMembership).filter(
         models.GroupMembership.user_id == rpt.reporter_user_id,
@@ -620,8 +618,9 @@ def resolve_report(
     current_role_value = role_rank.get(str(resolver_membership.role.value), 0)
     reporter_role_value = role_rank.get(str(reporter_membership.role.value), 0)
     respondent_role_value = role_rank.get(str(respondent_membership.role.value), 0)
+    respondent_final_role_value = role_rank.get(str(payload.respondent_role_after.value), 0)
     moderator_value = role_rank["moderator"]
-    max_required = max(reporter_role_value, respondent_role_value, moderator_value)
+    max_required = max(respondent_role_value, respondent_final_role_value, moderator_value)
 
     if current_role_value < max_required:
         raise HTTPException(403, f"Insufficient role to resolve this report. Current role: {current_role_value}, required role: {max_required}")

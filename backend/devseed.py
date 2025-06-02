@@ -310,7 +310,6 @@ def build_reports(
             respondent_rating_at_report_time=respondent_m.user_group_rating,
             resolved=is_resolved,
             accepted=random.choice([True, False]),
-            reporter_role_before=reporter_m.role,
             respondent_role_before=respondent_m.role,
         )
 
@@ -332,7 +331,6 @@ def build_reports(
                 rpt.resolve_timestamp = faker.date_time_between(
                     start_date="-30d", end_date="now"
                 )
-                rpt.reporter_role_after = reporter_m.role if random.random() < 0.5 else Role.kicked
                 rpt.respondent_role_after = respondent_m.role if random.random() < 0.5 else Role.kicked
 
         reports.append(rpt)

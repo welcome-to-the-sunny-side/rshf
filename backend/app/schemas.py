@@ -233,7 +233,6 @@ class ReportResolve(BaseModel):
     report_id: str
     resolver_user_id: str
     resolve_message: str
-    reporter_role_after: Role
     respondent_role_after: Role
     accepted: bool
 

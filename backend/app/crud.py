@@ -673,14 +673,8 @@ def resolve_report(db: Session, payload: schemas.ReportResolve) -> Optional[mode
     ).first()
     
     # Set the 'after' roles from the payload (as required by new schema)
-    rpt.reporter_role_after = payload.reporter_role_after
     rpt.respondent_role_after = payload.respondent_role_after
 
-    # Modify reporter/respondent memberships as per role change or removal
-    if payload.reporter_role_after == models.Role.kicked:
-        remove_membership(db, rpt.reporter_user_id, rpt.group_id)
-    elif reporter_membership:
-        update_membership_role(db, rpt.reporter_user_id, rpt.group_id, payload.reporter_role_after)
 
     if payload.respondent_role_after == models.Role.kicked:
         remove_membership(db, rpt.respondent_user_id, rpt.group_id)
