@@ -139,8 +139,8 @@ export default function Report() {
     <div className="page-container">
       <GroupNavBar groupId={groupId} showModViewButton={isModerator} />
       
-      <ContentBoxWithTitle title="Report Details" backgroundColor="rgb(240, 240, 255)">
-        <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto', padding: '15px' }}>
+      <ContentBoxWithTitle title="Report Details" backgroundColor="rgb(240, 240, 255)" contentPadding="0.5rem 1rem 0rem 1rem">
+        <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto', padding: '5px' }}>
           <div style={{ marginBottom: '15px', fontWeight: 'bold', fontSize: '1em' }}>
             Report Status<strong>:</strong>{' '}
             <span style={{
@@ -190,16 +190,16 @@ export default function Report() {
             <strong>Report Date:</strong> {formatDate(reportData.timestamp)}
           </div>
           
-          <div className={styles.aboutBox} style={{ marginTop: '10px' }}>
-            <h4 style={{ margin: '0 0 8px 0' }}>Report Text:</h4>
+          <div className={styles.aboutBox} style={{ marginTop: '0px', marginBottom: '0px' }}>
+            <h4 style={{ margin: '0 0 8px 0' }}>Report Details:</h4>
             <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{reportData.report_description}</p>
           </div>
         </div>
       </ContentBoxWithTitle>
       
       {!isResolved && isModerator && (
-        <ContentBoxWithTitle title="Take Action" backgroundColor="rgb(255, 245, 230)">
-          <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto', padding: '15px' }}>
+        <ContentBoxWithTitle title="Take Action" backgroundColor="rgb(255, 245, 230)" contentPadding="0.5rem 1rem 0rem 1rem">
+          <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto', padding: '5px' }}>
             <div style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
               <div>
                 <label htmlFor="reporter-status" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
@@ -286,8 +286,9 @@ export default function Report() {
         <ContentBoxWithTitle 
           title="Review Outcome" 
           backgroundColor={isAccepted === true ? "rgb(230, 255, 240)" : (isAccepted === false ? "rgb(255, 230, 230)" : "rgb(240, 240, 240)")}
+          contentPadding="0.5rem 1rem 0rem 1rem"
         >
-          <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto', padding: '15px' }}>
+          <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto', padding: '5px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {reportData.resolver_cf_handle && (
                 <div>
