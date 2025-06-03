@@ -17,7 +17,7 @@ export default function Register() {
     confirmPassword: ''
   });
   const [formErrors, setFormErrors] = useState({});
-  const { register, loading, error } = useAuth();
+  const { register, loading, error, setError } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -78,11 +78,12 @@ export default function Register() {
 
   // Add a class to the body to handle special register page styling
   React.useEffect(() => {
+    setError && setError(''); // Clear global auth error on mount
     document.body.classList.add('registerPage');
     return () => {
       document.body.classList.remove('registerPage');
     };
-  }, []);
+  }, [setError]);
 
   return isMobile ? (
     <div className={styles.mobileLoginPage}>
@@ -93,7 +94,7 @@ export default function Register() {
           backgroundColor="rgb(230, 255, 230)"
           contentPadding="1.2rem 1rem"
         >
-          {error && <div className={styles.errorMessage}>{error}</div>}
+          {error && <div className="api-error">{error}</div>}
           <form onSubmit={handleSubmit}>
             <div className={`standardTextFont`} style={{marginBottom: '1rem', background: '#e6f7ff', border: '1px solid #91d5ff', padding: '0.75rem', borderRadius: '6px', color: '#005480'}}>
               <strong>Important:</strong> Before registering, please make a submission that results in a <b>compilation error</b> to <a href="https://codeforces.com/problemset/problem/1188/B" target="_blank" rel="noopener noreferrer">this problem</a>. Registration will only work if your latest submission meets this requirement and was made within the last 5 minutes.
@@ -183,7 +184,7 @@ export default function Register() {
           backgroundColor="rgb(230, 255, 230)"
           contentPadding="0.75rem"
         >
-          {error && <div className={styles.errorMessage}>{error}</div>}
+          {error && <div className="api-error">{error}</div>}
           <form onSubmit={handleSubmit}>
             <div className={`standardTextFont`} style={{marginBottom: '1rem', background: '#e6f7ff', border: '1px solid #91d5ff', padding: '0.75rem', borderRadius: '6px', color: '#005480'}}>
               <strong>Important:</strong> Before registering, please make a submission that results in a <b>compilation error</b> to <a href="https://codeforces.com/problemset/problem/1188/B" target="_blank" rel="noopener noreferrer">this problem</a>. Registration will only work if your latest submission meets this requirement and was made within the last 5 minutes.

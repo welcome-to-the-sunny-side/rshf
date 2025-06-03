@@ -429,7 +429,7 @@ export default function User() {
             <div className={`contentBox ${styles.contentBoxRight}`}>
               {/* Group dropdown moved to top of right box */}
               <div className={`${styles.groupRatingRow}`} style={{ marginBottom: '15px' }}>
-                <h3 className="standardTextFont" style={{ margin: 0, marginRight: '10px', marginTop: '-10px' }}>Group: </h3>
+                {/* <h3 className="standardTextFont" style={{ margin: 0, marginRight: '10px', marginTop: '-10px' }}>Group: </h3> */}
                 <DropdownMenu
   value={selectedGroupIdx}
   onChange={handleGroupChange}
@@ -450,16 +450,11 @@ export default function User() {
                     Role: <span style={{ textTransform: 'capitalize' }}>{selectedGroup[8]}</span>
                   </div>
                   <div className={`${styles.statItem} standardTextFont`}>
-                    Report Accuracy: <span title={`${selectedGroup[10]} accepted out of ${selectedGroup[11]} reports`}>
-                      {selectedGroup[11] > 0 ? Math.round((selectedGroup[10] / selectedGroup[11]) * 100) : 0}% ({selectedGroup[10]}/{selectedGroup[11]})
-                    </span>
-                  </div>
-                  <div className={`${styles.statItem} standardTextFont`}>
                     Member Since: <span>{formatDate(selectedGroup[7])}</span>
                   </div>
                 </div>
               ) : (
-                <div className="api-feedback-container no-data-message">No group data available</div>
+                <div className="api-feedback-container no-data-message"></div>
               )}
             </div>
           </div>

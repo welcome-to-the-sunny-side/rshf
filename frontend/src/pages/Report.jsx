@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { getRatingColor } from '../utils/ratingUtils';
 import ContentBoxWithTitle from '../components/ContentBoxWithTitle';
 import GroupNavBar from '../components/GroupNavBar';
+import DropdownMenu from '../components/DropdownMenu';
 import styles from './Group.module.css'; // Assuming styles are relevant
 
 export default function Report() {
@@ -17,8 +18,9 @@ export default function Report() {
   const [isModerator, setIsModerator] = useState(false);
 
   // State for form inputs in the "Take Action" section
-  const [actionReporterStatus, setActionReporterStatus] = useState('No change');
-  const [actionRespondentStatus, setActionRespondentStatus] = useState('Member');
+  // Reporter role dropdown removed; only respondent role and reviewer note remain
+  // Respondent role is either 'user' or 'kicked', mapped to backend Role enum
+  const [actionRespondentStatus, setActionRespondentStatus] = useState('user');
   const [actionReviewerNote, setActionReviewerNote] = useState('');
 
   useEffect(() => {
@@ -89,31 +91,29 @@ export default function Report() {
         alert('You must be logged in to perform this action.');
         return;
     }
-    
     try {
       setLoading(true);
       // Make API call to resolve the report
       await axios.put('/api/report/resolve', {
         report_id: reportId,
         resolver_user_id: user.user_id,
-        resolve_message: actionReviewerNote
+        resolve_message: actionReviewerNote,
+        respondent_role_after: actionRespondentStatus,
+        accepted: accepted
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
       // Fetch the updated report data
       const response = await axios.get(`/api/report`, {
         headers: { Authorization: `Bearer ${token}` },
         params: { report_id: reportId },
       });
-      
       if (response.data && response.data.length > 0) {
         setReportData(response.data[0]);
-        alert(`Report successfully ${accepted ? 'accepted' : 'rejected'}!`);
       }
     } catch (err) {
       console.error('Failed to resolve report:', err);
-      alert(`Failed to ${accepted ? 'accept' : 'reject'} report. Please try again later.`);
+      // No alert; silent fail (could add UI error message if desired)
     } finally {
       setLoading(false);
     }
@@ -190,7 +190,7 @@ export default function Report() {
             <strong>Report Date:</strong> {formatDate(reportData.timestamp)}
           </div>
           
-          <div className={styles.aboutBox} style={{ marginTop: '5px' }}>
+          <div className={styles.aboutBox} style={{ marginTop: '0px', marginBottom: '-5px' }}>
             <h4 style={{ margin: '0 0 8px 0' }}>Report Details:</h4>
             <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{reportData.report_description}</p>
           </div>
@@ -200,50 +200,21 @@ export default function Report() {
       {!isResolved && isModerator && (
         <ContentBoxWithTitle title="Take Action" backgroundColor="rgb(255, 245, 230)" contentPadding="0.5rem 1rem 0rem 1rem">
           <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto', padding: '5px' }}>
-            <div style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
-              <div>
-                <label htmlFor="reporter-status" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
-                  Reporter Status Change:
-                </label>
-                <select
-                  id="reporter-status"
-                  value={actionReporterStatus}
-                  onChange={(e) => setActionReporterStatus(e.target.value)}
-                  style={{
-                    padding: '6px',
-                    borderRadius: '4px',
-                    border: '1px solid #ccc',
-                    width: '160px'
-                  }}
-                >
-                  <option value="No change">No change</option>
-                  <option value="Moderator">Moderator</option>
-                  <option value="Member">Member</option>
-                  <option value="Outsider">Outsider</option>
-                </select>
-              </div>
-              
-              <div>
-                <label htmlFor="respondent-status" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
-                  Respondent Status Change:
-                </label>
-                <select
-                  id="respondent-status"
-                  value={actionRespondentStatus}
-                  onChange={(e) => setActionRespondentStatus(e.target.value)}
-                  style={{
-                    padding: '6px',
-                    borderRadius: '4px',
-                    border: '1px solid #ccc',
-                    width: '160px'
-                  }}
-                >
-                  <option value="Member">Member</option>
-                  <option value="Outsider">Outsider</option>
-                </select>
-              </div>
+            <div style={{ marginBottom: '20px' }}>
+              <label htmlFor="respondent-status" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                Respondent Status:
+              </label>
+              <DropdownMenu
+                value={actionRespondentStatus}
+                onChange={e => setActionRespondentStatus(e.target.value)}
+                style={{ width: '160px' }}
+              >
+                <option value="admin">admin</option>
+                <option value="moderator">moderator</option>
+                <option value="user">user</option>
+                <option value="kicked">kicked</option>
+              </DropdownMenu>
             </div>
-            
             <div style={{ marginBottom: '20px' }}>
               <label htmlFor="reviewer-note" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
                 Reviewer's Note:
@@ -263,7 +234,6 @@ export default function Report() {
                 }}
               />
             </div>
-            
             <div style={{ display: 'flex', gap: '10px' }}>
               <button
                 onClick={() => handleAction(true)}
@@ -302,9 +272,9 @@ export default function Report() {
                   </Link>
                 </div>
               )}
-              {reportData.resolve_time_stamp && (
+              {reportData.resolve_timestamp && (
                 <div>
-                  <strong>Resolve Date:</strong> {formatDate(reportData.resolve_time_stamp)}
+                  <strong>Resolve Date:</strong> {formatDate(reportData.resolve_timestamp)}
                 </div>
               )}
               <div>
@@ -320,7 +290,7 @@ export default function Report() {
                 <strong>Result:</strong> {reportData.respondent_role_before ? reportData.respondent_role_before : '-' } {'->'} {reportData.respondent_role_after ? reportData.respondent_role_after : '-' }
             </div>
               {reportData.resolve_message && (
-                <div className={styles.aboutBox} style={{ marginTop: '10px' }}>
+                <div className={styles.aboutBox} style={{ marginTop: '0px', marginBottom: '-5px' }}>
                   <h4 style={{ margin: '0 0 8px 0' }}>Reviewer's Note:</h4>
                   <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{reportData.resolve_message}</p>
                 </div>

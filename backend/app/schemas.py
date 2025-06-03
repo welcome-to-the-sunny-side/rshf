@@ -86,7 +86,6 @@ class GroupMembershipAdd(BaseModel):
     group_id: str
     cf_handle: Optional[str] = None
     role: Role = Role.user
-    user_group_rating: int = 1500   # matches DB default
 
 
 class GroupMembershipRemove(BaseModel):

@@ -87,6 +87,11 @@ def ensure_group_mod(db: Session, uid: str, gid: str):
     m = crud.get_membership(db, uid, gid)
     if not m or role_rank[m.role] < role_rank["moderator"]:
         raise HTTPException(403, "insufficient privilege")
+
+def ensure_group_admin(db: Session, uid: str, gid: str):
+    m = crud.get_membership(db, uid, gid)
+    if not m or role_rank[m.role] < role_rank["admin"]:
+        raise HTTPException(403, "insufficient privilege")
         
 # helper to check if a user has sufficient privileges to modify roles in a group
 def check_role_modification_privileges(db: Session, requester_id: str, target_id: str, group_id: str, new_role: str):
@@ -157,6 +162,36 @@ def check_removal_privileges(db: Session, requester_id: str, target_id: str, gro
 
 
 # ---------- user endpoints ----------
+
+@router.post("/leave_group", status_code=status.HTTP_200_OK)
+def leave_group(
+    group_id: str = Query(..., description="Group ID to leave"),
+    db: Session = Depends(get_db),
+    current: models.User = Depends(get_current_user),
+):
+    """
+    Allows the current user to leave a group they are a member of.
+    Args:
+        group_id: ID of the group to leave
+        db: Database session
+        current: Current authenticated user
+    Returns:
+        Success message
+    Raises:
+        HTTPException: If the membership doesn't exist or last admin tries to leave
+    """
+    success = crud.remove_membership(
+        db=db,
+        user_id=current.user_id,
+        group_id=group_id
+    )
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Membership not found"
+        )
+    return {"detail": "You have left the group"}
+
 @router.post("/user/register", response_model=schemas.UserOut)
 def register_user(payload: schemas.UserRegister, db: Session = Depends(get_db)):
     # Set user_id = cf_handle
@@ -322,11 +357,8 @@ def update_group(
     if not grp:
         raise HTTPException(404, "group not found")
 
-    # requester must be at least moderator inside that group
-    g_mem = crud.get_membership(db, current.user_id, payload.group_id)
-    if not g_mem or role_rank[g_mem.role] < role_rank["moderator"]:
-        raise HTTPException(403, "insufficient privilege")
-
+    # requester must be at least admin inside that group
+    ensure_group_admin(db, current.user_id, payload.group_id)
     return crud.update_group(db, payload)
 
 
@@ -616,8 +648,8 @@ def resolve_report(
     ).first()
     
     current_role_value = role_rank.get(str(resolver_membership.role.value), 0)
-    reporter_role_value = role_rank.get(str(reporter_membership.role.value), 0)
-    respondent_role_value = role_rank.get(str(respondent_membership.role.value), 0)
+    reporter_role_value = role_rank.get(str(rpt.reporter_role_before.value), 0)
+    respondent_role_value = role_rank.get(str(rpt.respondent_role_before.value), 0)
     respondent_final_role_value = role_rank.get(str(payload.respondent_role_after.value), 0)
     moderator_value = role_rank["moderator"]
     max_required = max(respondent_role_value, respondent_final_role_value, moderator_value)
@@ -1364,7 +1396,8 @@ def join_group(
         models.Report.group_id == payload.group_id,
         models.Report.respondent_user_id == payload.user_id,
         models.Report.resolved == True,
-        models.Report.accepted == True  # Report was accepted = user was kicked
+        models.Report.accepted == True,
+        models.Report.respondent_role_after == models.Role.kicked,
     ).first() is not None
     
     # If group is public and user was never kicked, directly add membership

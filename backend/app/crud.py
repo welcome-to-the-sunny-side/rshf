@@ -6,6 +6,7 @@ from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, asc, desc
 from datetime import datetime
+from fastapi import HTTPException
 
 from app import models
 from app.utils import hash_password, verify_password
@@ -134,8 +135,6 @@ def update_group(db: Session, payload: schemas.GroupUpdate):
     # Store the original is_private status to check if it changes
     original_is_private = grp.is_private
     
-    if payload.group_name is not None:
-        grp.group_name = payload.group_name
     if payload.group_description is not None:
         grp.group_description = payload.group_description
     if payload.is_private is not None:
@@ -199,11 +198,23 @@ def add_membership(db: Session, payload: schemas.GroupMembershipAdd) -> models.G
         group_id=payload.group_id,
         cf_handle=cf_handle,
         role=payload.role,
-        user_group_rating=payload.user_group_rating or 1_500,
+        user_group_rating=1500,
+        user_group_max_rating=1500,
     )
     db.add(m)
     db.commit()
     db.refresh(m)
+
+    # update group_views of every contest (increase total_members) that has contest.finished = false
+    contests = db.query(models.Contest).filter(models.Contest.finished == False).all()
+    for contest in contests:
+        if contest.group_views is not None:
+            contest.group_views[payload.group_id]["total_members"] += 1
+            from sqlalchemy.orm.attributes import flag_modified
+            flag_modified(contest, "group_views")   
+            db.add(contest)
+            db.commit()
+
     return m
 
 
@@ -225,6 +236,23 @@ def remove_membership(db: Session, user_id: str, group_id: str) -> bool:
         if admin_count <= 1:
             # Prevent removal if this is the last admin
             raise Exception("Cannot remove the last admin from the group.")
+    
+    # Delete all contest participations for this user in this group and update group_views for all contests
+    contestparticipations = db.query(models.ContestParticipation).filter(
+        models.ContestParticipation.user_id == user_id,
+        models.ContestParticipation.group_id == group_id
+    ).all()
+    for part in contestparticipations:
+        contest = db.query(models.Contest).filter(models.Contest.contest_id == part.contest_id).first()
+        if contest.group_views is not None:
+            contest.group_views[group_id]["total_participants"] -= 1
+            contest.group_views[group_id]["total_members"] -= 1
+            from sqlalchemy.orm.attributes import flag_modified
+            flag_modified(contest, "group_views")   
+            db.add(contest)
+            db.commit()
+        db.delete(part)
+
     db.delete(m)
     db.commit()
     return True
@@ -555,6 +583,7 @@ def create_report(db: Session, payload: schemas.ReportCreate) -> models.Report:
     
     # Get reporter and respondent roles
     respondent_role_before = respondent_membership.role
+    reporter_role_before = reporter_membership.role
 
     rpt = models.Report(
         report_id=report_id, 
@@ -562,6 +591,7 @@ def create_report(db: Session, payload: schemas.ReportCreate) -> models.Report:
         respondent_rating_at_report_time=respondent_rating_at_report_time,
         reporter_cf_handle=reporter_cf_handle,
         respondent_cf_handle=respondent_cf_handle,
+        reporter_role_before=reporter_role_before,
         respondent_role_before=respondent_role_before,
         respondent_role_after=respondent_role_before,
         accepted=payload.accepted,
@@ -660,10 +690,6 @@ def resolve_report(db: Session, payload: schemas.ReportResolve) -> Optional[mode
     resolver_cf_handle = resolver_membership.cf_handle
     
     # Get the current roles of reporter and respondent at resolution time
-    reporter_membership = db.query(models.GroupMembership).filter(
-        models.GroupMembership.user_id == rpt.reporter_user_id,
-        models.GroupMembership.group_id == rpt.group_id,
-    ).first()
     
     respondent_membership = db.query(models.GroupMembership).filter(
         models.GroupMembership.user_id == rpt.respondent_user_id,
@@ -673,11 +699,11 @@ def resolve_report(db: Session, payload: schemas.ReportResolve) -> Optional[mode
     # Set the 'after' roles from the payload (as required by new schema)
     rpt.respondent_role_after = payload.respondent_role_after
 
-
-    if payload.respondent_role_after == models.Role.kicked:
-        remove_membership(db, rpt.respondent_user_id, rpt.group_id)
-    elif respondent_membership:
-        update_membership_role(db, rpt.respondent_user_id, rpt.group_id, payload.respondent_role_after)
+    if(respondent_membership is not None):
+        if payload.respondent_role_after == models.Role.kicked:
+            remove_membership(db, rpt.respondent_user_id, rpt.group_id)
+        elif respondent_membership:
+            update_membership_role(db, rpt.respondent_user_id, rpt.group_id, payload.respondent_role_after)
 
     rpt.resolved = True
     rpt.resolver_cf_handle = resolver_cf_handle
@@ -1014,7 +1040,7 @@ def get_ratings_by_cf_handles(db: Session, group_id: str, cf_handles: List[str])
 # ───────────── requests ─────────────
 def create_request(db: Session, payload: schemas.RequestCreate) -> models.Request:
     """
-    Create a new request for a user to join a group.
+    Create a new request for a user to join a group, only if no active requests exist.
     
     Args:
         db: Database session
@@ -1023,6 +1049,15 @@ def create_request(db: Session, payload: schemas.RequestCreate) -> models.Reques
     Returns:
         The created Request object
     """
+    # Check if a request already exists for this user and group
+    existing_request = db.query(models.Request).filter(
+        models.Request.user_id == payload.user_id,
+        models.Request.group_id == payload.group_id,
+        models.Request.resolved == False
+    ).first()
+    if existing_request:
+        raise HTTPException(status_code=400, detail="You already have an active request for this group")
+    
     # Generate a request_id by counting existing requests
     request_count = db.query(models.Request).count()
     request_id = f"REQ-{request_count + 1}"

@@ -7,8 +7,8 @@
 :root {
   /* Global button colors */
   --button-blue: #448ee3;
-  --button-green: #32b24c;
-  --button-red: #d72b2b;
+  --button-green: #5bb16c;
+  --button-red: #ce5b5b;
   --button-yellow: #e2b54a;
   
   /* Button hover states */
@@ -287,7 +287,7 @@ h1 {
 }
 
 .actionButton.approve {
-  border-color: #4caf50;
+  border-color: #69cf6c;
   color: #4caf50;
 }
 

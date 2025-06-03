@@ -11,7 +11,7 @@ export default function Login() {
   const isMobile = useIsMobile();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const { login, loading, error } = useAuth();
+  const { login, loading, error, setError } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -28,11 +28,12 @@ export default function Login() {
 
   // Add a class to the body to handle special login page styling
   React.useEffect(() => {
+    setError && setError(''); // Clear global auth error on mount
     document.body.classList.add('loginPage');
     return () => {
       document.body.classList.remove('loginPage');
     };
-  }, []);
+  }, [setError]);
 
   return isMobile ? (
     <div className={styles.mobileLoginPage}>
@@ -43,7 +44,7 @@ export default function Login() {
           backgroundColor="rgb(230, 255, 230)"
           contentPadding="1.2rem 1rem"
         >
-        {error && <div className={styles.errorMessage}>{error}</div>}
+        {error && <div className="api-error">{error}</div>}
         <form onSubmit={handleSubmit}>
           <div className={styles.formGroup}>
             <label htmlFor="username" className={`${styles.formLabel} standardTextFont`}>
@@ -109,7 +110,7 @@ export default function Login() {
           backgroundColor="rgb(230, 255, 230)" // Light green background for the title bar
           contentPadding="0.75rem" // Reduced padding from default 1rem
         >
-        {error && <div className={styles.errorMessage}>{error}</div>}
+        {error && <div className="api-error">{error}</div>}
         <form onSubmit={handleSubmit}>
           <div className={styles.formGroup}>
             <label htmlFor="username" className={`${styles.formLabel} standardTextFont`}>

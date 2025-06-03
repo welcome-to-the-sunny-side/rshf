@@ -99,6 +99,7 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     register,
+    setError, // Expose setError so pages can clear error state
     isAuthenticated: !!token
   };
 

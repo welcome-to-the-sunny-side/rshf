@@ -1,8 +1,15 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import SortablePagedTableBox from '../components/SortablePagedTableBox';
+import CheckIcon from '../assets/green_check.svg';
+import CrossIcon from '../assets/red_cross.svg';
+import LazyLoadingSortablePagedTableBox from '../components/LazyLoadingSortablePagedTableBox';
 import { getRatingColor } from '../utils/ratingUtils';
 import GroupNavBar from '../components/GroupNavBar';
+import { useAuth } from '../context/AuthContext';
+import axios from 'axios';
+import titleStyles from '../components/ContentBoxWithTitle.module.css';
+import styles from './GroupReports.module.css';
+
 
 // Social platform icons components from User.jsx
 const CodeforcesIcon = ({ active }) => (
@@ -110,156 +117,330 @@ const SocialLinks = ({ user }) => {
 
 export default function GroupModViewRequests() {
   const { groupId } = useParams();
-  
-  // Function to format date
+  const { user, token } = useAuth();
+  const [requests, setRequests] = React.useState([]);
+  const [totalCount, setTotalCount] = React.useState(0);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState(null);
+  const [page, setPage] = React.useState(1);
+  const itemsPerPage = 15;
+  const [sortConfig, setSortConfig] = React.useState({ key: 'timestamp', direction: 'desc' });
+
+  // Helper to format date
   const formatDate = (dateString) => {
+    if (!dateString) return '';
     const options = { year: 'numeric', month: 'short', day: 'numeric' };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
-  // Sample request data - in real app this would come from backend
-  const requestsData = [
-    { 
-      id: 1, 
-      user: { 
-        username: "james", 
-        rating: 1850,
-        hasCodechef: true,
-        memberIn: ["CompetitiveProgramming", "WebDevelopment"],
-        moderatorIn: [],
-        removedFrom: ["AlgorithmStudy"],
-        previouslyRemovedFromThisGroup: false,
-        previousReportIds: []
-      },
-      requestDate: "2024-03-20"
+  // Table columns for LazyLoadingSortablePagedTableBox
+  // Per-row action state for loading and error
+  const [actionState, setActionState] = React.useState({});
+
+  const handleResolve = async (request_id, accepted) => {
+    if (!user || !user.user_id) {
+      setActionState(prev => ({
+        ...prev,
+        [request_id]: { loading: false, error: 'User not authenticated.' }
+      }));
+      return;
+    }
+    setActionState(prev => ({
+      ...prev,
+      [request_id]: { loading: true, error: null }
+    }));
+    try {
+      await axios.post(
+        '/api/resolve_request',
+        {
+          request_id,
+          accepted,
+          resolver_user_id: user.user_id
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      // Refresh both tables (ideally refetch, fallback reload)
+      if (typeof window !== 'undefined' && window.location) {
+        window.location.reload();
+      }
+    } catch (err) {
+      setActionState(prev => ({
+        ...prev,
+        [request_id]: { loading: false, error: err.response?.data?.detail || err.message || 'Failed to resolve request' }
+      }));
+    }
+  };
+
+  const columns = [
+    {
+      label: "Request ID",
+      key: "request_id",
+      render: (request) => request.request_id,
+      sortable: true
     },
-    { 
-      id: 2, 
-      user: { 
-        username: "karen", 
-        rating: 1650,
-        hasCodechef: false,
-        memberIn: ["MachineLearning"],
-        moderatorIn: ["DataScience"],
-        removedFrom: [],
-        previouslyRemovedFromThisGroup: true,
-        previousReportIds: [101, 203]
-      },
-      requestDate: "2024-03-19"
+    {
+      label: "User",
+      key: "user_id",
+      render: (request) => (
+        <Link to={`/user/${request.user_id}`} className="tableCellLink" style={{ fontWeight: 'bold' }}>
+          {request.user_id}
+        </Link>
+      ),
+      sortable: true
     },
-    { 
-      id: 3, 
-      user: { 
-        username: "larry", 
-        rating: 1920,
-        hasCodechef: true,
-        memberIn: ["WebDevelopment", "FrontendDevelopers"],
-        moderatorIn: ["JavaScript"],
-        removedFrom: ["ReactJS"],
-        previouslyRemovedFromThisGroup: true,
-        previousReportIds: [157]
-      },
-      requestDate: "2024-03-18"
+    {
+      label: "Request Date",
+      key: "timestamp",
+      render: (request) => formatDate(request.timestamp),
+      sortable: true
     },
-    { 
-      id: 4, 
-      user: { 
-        username: "mary", 
-        rating: 1780,
-        hasCodechef: false,
-        memberIn: ["CompetitiveProgramming", "AlgorithmStudy"],
-        moderatorIn: [],
-        removedFrom: [],
-        previouslyRemovedFromThisGroup: false,
-        previousReportIds: []
+    {
+      label: "Action",
+      key: "action",
+      render: (request) => {
+        const state = actionState[request.request_id] || { loading: false, error: null };
+        return (
+          <div style={{ display: 'flex', gap: '8px', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', gap: '90px', justifyContent: 'center', alignItems: 'center' }}>
+              <button
+                style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                title="Approve request"
+                disabled={!!request.resolved || state.loading}
+                onClick={() => handleResolve(request.request_id, true)}
+              >
+                {state.loading ? <span className="loader" /> : <img src={CheckIcon} alt="Approve" style={{ width: 20, height: 20, verticalAlign: 'middle' }} />}
+              </button>
+              <button
+                style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                title="Deny request"
+                disabled={!!request.resolved || state.loading}
+                onClick={() => handleResolve(request.request_id, false)}
+              >
+                {state.loading ? <span className="loader" /> : <img src={CrossIcon} alt="Deny" style={{ width: 20, height: 20, verticalAlign: 'middle' }} />}
+              </button>
+            </div>
+            {state.error && (
+              <div style={{ color: 'red', fontSize: '0.9em' }}>{state.error}</div>
+            )}
+          </div>
+        );
       },
-      requestDate: "2024-03-17"
-    },
-    { 
-      id: 5, 
-      user: { 
-        username: "nathan", 
-        rating: 2050,
-        hasCodechef: true,
-        memberIn: ["DataScience", "MachineLearning"],
-        moderatorIn: ["AI"],
-        removedFrom: [],
-        previouslyRemovedFromThisGroup: false,
-        previousReportIds: []
-      },
-      requestDate: "2024-03-16"
+      sortable: false
     }
   ];
 
-  // Define columns for the table
-  const columns = ["Request ID", "User", "Socials", "Member In (groups)", "Moderator In (groups)", "Removed From (groups)", "Previously Removed (from this group)", "Request Date", "Action"];
-  
-  // Transform the data for the table component
-  const tableRows = requestsData.map(request => {
-    // Create the "Previously Removed" content
-    let previouslyRemovedContent;
-    if (request.user.previouslyRemovedFromThisGroup) {
-      // If previously removed, show links to reports
-      previouslyRemovedContent = (
-        <div style={{ color: 'red' }}>
-          Yes - 
-          {request.user.previousReportIds.map((reportId, index) => (
-            <span key={reportId}>
-              {index > 0 && ", "}
-              <Link to={`/group/${groupId}/report/${reportId}`} className="tableCellLink">
-                {reportId}
-              </Link>
-            </span>
-          ))}
-        </div>
-      );
-    } else {
-      // If not previously removed, show "No" in green
-      previouslyRemovedContent = <div style={{ color: 'green' }}>No</div>;
+  // Columns for processed requests (resolved table)
+  const processedColumns = [
+    {
+      label: "Request ID",
+      key: "request_id",
+      render: (request) => request.request_id,
+      sortable: true
+    },
+    {
+      label: "User",
+      key: "user_id",
+      render: (request) => (
+        <Link to={`/user/${request.user_id}`} className="tableCellLink" style={{ fontWeight: 'bold' }}>
+          {request.user_id}
+        </Link>
+      ),
+      sortable: true
+    },
+    {
+      label: "Request Date",
+      key: "timestamp",
+      render: (request) => formatDate(request.timestamp),
+      sortable: true
+    },
+    {
+      label: "Decision",
+      key: "accepted",
+      render: (request) => (
+        <span style={{ color: request.accepted ? 'green' : 'red', fontWeight: 600 }}>
+          {request.accepted ? 'Accepted' : 'Rejected'}
+        </span>
+      ),
+      sortable: false
+    },
+    {
+      label: "Resolver",
+      key: "resolver_user_id",
+      render: (request) => request.resolver_user_id ? (
+        <Link to={`/user/${request.resolver_user_id}`} className="tableCellLink" style={{ fontWeight: 'bold' }}>
+          {request.resolver_user_id}
+        </Link>
+      ) : <span style={{ color: '#888' }}>N/A</span>,
+      sortable: true
+    },
+    {
+      label: "Resolve Date",
+      key: "resolve_timestamp",
+      render: (request) => request.resolve_timestamp ? formatDate(request.resolve_timestamp) : <span style={{ color: '#888' }}>N/A</span>,
+      sortable: true
     }
-    
-    return [
-      request.id,
-      <Link to={`/user/${request.user.username}`} className="tableCellLink" style={{ fontWeight: 'bold' }}>
-        {request.user.username}
-      </Link>,
-      <SocialLinks user={request.user} />,
-      <div>{request.user.memberIn.length}</div>,
-      <div>{request.user.moderatorIn.length}</div>,
-      <div>{request.user.removedFrom.length}</div>,
-      previouslyRemovedContent,
-      formatDate(request.requestDate),
-      <div style={{ display: 'flex', gap: '8px' }}>
-        <button 
-          className="global-button small green"
-          title="Approve request"
-        >
-          &#10004;
-        </button>
-        <button 
-          className="global-button small red"
-          title="Deny request"
-        >
-          &#10008;
-        </button>
-      </div>
-    ];
-  });
+  ];
+
+  // Fetch total count for unresolved (active) requests
+  React.useEffect(() => {
+    if (!groupId || !token) return;
+    setLoading(true);
+    setError(null);
+    (async () => {
+      try {
+        const response = await axios.get(`/api/requests_count`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { group_id: groupId, resolved: false }
+        });
+        setTotalCount(response.data.count);
+      } catch (err) {
+        setError(err.response?.data?.detail || err.message || 'Failed to fetch request count');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [groupId, token]);
+
+  // Fetch unresolved (active) requests
+  React.useEffect(() => {
+    if (!groupId || !token) return;
+    setLoading(true);
+    setError(null);
+    (async () => {
+      try {
+        const skip = (page - 1) * itemsPerPage;
+        const response = await axios.get(`/api/request_range_fetch`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: {
+            group_id: groupId,
+            resolved: false,
+            skip,
+            limit: itemsPerPage,
+            sort_by: sortConfig.key,
+            sort_order: sortConfig.direction
+          }
+        });
+        setRequests(response.data.items || []);
+      } catch (err) {
+        setError(err.response?.data?.detail || err.message || 'Failed to fetch requests');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [groupId, page, sortConfig, token]);
+
+  // State and logic for processed (resolved) requests table
+  const [processedRequests, setProcessedRequests] = React.useState([]);
+  const [processedTotal, setProcessedTotal] = React.useState(0);
+  const [processedLoading, setProcessedLoading] = React.useState(true);
+  const [processedError, setProcessedError] = React.useState(null);
+  const [processedPage, setProcessedPage] = React.useState(1);
+  const [processedSortConfig, setProcessedSortConfig] = React.useState({ key: 'resolve_timestamp', direction: 'desc' });
+
+  // Fetch total count for processed
+  React.useEffect(() => {
+    if (!groupId || !token) return;
+    setProcessedLoading(true);
+    setProcessedError(null);
+    (async () => {
+      try {
+        const response = await axios.get(`/api/requests_count`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { group_id: groupId, resolved: true }
+        });
+        setProcessedTotal(response.data.count);
+      } catch (err) {
+        setProcessedError(err.response?.data?.detail || err.message || 'Failed to fetch processed count');
+      } finally {
+        setProcessedLoading(false);
+      }
+    })();
+  }, [groupId, token]);
+
+  // Fetch processed requests
+  React.useEffect(() => {
+    if (!groupId || !token) return;
+    setProcessedLoading(true);
+    setProcessedError(null);
+    (async () => {
+      try {
+        const skip = (processedPage - 1) * itemsPerPage;
+        const response = await axios.get(`/api/request_range_fetch`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: {
+            group_id: groupId,
+            resolved: true,
+            skip,
+            limit: itemsPerPage,
+            sort_by: processedSortConfig.key,
+            sort_order: processedSortConfig.direction
+          }
+        });
+        setProcessedRequests(response.data.items || []);
+      } catch (err) {
+        setProcessedError(err.response?.data?.detail || err.message || 'Failed to fetch processed requests');
+      } finally {
+        setProcessedLoading(false);
+      }
+    })();
+  }, [groupId, processedPage, processedSortConfig, token]);
+
 
   return (
     <div className="page-container">
       {/* Floating button box */}
       <GroupNavBar groupId={groupId} showModViewButton={true} />
       
-      {/* Requests Table */}
-      <SortablePagedTableBox 
-        columns={columns}
-        data={tableRows}
-        backgroundColor="rgb(230, 255, 230)" // Light green
-        itemsPerPage={15}
-        initialSortColumnIndex={7} // Request Date column
-        initialSortDirection="desc" // Descending order
-      />
+      {/* Pending Requests Table */}
+      <div className={styles.reportsTableWrapper}>
+        <LazyLoadingSortablePagedTableBox
+          title={<span className={titleStyles.titleText}>Pending Requests</span>}
+          columns={columns}
+          items={requests}
+          totalItems={totalCount}
+          itemsPerPage={itemsPerPage}
+          currentPage={page}
+          onPageChange={setPage}
+          sortConfig={sortConfig}
+          onSortChange={(colKey) => {
+            setPage(1);
+            setSortConfig(prev => ({
+              key: colKey,
+              direction: prev.key === colKey && prev.direction === 'asc' ? 'desc' : 'asc',
+            }));
+          }}
+          isLoading={loading}
+          error={error}
+          noDataMessage={"No pending requests."}
+          backgroundColor="rgb(255, 245, 230)"
+          className="activeReportsTable"
+        />
+
+        <LazyLoadingSortablePagedTableBox
+          title={<span className={titleStyles.titleText}>Processed Requests</span>}
+          columns={processedColumns}
+          items={processedRequests}
+          totalItems={processedTotal}
+          itemsPerPage={itemsPerPage}
+          currentPage={processedPage}
+          onPageChange={setProcessedPage}
+          sortConfig={processedSortConfig}
+          onSortChange={(colKey) => {
+            setProcessedPage(1);
+            setProcessedSortConfig(prev => ({
+              key: colKey,
+              direction: prev.key === colKey && prev.direction === 'asc' ? 'desc' : 'asc',
+            }));
+          }}
+          isLoading={processedLoading}
+          error={processedError}
+          noDataMessage={"No processed requests."}
+          backgroundColor="rgb(230, 255, 240)"
+          className="processedReportsTable"
+        />
+      </div>
     </div>
   );
 }

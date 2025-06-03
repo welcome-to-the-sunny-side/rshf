@@ -162,11 +162,11 @@
 
 :global(.leaderboardTable) :global(table th:nth-child(2)),
 :global(.leaderboardTable) :global(table td:nth-child(2)) {
-  width: 75%;
+  width: 65%;
 }
 
 :global(.leaderboardTable) :global(table th:nth-child(3)),
 :global(.leaderboardTable) :global(table td:nth-child(3)) {
-  width: 15%;
+  width: 20%;
   text-align: right;
 }

@@ -14,6 +14,45 @@ import { API_MESSAGES } from '../constants/apiMessages';
 import '../styles/apiFeedbackStyles.css';
 
 export default function Group() {
+  // ...existing state
+  const [actionLoading, setActionLoading] = useState(false);
+
+  // Handler for joining group
+  const handleJoinGroup = async () => {
+    if (!user || !token) return;
+    setActionLoading(true);
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      const payload = { user_id: user.user_id, group_id: groupId };
+      await axios.post('/api/join_group', payload, { headers });
+      // Refetch group data for updated membership
+      if (typeof fetchGroupData === 'function') fetchGroupData();
+      // Or force reload
+      else window.location.reload();
+    } catch (err) {
+    //   alert(err?.response?.data?.detail || 'Failed to join group');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Handler for leaving group
+  const handleLeaveGroup = async () => {
+    if (!user || !token) return;
+    setActionLoading(true);
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      await axios.post(`/api/leave_group?group_id=${groupId}`, {}, { headers });
+      // Refetch group data for updated membership
+      if (typeof fetchGroupData === 'function') fetchGroupData();
+      else window.location.reload();
+    } catch (err) {
+    //   alert(err?.response?.data?.detail || 'Failed to leave group');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const { groupId } = useParams();
   const { user, token } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -273,18 +312,18 @@ export default function Group() {
       // User is logged out, no button
       return null;
     } else if (userRole) {
-      // User is a member or moderator, show "Leave" button
+      // User is a member or moderator or admin, show "Leave" button
       return (
-        <button className="global-button red">
-          Leave
+        <button className="global-button red" onClick={handleLeaveGroup} disabled={actionLoading}>
+          {actionLoading ? "Leaving..." : "Leave"}
         </button>
       );
     } else {
       // User is not a member, show "Join" or "Request" based on group type
-      const buttonText = groupData.type === "anyone can join" ? "Join" : "Request to Join";
+      const buttonText = "Join";
       return (
-        <button className="global-button blue">
-          {buttonText}
+        <button className="global-button blue" onClick={handleJoinGroup} disabled={actionLoading}>
+          {actionLoading ? "Joining..." : buttonText}
         </button>
       );
     }

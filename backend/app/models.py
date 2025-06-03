@@ -135,6 +135,9 @@ class Report(ModelBase):
     respondent_role_before = Column(Enum(Role), nullable=True)
     respondent_role_after = Column(Enum(Role), nullable=True, index=True)
 
+    reporter_role_before = Column(Enum(Role), nullable=True)
+    
+
     report_description = Column(String, nullable=False)
     resolved = Column(Boolean, nullable=False, default=False, index=True)
     resolver_user_id = Column(String, ForeignKey("users.user_id"), nullable=True, index=True)
@@ -142,7 +145,6 @@ class Report(ModelBase):
     resolve_message = Column(String, nullable=True)
     accepted = Column(Boolean, nullable=True, index=True)
     resolve_timestamp = Column(DateTime, nullable=True, index=True)
-
 
 class Announcement(ModelBase):
     __tablename__ = "announcements"

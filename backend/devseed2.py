@@ -362,7 +362,7 @@ def seed():
     # 7. Create reports (active and processed)
     banner("creating reports")
     # Pick random pairs for reports
-    report_pairs = [(random.choice(all_handles), random.choice([u for u in all_handles if u != a])) for a in all_handles[:min(10, len(all_handles))]]
+    report_pairs = [(random.choice(all_handles), random.choice([u for u in all_handles if u != a])) for a in all_handles[:min(1000, len(all_handles))]]
     reports = []
     for idx, (reporter, respondent) in enumerate(report_pairs):
         resolved = idx % 2 == 0
@@ -375,6 +375,9 @@ def seed():
             respondent_user_id=respondent,
             reporter_cf_handle=reporter,
             respondent_cf_handle=respondent,
+            reporter_role_before='user',
+            respondent_role_before='user',
+            respondent_role_after='user',
             report_description=faker.sentence(),
             resolved=resolved,
             resolver_user_id=resolver,

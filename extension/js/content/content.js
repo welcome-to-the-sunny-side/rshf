@@ -122,7 +122,6 @@ async function initializeExtension() {
 
   if (!localData.selectedGroup || !localData.selectedGroup.group_id) {
     console.log('RSHF: No group selected.');
-    addExtensionStatusIndicator('no-group-selected');
     return;
   }
   currentSelectedGroupId = localData.selectedGroup.group_id;
@@ -143,64 +142,7 @@ async function initializeExtension() {
   }
 
   const settings = await getStoredSettings();
-  addExtensionStatusIndicator('active');
   processPage(settings, localData.selectedGroup.group_name); // Pass group_name for display purposes
-}
-
-// Add a small indicator to show the extension status
-function addExtensionStatusIndicator(status) {
-  let indicator = document.getElementById('rshf-status-indicator');
-  if (!indicator) {
-    indicator = document.createElement('div');
-    indicator.id = 'rshf-status-indicator';
-    document.body.appendChild(indicator);
-
-    // Add styles for the indicator
-    const style = document.createElement('style');
-    style.textContent = `
-      #rshf-status-indicator {
-        position: fixed;
-        bottom: 10px;
-        right: 10px;
-        padding: 5px 10px;
-        border-radius: 5px;
-        font-size: 12px;
-        z-index: 9999;
-        cursor: pointer;
-        transition: opacity 0.3s ease-in-out;
-      }
-      #rshf-status-indicator.active {
-        background-color: #4CAF50; /* Green */
-        color: white;
-      }
-      #rshf-status-indicator.no-group-selected {
-        background-color: #f44336; /* Red */
-        color: white;
-      }
-      #rshf-status-indicator:hover {
-        opacity: 0.8;
-      }
-    `;
-    document.head.appendChild(style);
-
-    // Add click listener to open popup
-    indicator.addEventListener('click', () => {
-      chrome.runtime.sendMessage({ action: 'openPopup' });
-    });
-  }
-
-  indicator.className = status; // Reset classes and apply current status
-  switch (status) {
-    case 'active':
-      indicator.textContent = 'RSHF Active';
-      break;
-    case 'no-group-selected':
-      indicator.textContent = 'RSHF: Select Group';
-      break;
-    default:
-      indicator.textContent = 'RSHF';
-      break;
-  }
 }
 
 // Process Codeforces page to replace ratings
@@ -245,7 +187,7 @@ async function processProfileSidebar(settings, group_display_name) {
       sidebarRatingSpan.textContent = rating;
       sidebarRatingSpan.classList.add(ratingInfo.cssClass);
       sidebarRatingSpan.style.color = ratingInfo.color;
-      sidebarRatingSpan.setAttribute('data-rshf-tooltip', `RSHF Rating: ${rating} (${ratingInfo.name}) (Group: ${group_display_name})`);
+
     }
   } else {
     // Not in group: apply non-member styling
@@ -429,8 +371,8 @@ function updateElementWithNewRating(element, rating, maxRating = null) {
   const ratingInfo = getRatingInfo(rating);
   element.classList.add(ratingInfo.cssClass);
   element.style.color = ratingInfo.color;
-  element.setAttribute('data-rshf-tooltip', `RSHF Rating: ${rating} (${ratingInfo.name})`);
-  element.classList.add('rshf-tooltip');
+
+
 }
 
 // Handle elements for users not in the selected group

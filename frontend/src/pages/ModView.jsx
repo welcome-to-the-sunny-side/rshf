@@ -12,7 +12,7 @@ import loginStyles from './Login.module.css';
 
 export default function ModView() {
   const { groupId } = useParams();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
 
   // References for the content boxes to measure heights
   const requestsBoxRef = useRef(null);
@@ -126,6 +126,7 @@ export default function ModView() {
     try {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       await axios.post('/api/announcement', {
+        user_id: user?.user_id,
         group_id: groupId,
         title: announcementTitle,
         content: announcementContent
@@ -402,7 +403,7 @@ export default function ModView() {
                   <option value="admin">admin</option>
                   <option value="moderator">moderator</option>
                   <option value="user">user</option>
-                  <option value="outsider">kicked</option>
+                  <option value="kicked">kicked</option>
                 </DropdownMenu>
               </div>
             </div>

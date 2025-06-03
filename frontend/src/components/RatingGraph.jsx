@@ -320,6 +320,7 @@ export default function RatingGraph({ ratingHistory }) {
             filter="url(#yellowLineShadow)"
           />
           {/* Show a subtle message if no data points */}
+          {/*
           {data.length === 0 && (
             <text
               x="50%"
@@ -333,6 +334,7 @@ export default function RatingGraph({ ratingHistory }) {
                 No rating data yet
             </text>
           )}
+          */}
         </LineChart>
       </ResponsiveContainer>
     </div>
