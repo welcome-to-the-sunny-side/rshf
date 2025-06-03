@@ -11,12 +11,16 @@ export default function Login() {
   const isMobile = useIsMobile();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const { login, loading, error, setError } = useAuth();
+  const { login, loading, error, setError, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Get the page they were trying to access before being redirected to login
-  const from = location.state?.from?.pathname || '/';
+  // Redirect to Home if already logged in
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

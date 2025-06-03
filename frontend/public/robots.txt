@@ -1,0 +1,8 @@
+User-agent: *
+Disallow: /
+
+Allow: /login
+Allow: /register
+Allow: /about
+
+Sitemap: https://rshf.net/sitemap.xml

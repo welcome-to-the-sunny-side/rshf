@@ -8,6 +8,8 @@ import formInputStyles from '../components/FormInput.module.css';
 import useIsMobile from '../utils/useIsMobile'; // Import the mobile detection hook
 
 export default function Register() {
+  const { register, loading, error, setError, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [formData, setFormData] = useState({
     user_id: '',
@@ -17,8 +19,14 @@ export default function Register() {
     confirmPassword: ''
   });
   const [formErrors, setFormErrors] = useState({});
-  const { register, loading, error, setError } = useAuth();
-  const navigate = useNavigate();
+
+  // Redirect to Home if already logged in
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
