@@ -27,8 +27,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Set register link URL
   registerLink.href = `${BACKEND_URL}/register`;
   
-  // Check authentication state
-  checkAuthState(); // This will also call updateRefreshStatusDisplay if user is logged in
+  // Check authentication state - Use the new validateAuthState instead of checkAuthState
+  validateAuthState();
   
   // Set up event listeners
   loginForm.addEventListener('submit', handleLogin);
@@ -77,6 +77,22 @@ function checkAuthState() {
     } else {
       // User is not logged in, show login view
       showLoginView();
+    }
+  });
+}
+
+// Validate authentication status by making an API call to confirm token is still valid
+function validateAuthState() {
+  chrome.runtime.sendMessage({ action: 'validateToken' }, (response) => {
+    if (response.isValid) {
+      // Token is valid, use regular auth state check
+      checkAuthState();
+    } else {
+      // Token is invalid, show login view
+      showLoginView();
+      
+      // If we were previously logged in but token is now invalid, clean up
+      chrome.runtime.sendMessage({ action: 'logout' });
     }
   });
 }
@@ -189,7 +205,6 @@ function handleGroupChange() {
   }
 }
 
-// Display preference change handler
 // Display preference change handler
 function handleDisplayChange() {
   const nonMemberDisplayMode = nonMemberDisplay.value;

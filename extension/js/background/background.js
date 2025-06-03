@@ -166,12 +166,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return true;
 
     case 'getAuthState':
-      sendResponse({ 
-        isAuthenticated: authState.isAuthenticated,
-        user: authState.user,
-        selectedGroup: authState.selectedGroup
-      });
+      sendResponse(authState);
       return false;
+
+    case 'validateToken':
+      validateAuthToken()
+        .then(isValid => {
+          // If token was previously thought to be valid but is now invalid, update authState
+          if (!isValid && authState.isAuthenticated) {
+            authState.isAuthenticated = false;
+            console.log('RSHF Extension: Token validation failed, auth state updated');
+          }
+          sendResponse({ isValid });
+        })
+        .catch(() => {
+          // On error, assume token is invalid
+          authState.isAuthenticated = false;
+          sendResponse({ isValid: false });
+        });
+      return true; // Async response
 
     case 'setSelectedGroup':
       authState.selectedGroup = message.group;
@@ -179,7 +192,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ success: true });
       return false;
     
-    // New actions for ratings data
     case 'forceRefreshRatings':
       triggerRefresh().then(sendResponse);
       return true; // Indicates async response
@@ -340,3 +352,35 @@ async function handleLogout() {
   return chrome.storage.local.remove(['token', 'user', 'selectedGroup']); // Also clear selectedGroup on logout
 }
 
+// Validate the stored auth token
+async function validateAuthToken() {
+  try {
+    if (!authState.token) {
+      return false;
+    }
+
+    // Attempt to make a call to the API with the token
+    const response = await fetch(`${API_ENDPOINTS.USER_INFO}?user_id=${encodeURIComponent(authState.user?.user_id || '')}`, {
+      headers: { 'Authorization': `Bearer ${authState.token}` }
+    });
+
+    // If response is 401 or 403, token is invalid
+    if (response.status === 401 || response.status === 403) {
+      console.log('RSHF Extension: Token validation - unauthorized response');
+      return false;
+    }
+
+    // If any other error, also consider token invalid
+    if (!response.ok) {
+      console.log(`RSHF Extension: Token validation - unexpected status: ${response.status}`);
+      return false;
+    }
+
+    // Success - token is valid
+    console.log('RSHF Extension: Token validation successful');
+    return true;
+  } catch (error) {
+    console.error('RSHF Extension: Token validation error:', error);
+    return false;
+  }
+}
