@@ -272,11 +272,6 @@ export default function Report() {
                   </Link>
                 </div>
               )}
-              {reportData.resolve_timestamp && (
-                <div>
-                  <strong>Resolve Date:</strong> {formatDate(reportData.resolve_timestamp)}
-                </div>
-              )}
               <div>
                 <strong>Status:</strong>{' '}
                 <span style={{ 
@@ -287,8 +282,13 @@ export default function Report() {
                 </span>
               </div>
             <div>
-                <strong>Result:</strong> {reportData.respondent_role_before ? reportData.respondent_role_before : '-' } {'->'} {reportData.respondent_role_after ? reportData.respondent_role_after : '-' }
+                <strong>Respondent Role:</strong> {reportData.respondent_role_before ? reportData.respondent_role_before : '-' } {'->'} {reportData.respondent_role_after ? reportData.respondent_role_after : '-' }
             </div>
+            {reportData.resolve_timestamp && (
+                <div>
+                  <strong>Resolution Date:</strong> {formatDate(reportData.resolve_timestamp)}
+                </div>
+              )}
               {reportData.resolve_message && (
                 <div className={styles.aboutBox} style={{ marginTop: '0px', marginBottom: '-5px' }}>
                   <h4 style={{ margin: '0 0 8px 0' }}>Reviewer's Note:</h4>
