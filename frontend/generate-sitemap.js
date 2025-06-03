@@ -2,7 +2,7 @@
 const { SitemapStream, streamToPromise } = require('sitemap');
 const { createWriteStream } = require('fs');
 
-const sitemap = new SitemapStream({ hostname: 'https://your-domain.com' }); // TODO: Replace with your domain
+const sitemap = new SitemapStream({ hostname: 'https://rshf.net' }); // TODO: Replace with your domain
 
 // List your static routes here
 const routes = [
