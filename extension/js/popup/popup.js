@@ -1,204 +1,47 @@
 // DOM Elements
-const loginView = document.getElementById('login-view');
-const mainView = document.getElementById('main-view');
-const loginForm = document.getElementById('login-form');
-const usernameInput = document.getElementById('username');
-const passwordInput = document.getElementById('password');
-const loginButton = document.getElementById('login-button');
-const loginError = document.getElementById('login-error');
-const logoutButton = document.getElementById('logout-button');
-
-const userDetails = document.getElementById('user-details');
 const groupInput = document.getElementById('group-input');
 const setGroupButton = document.getElementById('set-group-button');
 const nonMemberDisplay = document.getElementById('non-member-display');
 const inGroupDisplay = document.getElementById('in-group-display');
-const registerLink = document.getElementById('register-link');
-
-// New DOM Elements for Ratings Refresh
 const refreshRatingsBtn = document.getElementById('refreshRatingsBtn');
 const refreshStatusEl = document.getElementById('refreshStatus');
-
-// Constants
-const BACKEND_URL = 'http://localhost:8000';
+const registerLink = document.getElementById('register-link');
 
 // Initialize popup
 document.addEventListener('DOMContentLoaded', () => {
-  // Set register link URL
-  registerLink.href = `${BACKEND_URL}/register`;
-  
-  // Check authentication state - Use the new validateAuthState instead of checkAuthState
-  validateAuthState();
-  
-  // Set up event listeners
-  loginForm.addEventListener('submit', handleLogin);
-  logoutButton.addEventListener('click', handleLogout);
   setGroupButton.addEventListener('click', handleGroupChange);
   nonMemberDisplay.addEventListener('change', handleDisplayChange);
   inGroupDisplay.addEventListener('change', handleDisplayChange);
-
-  // Event listener for the new refresh button
   if (refreshRatingsBtn) {
     refreshRatingsBtn.addEventListener('click', handleForceRefreshRatings);
   }
-
-  // Initial call to update refresh status when popup opens
-  // This is also called within checkAuthState for logged-in users, but good to have for non-logged in state too if section is visible
-  updateRefreshStatusDisplay(); 
+  loadGroups();
+  loadDisplayPreferences();
+  updateRefreshStatusDisplay();
 });
 
 // Listen for messages from background script (e.g., when ratings are updated automatically)
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'ratingsUpdated') {
-    console.log('Popup received ratingsUpdated message from background.');
     updateRefreshStatusDisplay(message.fileTimestamp, message.refreshedAt);
   }
-  // Keep 'return true' if you need to send an async response from here, otherwise false or undefined.
-  // For this listener, we are just reacting, so no async response needed.
 });
-
-// Authentication status check
-function checkAuthState() {
-  chrome.runtime.sendMessage({ action: 'getAuthState' }, (response) => {
-    if (response.isAuthenticated && response.user) {
-      // User is logged in, show main view
-      showMainView(response.user);
-      
-      // Load groups if not already loaded
-      loadGroups();
-      
-      // Set selected group if exists
-      if (response.selectedGroup) {
-        groupInput.value = response.selectedGroup.group_name;
-      }
-      
-      // Load display preferences
-      loadDisplayPreferences();
-    } else {
-      // User is not logged in, show login view
-      showLoginView();
-    }
-  });
-}
-
-// Validate authentication status by making an API call to confirm token is still valid
-function validateAuthState() {
-  chrome.runtime.sendMessage({ action: 'validateToken' }, (response) => {
-    if (response.isValid) {
-      // Token is valid, use regular auth state check
-      checkAuthState();
-    } else {
-      // Token is invalid, show login view
-      showLoginView();
-      
-      // If we were previously logged in but token is now invalid, clean up
-      chrome.runtime.sendMessage({ action: 'logout' });
-    }
-  });
-}
-
-// Login handler
-async function handleLogin(e) {
-  e.preventDefault();
-  
-  // Clear previous errors
-  loginError.textContent = '';
-  
-  // Disable login button and show loading state
-  loginButton.disabled = true;
-  loginButton.textContent = 'Logging in...';
-  
-  const username = usernameInput.value.trim();
-  const password = passwordInput.value;
-  
-  try {
-    // Send login request to background script
-    chrome.runtime.sendMessage(
-      { action: 'login', username, password },
-      (response) => {
-        // Reset login button state
-        loginButton.disabled = false;
-        loginButton.textContent = 'Login';
-        
-        if (response.success && response.user) {
-          // Login successful
-          showMainView(response.user);
-          loadGroups();
-        } else {
-          // Login failed
-          loginError.textContent = response.error || 'Login failed';
-        }
-      }
-    );
-  } catch (error) {
-    // Handle login errors
-    loginButton.disabled = false;
-    loginButton.textContent = 'Login';
-    loginError.textContent = error.message || 'An error occurred during login';
-  }
-}
-
-// Logout handler
-function handleLogout() {
-  chrome.runtime.sendMessage({ action: 'logout' }, (response) => {
-    if (response.success) {
-      showLoginView();
-    } else {
-      console.error('Logout failed:', response.error);
-    }
-  });
-}
 
 // Group change handler
 function handleGroupChange() {
   const groupName = groupInput.value.trim();
   if (groupName) {
-    // Get the authentication token
-    chrome.storage.local.get(['token'], (result) => {
-      if (!result.token) {
-        alert('You need to be logged in to select a group');
-        return;
+    // For stateless extension, just set the group directly
+    const selectedGroup = {
+      group_id: groupName,
+      group_name: groupName
+    };
+    chrome.runtime.sendMessage({ action: 'setSelectedGroup', group: selectedGroup }, (response) => {
+      if (response.success) {
+        alert(`Group '${groupName}' selected successfully!`);
+      } else {
+        alert('Failed to set group. Please try again.');
       }
-      
-      // Fetch group ID by name with authentication
-      fetch(`${BACKEND_URL}/api/group?group_id=${encodeURIComponent(groupName)}`, {
-        headers: {
-          'Authorization': `Bearer ${result.token}`
-        }
-      })
-      .then(response => {
-        if (!response.ok) {
-          if (response.status === 404) {
-            throw new Error(`Group '${groupName}' not found`);
-          } else if (response.status === 401) {
-            throw new Error('Authentication error. Please log in again.');
-          }
-          throw new Error('Failed to fetch group details');
-        }
-        return response.json();
-      })
-      .then(group => {
-        const selectedGroup = {
-          group_id: group.group_id,
-          group_name: group.group_name
-        };
-        
-        chrome.runtime.sendMessage(
-          { action: 'setSelectedGroup', group: selectedGroup },
-          (response) => {
-            if (response.success) {
-              alert(`Group '${group.group_name}' selected successfully!`);
-            } else {
-              console.error('Failed to set selected group:', response.error);
-              alert('Failed to set group. Please try again.');
-            }
-          }
-        );
-      })
-      .catch(error => {
-        console.error('Error selecting group:', error);
-        alert(error.message || 'Failed to set group. Please try again.');
-      });
     });
   } else {
     alert('Please enter a group name');
@@ -235,35 +78,6 @@ function loadDisplayPreferences() {
   });
 }
 
-// View management
-function showLoginView() {
-  loginView.style.display = 'block';
-  mainView.style.display = 'none';
-  
-  // Clear login form
-  loginForm.reset();
-  loginError.textContent = '';
-  // Hide refresh section if it's part of mainView, or manage its visibility separately
-  if (document.getElementById('ratings-refresh-section')) {
-      document.getElementById('ratings-refresh-section').style.display = 'none';
-  }
-}
-
-function showMainView(user) {
-  loginView.style.display = 'none';
-  mainView.style.display = 'block';
-  
-  // Update user information
-  userDetails.textContent = user.cf_handle ? 
-    `Codeforces handle: ${user.cf_handle}` : 
-    'No Codeforces handle linked';
-
-  // Show refresh section and update its status
-  if (document.getElementById('ratings-refresh-section')) {
-      document.getElementById('ratings-refresh-section').style.display = 'block';
-  }
-  updateRefreshStatusDisplay();
-}
 
 // --- New Functions for Ratings Refresh Display ---
 function formatTimestamp(timestamp) {

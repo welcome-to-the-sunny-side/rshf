@@ -115,28 +115,21 @@ async function initializeExtension() {
     return;
   }
 
-  const authState = await getAuthState();
-  if (!authState.isAuthenticated) {
-    console.log('RSHF: User not authenticated.');
-    addExtensionStatusIndicator('not-logged-in');
-    return;
-  }
-  
-  if (!authState.selectedGroup || !authState.selectedGroup.group_id) {
+  // Get selected group from storage
+  const localData = await new Promise(resolve => {
+    chrome.storage.local.get(['selectedGroup', 'rshfRatingsData', 'rshfRatingsFileTimestamp'], result => resolve(result));
+  });
+
+  if (!localData.selectedGroup || !localData.selectedGroup.group_id) {
     console.log('RSHF: No group selected.');
     addExtensionStatusIndicator('no-group-selected');
     return;
   }
-  currentSelectedGroupId = authState.selectedGroup.group_id;
+  currentSelectedGroupId = localData.selectedGroup.group_id;
 
-  // Load RSHF ratings data from chrome.storage.local
-  const storedData = await new Promise(resolve => {
-    chrome.storage.local.get(['rshfRatingsData', 'rshfRatingsFileTimestamp'], result => resolve(result));
-  });
-
-  if (storedData.rshfRatingsData) {
-    rshfAllGroupsData = storedData.rshfRatingsData;
-    rshfDataFileTimestamp = storedData.rshfRatingsFileTimestamp;
+  if (localData.rshfRatingsData) {
+    rshfAllGroupsData = localData.rshfRatingsData;
+    rshfDataFileTimestamp = localData.rshfRatingsFileTimestamp;
     if (currentSelectedGroupId && rshfAllGroupsData[currentSelectedGroupId]) {
       rshfSelectedGroupData = rshfAllGroupsData[currentSelectedGroupId];
     } else {
@@ -145,15 +138,13 @@ async function initializeExtension() {
     }
   } else {
     console.warn('RSHF: Ratings data not found in local storage. Please refresh data via popup.');
-    // Potentially show a different status or try to trigger a refresh if robust error handling is needed.
-    // For now, proceed with empty data; replacements won't happen.
     rshfAllGroupsData = {};
     rshfSelectedGroupData = {};
   }
-  
+
   const settings = await getStoredSettings();
   addExtensionStatusIndicator('active');
-  processPage(settings, authState.selectedGroup.group_name); // Pass group_name for display purposes
+  processPage(settings, localData.selectedGroup.group_name); // Pass group_name for display purposes
 }
 
 // Add a small indicator to show the extension status
@@ -182,7 +173,6 @@ function addExtensionStatusIndicator(status) {
         background-color: #4CAF50; /* Green */
         color: white;
       }
-      #rshf-status-indicator.not-logged-in, 
       #rshf-status-indicator.no-group-selected {
         background-color: #f44336; /* Red */
         color: white;
@@ -203,9 +193,6 @@ function addExtensionStatusIndicator(status) {
   switch (status) {
     case 'active':
       indicator.textContent = 'RSHF Active';
-      break;
-    case 'not-logged-in':
-      indicator.textContent = 'RSHF: Login Required';
       break;
     case 'no-group-selected':
       indicator.textContent = 'RSHF: Select Group';
@@ -482,14 +469,6 @@ function removeRatingClasses(element) {
   });
 }
 
-// Utility functions for storage and messaging
-async function getAuthState() {
-  return new Promise(resolve => {
-    chrome.runtime.sendMessage({ action: 'getAuthState' }, response => {
-      resolve(response);
-    });
-  });
-}
 
 async function getStoredSettings() {
   return new Promise(resolve => {

@@ -151,11 +151,7 @@ export default function Group() {
         contests.forEach(contest => {
           if (contest.group_views && contest.group_views[groupId]) {
             const groupData = contest.group_views[groupId];
-            // const totalMembers = groupData.total_members || 0;
-            // const participants = groupData.total_participation || 0;
-            
-            // const participation = calculateParticipation(totalMembers, participants);
-            // const strength = calculateStrength(ratings);
+
             const participation = groupData.total_participants || 0;
             const strength = groupData.total_members || 0;
 
@@ -172,7 +168,7 @@ export default function Group() {
             });
           }
         });
-        
+        console.log(participationPoints);
         // Sort by date
         participationPoints.sort((a, b) => Date.parse(a.date) - Date.parse(b.date));
         

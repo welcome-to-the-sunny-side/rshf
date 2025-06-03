@@ -8,44 +8,10 @@
 </head>
 <body>
   <div class="popup-container">
-    <!-- Login View -->
-    <div id="login-view" class="view">
-      <div class="logo-container">
-        <img src="images/logo.png" alt="RSHF Logo" class="logo" />
-      </div>
-      <div id="login-error" class="error-message"></div>
-      <form id="login-form">
-        <div class="form-group">
-          <label for="username">Username</label>
-          <input
-            type="text"
-            id="username"
-            required
-            placeholder="Enter your username"
-          />
-        </div>
-        <div class="form-group">
-          <label for="password">Password</label>
-          <input
-            type="password"
-            id="password"
-            required
-            placeholder="Enter your password"
-          />
-        </div>
-        <button type="submit" id="login-button" class="button primary-button">
-          Login
-        </button>
-      </form>
-      <p class="register-link">
-        Don't have an account? <a href="#" id="register-link" target="_blank">Register here</a>
-      </p>
-    </div>
-
-    <!-- Main View (after login) -->
-    <div id="main-view" class="view">
-      <div class="user-info">
-        <p id="user-details"></p>
+    <!-- Main View (always visible, no login needed) -->
+    <div id="main-view" class="view" style="display: block;">
+      <div class="logo-container" style="text-align:center; margin-bottom:12px;">
+        <img src="images/logo.png" alt="RSHF Logo" class="logo" style="max-width:100px;" />
       </div>
       
       <div class="form-group">
@@ -84,9 +50,6 @@
       <div id="ratings-refresh-section" style="margin-top: 16px;">
         <button id="refreshRatingsBtn" class="button">Refresh Ratings Data</button>
         <p id="refreshStatus">Last refreshed: Never</p>
-      </div>
-      <div class="button-container">
-        <button id="logout-button" class="button secondary-button">Logout</button>
       </div>
     </div>
   </div>

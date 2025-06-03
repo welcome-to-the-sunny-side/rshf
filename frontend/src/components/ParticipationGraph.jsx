@@ -238,8 +238,13 @@ export default function ParticipationGraph({ participationData, groupName }) {
   const minTimestamp = chartData.length > 0 ? chartData[0].timestamp : now;
   const maxTimestamp = chartData.length > 0 ? chartData[chartData.length - 1].timestamp : now;
 
-  // Generate ticks for January 1st of each year safely
-  const yearlyTicks = chartData.length > 0 ? generateYearlyTicks(minTimestamp, maxTimestamp) : [now];
+  // Generate ticks for January 1st of each year, and ensure first/last data points are included
+  let yearlyTicks = chartData.length > 0 ? generateYearlyTicks(minTimestamp, maxTimestamp) : [now];
+  // Always include first and last timestamps for edge alignment
+  if (chartData.length > 0) {
+    if (yearlyTicks[0] !== minTimestamp) yearlyTicks = [minTimestamp, ...yearlyTicks];
+    if (yearlyTicks[yearlyTicks.length - 1] !== maxTimestamp) yearlyTicks = [...yearlyTicks, maxTimestamp];
+  }
 
   // --- END: Tooltip Hover Logic ---
 
@@ -296,7 +301,7 @@ export default function ParticipationGraph({ participationData, groupName }) {
           <XAxis
             dataKey="timestamp"
             type="number"
-            domain={['dataMin', 'dataMax']}
+            domain={[minTimestamp, maxTimestamp]}
             tickFormatter={formatDateTick}
             scale="time"
             ticks={yearlyTicksSafe}
