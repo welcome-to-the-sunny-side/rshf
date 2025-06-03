@@ -124,13 +124,13 @@ export default function GroupContests() {
   }
   
   // Determine noDataMessage and prepare tableRows
-  let currentNoDataMessage = "No contests found for this group."; // Default for empty state
+  let currentNoDataMessage = "No contests found for this group.";
   let displayTableRows = [];
 
   if (loading) {
     currentNoDataMessage = "Loading contests...";
   } else if (error) {
-    currentNoDataMessage = error; // Display the error message from state
+    currentNoDataMessage = error || "Failed to load contests.";
   } else if (contests.length > 0) {
     // Only map rows if not loading, no error, and contests exist
     displayTableRows = contests.map(contest => {

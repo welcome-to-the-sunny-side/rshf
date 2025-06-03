@@ -111,15 +111,13 @@ export default function Groups() {
 
   let tableNoDataMessage;
   if (loading) {
-    tableNoDataMessage = API_MESSAGES.LOADING;
+    tableNoDataMessage = "Loading groups...";
   } else if (error) {
-    tableNoDataMessage = error; // This is already API_MESSAGES.ERROR
+    tableNoDataMessage = error || "Failed to load groups.";
   } else if (groups.length === 0) {
     tableNoDataMessage = "No groups found.";
   } else if (otherGroupsRows.length === 0 && pinnedRows.length === 0) {
     tableNoDataMessage = "No groups to display.";
-  } else {
-    tableNoDataMessage = API_MESSAGES.NO_DATA; // Default for table if it renders empty
   }
 
   const displayDataForTable = loading || error ? [] : otherGroupsRows;

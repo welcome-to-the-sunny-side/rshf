@@ -79,16 +79,16 @@ export default function UserGroups() {
   ]);
 
   let displayData = data;
-  let noDataMessage = API_MESSAGES.NO_DATA;
+  let noDataMessage = "No group memberships found.";
   if (loading) {
     displayData = [];
-    noDataMessage = API_MESSAGES.LOADING;
+    noDataMessage = "Loading groups...";
   } else if (error) {
     displayData = [];
-    noDataMessage = API_MESSAGES.ERROR;
+    noDataMessage = error || "Failed to load groups.";
   } else if (userGroupsData.length === 0) {
     displayData = [];
-    noDataMessage = API_MESSAGES.NO_DATA;
+    noDataMessage = "No group memberships found.";
   }
 
   return (

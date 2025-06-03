@@ -195,7 +195,11 @@ export default function Home() {
         <Link to={`/group/${group.name}`} className="tableCellLink">{group.name}</Link>,
         group.memberCount.toLocaleString()
       ]);
-  const groupNoDataMessage = loading.groups ? API_MESSAGES.LOADING : (error.groups ? API_MESSAGES.ERROR : API_MESSAGES.NO_DATA);
+  const groupNoDataMessage = loading.groups
+    ? "Loading groups..."
+    : (error.groups
+      ? (error.groups || "Failed to load groups.")
+      : "No groups found.");
 
   const announcementColumns = ["Announcement", "Date"];
   // Transform the data for the announcements table
@@ -209,7 +213,11 @@ export default function Home() {
           day: 'numeric'
         })
       ]);
-  const announcementNoDataMessage = loading.announcements ? API_MESSAGES.LOADING : (error.announcements ? API_MESSAGES.ERROR : API_MESSAGES.NO_DATA);
+  const announcementNoDataMessage = loading.announcements
+    ? "Loading announcements..."
+    : (error.announcements
+      ? (error.announcements || "Failed to load announcements.")
+      : "No announcements found.");
 
   const contestColumns = ["Contest", "Date"];
   // Transform the data for the contests table
@@ -227,7 +235,11 @@ export default function Home() {
             })
           : "Date not specified"
       ]);
-  const contestNoDataMessage = loading.contests ? API_MESSAGES.LOADING : (error.contests ? API_MESSAGES.ERROR : API_MESSAGES.NO_DATA);
+  const contestNoDataMessage = loading.contests
+    ? "Loading contests..."
+    : (error.contests
+      ? (error.contests || "Failed to load contests.")
+      : "No contests found.");
 
   return (
     <div className="page-container">

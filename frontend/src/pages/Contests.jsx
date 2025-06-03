@@ -111,8 +111,12 @@ export default function Contests() {
         contest.platform,
         formatDateTime(contest.start_time_posix)
       ]);
-  const upcomingNoDataMessage = loading.upcoming ? API_MESSAGES.LOADING : (error.upcoming ? API_MESSAGES.ERROR : API_MESSAGES.NO_DATA);
-  
+  const upcomingNoDataMessage = loading.upcoming
+    ? "Loading contests..."
+    : (error.upcoming
+      ? (error.upcoming || "Failed to load upcoming contests.")
+      : "No upcoming contests.");
+
   // Format data for past contests
   const pastTableData = (loading.past || error.past || pastContests.length === 0)
     ? []
@@ -121,7 +125,11 @@ export default function Contests() {
         contest.platform,
         formatDateTime(contest.start_time_posix)
       ]);
-  const pastNoDataMessage = loading.past ? API_MESSAGES.LOADING : (error.past ? API_MESSAGES.ERROR : API_MESSAGES.NO_DATA);
+  const pastNoDataMessage = loading.past
+    ? "Loading past contests..."
+    : (error.past
+      ? (error.past || "Failed to load past contests.")
+      : "No past contests.");
 
   return (
     <div className="page-container contestsPage">     

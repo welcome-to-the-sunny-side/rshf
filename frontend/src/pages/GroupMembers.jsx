@@ -206,16 +206,16 @@ export default function GroupMembers() {
       <div className={styles.membersTableWrapper}>
         <LazyLoadingSortablePagedTableBox
           columns={tableColumns}
-          items={membersData} // Pass the actual data or an empty array
+          items={membersData}
           totalItems={totalMembers}
           itemsPerPage={itemsPerPage}
           currentPage={currentPage}
           onPageChange={handlePageChange}
           sortConfig={sortConfig}
           onSortChange={handleSort}
-          isLoading={loading} // Pass loading state
-          error={error} // Pass error state (LazyLoading component will handle displaying it as a row)
-          // noDataMessage prop will use its default "No Data Found" or be overridden by loading/error states internally
+          isLoading={loading}
+          error={error}
+          noDataMessage={loading ? "Loading members..." : (error ? (error || "Failed to load members.") : "No members found in this group.")}
         />
       </div>
     </div>
