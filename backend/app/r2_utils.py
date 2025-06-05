@@ -107,6 +107,13 @@ def write_extension_data_to_r2(db):
     
         data[obj.group_id][obj.user_id] = store_data
     
+    for report in accepted_reports:
+        data[report.group_id][report.user_id] = [
+            report.user_id,
+            -1000000000,
+            -1000000000
+        ]
+    
     res = {
         'timestamp': datetime.utcnow().replace(tzinfo=timezone.utc).isoformat(),
         'data': data,
