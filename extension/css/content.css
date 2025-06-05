@@ -6,7 +6,17 @@
 /* Styling for non-group members with transparency */
 .rshf-non-member-transparent {
   opacity: 0.5;
-  transition: opacity 0.3s ease;
+  /* transition: opacity 0.3s ease; */
+}
+
+/* Cheater rank - brown color */
+.rshf-rating-cheater {
+  color: #8B4513 !important;
+  font-weight: bold !important;
+}
+.user-cheater {
+  color: #8B4513 !important;
+  font-weight: bold !important;
 }
 
 .rshf-non-member-transparent:hover {

@@ -13,5 +13,4 @@ vomitinclude.txt
 __pycache__/
 *venv*
 changes.md
-cache
 a.json

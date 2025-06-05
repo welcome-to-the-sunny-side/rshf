@@ -3,6 +3,7 @@
 
 // RANK COLORS
 export const RANK_COLORS = {
+  cheater     : '#8B4513',    // < -999999999 (brown)
   newbie      : '#808080',    //   < 1200
   pupil       : '#008000',    // 1200 – 1399
   specialist  : '#03A89E',    // 1400 – 1599
@@ -31,6 +32,7 @@ export const RANK_BANDS = [
 
 // RANK CLASSES - Maps to Codeforces CSS classes
 export const RANK_CLASSES = {
+  cheater     : 'user-cheater',
   newbie      : 'user-gray',
   pupil       : 'user-green',
   specialist  : 'user-cyan',
@@ -49,6 +51,7 @@ export const RANK_CLASSES = {
  * @returns {string} The color hex code for the rating
  */
 export const getRatingColor = (rating) => {
+  if (rating < -999999999) return RANK_COLORS.cheater;
   for (const band of RANK_BANDS) {
     if (rating >= band.y1 && (band.y2 === undefined || rating < band.y2)) {
       return band.color;
@@ -64,6 +67,7 @@ export const getRatingColor = (rating) => {
  * @returns {string} The rank name
  */
 export const getRankName = (rating) => {
+  if (rating < -999999999) return "Cheater";
   if (rating < 1200) return "Newbie";
   if (rating < 1400) return "Pupil";
   if (rating < 1600) return "Specialist";
@@ -82,6 +86,7 @@ export const getRankName = (rating) => {
  * @returns {string} The CSS class for the rating
  */
 export const getRatingClass = (rating) => {
+  if (rating < -999999999) return RANK_CLASSES.cheater;
   if (rating < 1200) return RANK_CLASSES.newbie;
   if (rating < 1400) return RANK_CLASSES.pupil;
   if (rating < 1600) return RANK_CLASSES.specialist;

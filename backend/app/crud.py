@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from typing import List, Optional, Dict, Any
 
+from sqlalchemy import orm
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, asc, desc
 from datetime import datetime
@@ -114,16 +115,50 @@ def get_group(db: Session, group_id: str) -> Optional[models.Group]:
     return db.query(models.Group).filter(models.Group.group_id == group_id).first()
 
 
+# def list_groups(db: Session):
+#     """
+#     Returns (Group, member_count) tuples.
+#     """
+#     rows = (
+#         db.query(models.Group, func.count(models.GroupMembership.user_id).label("member_count"))
+#         .outerjoin(models.GroupMembership, models.Group.group_id == models.GroupMembership.group_id)
+#         .group_by(models.Group.group_id)
+#         .all()
+#     )
+#     return rows
+
 def list_groups(db: Session):
     """
-    Returns (Group, member_count) tuples.
+    Returns (Group, member_count) tuples with O(G) complexity.
     """
+    # Create a subquery that counts memberships per group
+    membership_count = (
+        db.query(
+            models.GroupMembership.group_id,
+            func.count(models.GroupMembership.user_id).label("member_count")
+        )
+        .group_by(models.GroupMembership.group_id)
+        .subquery()
+    )
+    
+    # Query groups and left join with the count subquery
     rows = (
-        db.query(models.Group, func.count(models.GroupMembership.user_id).label("member_count"))
-        .outerjoin(models.GroupMembership, models.Group.group_id == models.GroupMembership.group_id)
-        .group_by(models.Group.group_id)
+        db.query(
+            models.Group,
+            func.coalesce(membership_count.c.member_count, 0).label("member_count")
+        )
+        .outerjoin(
+            membership_count,
+            models.Group.group_id == membership_count.c.group_id
+        )
+        .options(
+            # Explicitly avoid loading relationships
+            orm.lazyload(models.Group.memberships),
+            orm.lazyload(models.Group.participations)
+        )
         .all()
     )
+    
     return rows
 
 
