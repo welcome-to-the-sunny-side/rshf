@@ -481,7 +481,7 @@ return (
                   onChange={(e) => setContestIds(e.target.value)}
                   disabled={submitLoading}
                   className={formInputStyles.formInput}
-                  placeholder=""
+                  placeholder="Fill in the contest id used by RSHF. For general reports, use an arbitrary contest id."
                 />
               </div>
             </div>
