@@ -295,11 +295,11 @@ export default function User() {
   return (
     <div className="page-container">
       {/* Error message */}
-      {error && (
+      {/* {error && (
         <div className="api-feedback-container error-message">
           {API_MESSAGES.ERROR}
         </div>
-      )}
+      )} */}
       
       {/* Loading indicator */}
       <UserNavBar username={username} isOwnProfile={isOwnProfile} />
