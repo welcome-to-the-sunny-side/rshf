@@ -428,6 +428,24 @@ def list_contests(db: Session, finished: Optional[bool] = None) -> List[models.C
 
 
 def map_cf_contest_to_internal(cf_contest: Dict[str, Any]) -> Dict[str, Any]:
+    contest_name = cf_contest.get("name", "Unknown Contest").lower()
+    
+    # Determine contest type based on name
+    contest_type = models.ContestType.DIV1  # Default to DIV1
+    if "div. 1" in contest_name.lower() or "div 1" in contest_name.lower() or "div.1" in contest_name.lower() or "global" in contest_name.lower():
+        contest_type = models.ContestType.DIV1
+    elif "div. 2" in contest_name.lower() or "div 2" in contest_name.lower() or "div.2" in contest_name.lower():
+        contest_type = models.ContestType.DIV2
+    elif "div. 3" in contest_name.lower() or "div 3" in contest_name.lower() or "div.3" in contest_name.lower():
+        contest_type = models.ContestType.DIV3
+    elif "div. 4" in contest_name.lower() or "div 4" in contest_name.lower() or "div.4" in contest_name.lower():
+        contest_type = models.ContestType.DIV4
+    elif "educational" in contest_name.lower():
+        contest_type = models.ContestType.EDU
+    else:
+        contest_type = models.ContestType.DIV1
+
+    
     return {
         "contest_id": f"cf_{cf_contest['id']}",
         "contest_name": cf_contest.get("name", "Unknown Contest"),
@@ -437,6 +455,7 @@ def map_cf_contest_to_internal(cf_contest: Dict[str, Any]) -> Dict[str, Any]:
         "link": f"https://codeforces.com/contest/{cf_contest['id']}",
         "internal_contest_identifier": str(cf_contest["id"]),
         "finished": cf_contest.get("phase", "BEFORE") == "FINISHED",
+        "contest_type": contest_type,
     }
 
 def get_contest(db: Session, contest_id: str) -> Optional[models.Contest]:
@@ -480,6 +499,7 @@ def update_contest(
     duration_seconds: Optional[int] = None,
     standings: Optional[Dict[str, Any]] = None,
     group_views: Optional[Dict[str, Any]] = None,
+    contest_type: Optional[models.ContestType] = None,
 ) -> Optional[models.Contest]:
     c = db.query(models.Contest).filter(models.Contest.contest_id == contest_id).first()
     if not c:
@@ -496,6 +516,8 @@ def update_contest(
         c.standings = standings
     if group_views is not None:
         c.group_views = group_views
+    if contest_type is not None:
+        c.contest_type = contest_type
     db.commit()
     db.refresh(c)
     return c

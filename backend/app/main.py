@@ -32,15 +32,4 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
 )
 
-async def run_cf_cron_job():
-    while True:
-        update_upcoming_contests(db)
-        update_finished_contests(db)
-        await asyncio.sleep(60 * 60 * 24)  # run every 24 hours
-
-
-# @app.on_event("startup")
-# async def launch_cf_cron_job():
-#     asyncio.create_task(run_cf_cron_job())
-
 print("✅ tables created & routes loaded. ready to go.")

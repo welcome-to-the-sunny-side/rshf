@@ -27,6 +27,7 @@ from app.models import (
     Role,
     User,
     Request,
+    ContestType
 )
 from app.codeforces_api import CodeforcesAPI
 
@@ -95,7 +96,7 @@ def get_cf_standings(contest_id: int) -> List[Tuple[str, int]]:
     url = "https://codeforces.com/api/contest.standings"
     banner(f"cf api → contest {contest_id}")
     try:
-        resp = requests.get(url, params={"contestId": contest_id, "from": 1, "count": 2000}, timeout=10)
+        resp = requests.get(url, params={"contestId": contest_id, "from": 1}, timeout=10)
         data = resp.json()
         time.sleep(2)
         time.sleep(2)
@@ -259,6 +260,23 @@ def seed():
     contest_objs = []
     for cinfo in contest_infos:
         cid = cinfo["id"]
+        contest_name = cinfo.get("name", f"CF {cid}").lower()
+        
+        # Determine contest type based on contest name
+        contest_type = ContestType.DIV1  # Default to DIV1
+        if "div. 1" in contest_name or "div 1" in contest_name or "div.1" in contest_name:
+            contest_type = ContestType.DIV1
+        elif "div. 2" in contest_name or "div 2" in contest_name or "div.2" in contest_name:
+            contest_type = ContestType.DIV2
+        elif "div. 3" in contest_name or "div 3" in contest_name or "div.3" in contest_name:
+            contest_type = ContestType.DIV3
+        elif "div. 4" in contest_name or "div 4" in contest_name or "div.4" in contest_name:
+            contest_type = ContestType.DIV4
+        elif "educational" in contest_name or "edu" in contest_name:
+            contest_type = ContestType.EDU
+        else:
+            contest_type = ContestType.DIV1
+            
         contest = Contest(
             contest_id="c" + str(cid),
             contest_name=cinfo.get("name", f"CF {cid}"),
@@ -266,7 +284,8 @@ def seed():
             start_time_posix=cinfo.get("startTimeSeconds", int(time.time())),
             duration_seconds=cinfo.get("durationSeconds", 7200),
             link=f"https://codeforces.com/contest/{cid}",
-            finished=(cinfo.get("phase", "FINISHED") == "FINISHED")
+            finished=(cinfo.get("phase", "FINISHED") == "FINISHED"),
+            contest_type=contest_type
         )
         db.add(contest)
         contest_objs.append(contest)
@@ -327,6 +346,21 @@ def seed():
     # 6. Add upcoming contest and random registrations
     # Fetch real contest info for upcoming contest
     upcoming_info = get_cf_contest_info(UPCOMING_CONTEST)
+    # Determine upcoming contest type based on name
+    upcoming_name = upcoming_info.get("name", f"CF {UPCOMING_CONTEST}").lower() if upcoming_info else f"CF {UPCOMING_CONTEST}".lower()
+    contest_type = ContestType.DIV1  # Default to DIV1
+    
+    if "div. 1" in upcoming_name or "div 1" in upcoming_name or "div.1" in upcoming_name:
+        contest_type = ContestType.DIV1
+    elif "div. 2" in upcoming_name or "div 2" in upcoming_name or "div.2" in upcoming_name:
+        contest_type = ContestType.DIV2
+    elif "div. 3" in upcoming_name or "div 3" in upcoming_name or "div.3" in upcoming_name:
+        contest_type = ContestType.DIV3
+    elif "div. 4" in upcoming_name or "div 4" in upcoming_name or "div.4" in upcoming_name:
+        contest_type = ContestType.DIV4
+    elif "educational" in upcoming_name or "edu" in upcoming_name:
+        contest_type = ContestType.EDU
+    
     contest_upcoming = Contest(
         contest_id="c"+str(UPCOMING_CONTEST),
         contest_name=upcoming_info.get("name", f"CF {UPCOMING_CONTEST}") if upcoming_info else f"CF {UPCOMING_CONTEST}",
@@ -334,7 +368,8 @@ def seed():
         start_time_posix=upcoming_info.get("startTimeSeconds", int(time.time())+86400) if upcoming_info else int(time.time())+86400,
         duration_seconds=upcoming_info.get("durationSeconds", 7200) if upcoming_info else 7200,
         link=f"https://codeforces.com/contest/{UPCOMING_CONTEST}",
-        finished=False
+        finished=False,
+        contest_type=contest_type
     )
     db.add(contest_upcoming)
     db.commit()

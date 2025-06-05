@@ -5,6 +5,7 @@ from enum import Enum
 from typing import List, Optional, Dict
 from pydantic import BaseModel, Field, constr
 from datetime import datetime
+from app.models import ContestType
 
 # ───────────── common ─────────────
 class Role(str, Enum):
@@ -161,6 +162,7 @@ class CountResponse(BaseModel):
 class ContestOut(BaseModel):
     contest_id: str
     contest_name: str
+    contest_type: Optional[ContestType] = None
     platform: str
     start_time_posix: int
     duration_seconds: Optional[int] = None

@@ -11,6 +11,25 @@ class Role(str, enum.Enum):
     user = "user"
     kicked = "kicked"
 
+class ContestType(str, enum.Enum):
+    DIV1 = "div1"
+    DIV2 = "div2"
+    DIV3 = "div3"
+    DIV4 = "div4"
+    EDU = "edu"
+
+    @property
+    def rating_upper_bound(self) -> int:
+        return {
+            ContestType.DIV1: 9999,
+            ContestType.DIV2: 2099,
+            ContestType.DIV3: 1599,
+            ContestType.DIV4: 1399,
+            ContestType.EDU: 2099,
+        }[self]
+
+    
+
 class ModelBase(Base):
     __abstract__ = True
     timestamp = Column(DateTime, server_default=func.timezone('UTC', func.now()), nullable=False, index=True)
@@ -85,6 +104,9 @@ class Contest(ModelBase):
     standings = Column(JSON, nullable=True)
     finished = Column(Boolean, nullable=False, default=False)
     group_views = Column(JSON, nullable=True) # this is derived data
+
+    contest_type = Column(Enum(ContestType), nullable=False, default=ContestType.DIV1)
+    
 
     participations = relationship("ContestParticipation", back_populates="contest", cascade="all, delete")
     def __repr__(self):

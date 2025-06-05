@@ -1,5 +1,5 @@
 import boto3
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 import io
 import requests
@@ -86,9 +86,9 @@ def read_from_r2(relative_path):
 
     return json.loads(raw.decode("utf-8"))
     
-def write_extension_data_to_r2():
-    db = db_utils.SessionLocal()
+def write_extension_data_to_r2(db):
     group_memberships = db.query(models.GroupMembership).all()
+    accepted_reports = db.query(models.Report).filter(models.Report.accepted == True and models.Report.respondent_role_after == "kicked").all()
     db.close()
     data = dict()
 
@@ -104,16 +104,16 @@ def write_extension_data_to_r2():
         data[obj.group_id][obj.user_id] = store_data
     
     res = {
-        'timestamp': datetime.now().isoformat(),
+        'timestamp': datetime.utcnow().replace(tzinfo=timezone.utc).isoformat(),
         'data': data,
         'data_format': [
             'cf_handle', 'user_group_rating', 'user_group_max_rating'
-        ]
+        ],
     }
     
     extension_data_link = write_to_r2(res, 'extension_data', use_gzip=True)
     timestamp_link = write_to_r2(
-        {'timestamp':datetime.now().isoformat()},
+        {'timestamp':datetime.utcnow().replace(tzinfo=timezone.utc).isoformat()},
         'timestamp'
     )
     print(f"Finished writing {len(group_memberships)} entries to r2")
