@@ -156,6 +156,9 @@ export default function User() {
     };
     
     fetchUserData();
+    setRatingHistoryData({});
+    setCurrentRatingHistory([]);
+    setSelectedGroupIdx(0);
   }, [token, username]);
   
   // Selected group based on the current index
