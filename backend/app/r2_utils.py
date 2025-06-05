@@ -21,7 +21,11 @@ def load_env_file(filepath=".env"):
             value = value.strip().strip('"').strip("'")
             os.environ[key] = value
 
-load_env_file()
+# Only load environment variables if they're not already set
+required_env_vars = ['UPLOAD_ENDPOINT_URL', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'DEV_URL']
+if not all(var in os.environ for var in required_env_vars):
+    load_env_file()
+
 session = boto3.session.Session()
 
 region_name = 'auto'
