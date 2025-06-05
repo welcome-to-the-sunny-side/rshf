@@ -108,8 +108,8 @@ def write_extension_data_to_r2(db):
         data[obj.group_id][obj.user_id] = store_data
     
     for report in accepted_reports:
-        data[report.group_id][report.user_id] = [
-            report.user_id,
+        data[report.group_id][report.respondent_cf_handle] = [
+            report.respondent_cf_handle,
             -1000000000,
             -1000000000
         ]
