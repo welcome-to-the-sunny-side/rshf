@@ -6,6 +6,8 @@ import os
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi import Request as FastApiRequest
+from fastapi_limiter.depends import RateLimiter
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -14,6 +16,14 @@ from app import crud, database, models, schemas
 from typing import List, Optional
 from typing import Union
 
+async def user_key(request: FastApiRequest):
+    user = getattr(request.state, "user", None)
+    if not user:
+        raise HTTPException(status_code=401, detail="User not authenticated")
+    return str(user.user_id)
+
+
+rate_dep = Depends(RateLimiter(times=2, seconds=60, identifier=user_key)) # rate limit: one hit per 30 seconds
 router = APIRouter(prefix="/api")
 
 # ---------- auth boilerplate ----------
@@ -41,7 +51,9 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
 
 
 def get_current_user(
-    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
+    fast_api_request: FastApiRequest,
+    token: str = Depends(oauth2_scheme), 
+    db: Session = Depends(get_db)
 ) -> models.User:
     credentials_error = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED, detail="unauthorized"
@@ -57,6 +69,7 @@ def get_current_user(
     user = crud.get_user(db, uid)
     if not user:
         raise credentials_error
+    fast_api_request.state.user = user
     return user
 
 
@@ -520,6 +533,7 @@ def create_report(
     payload: schemas.ReportCreate,
     db: Session = Depends(get_db),
     current: models.User = Depends(get_current_user),
+    _=Depends(RateLimiter(times=2, seconds=60, identifier=user_key))
 ):
     # any member of the group can file
     

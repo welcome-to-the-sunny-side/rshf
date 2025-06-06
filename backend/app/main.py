@@ -8,12 +8,25 @@ from app.endpoints import router as api_router
 import asyncio
 from app.crud import update_upcoming_contests, update_finished_contests
 from app.database import SessionLocal
-
+import os
+from fastapi_limiter import FastAPILimiter
 
 from fastapi.middleware.cors import CORSMiddleware
+import redis.asyncio as redis
 
 Base.metadata.create_all(bind=engine)
 app = FastAPI(title="rshf api")
+
+@app.on_event("startup")
+async def startup():
+    redis_url = os.getenv("REDIS_URL")
+    r = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
+    await FastAPILimiter.init(r)
+
+@app.on_event("shutdown")
+async def shutdown():
+    await FastAPILimiter.close()
+
 app.include_router(api_router)
 db = SessionLocal()
 
