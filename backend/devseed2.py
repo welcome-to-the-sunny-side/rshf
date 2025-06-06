@@ -29,6 +29,7 @@ from app.models import (
     Request,
     ContestType
 )
+from app.crud import fetch_and_add_contest_to_db_from_cf, update_contest_info_from_cf_api
 from app.codeforces_api import CodeforcesAPI
 
 SEED = 42
@@ -212,7 +213,7 @@ def seed():
     for h in all_handles:
         role = Role.admin if h in SPECIAL_USERS else Role.user
         email = f"{h}@example.com"
-        users.append(User(user_id=h, role=role, cf_handle=h, email_id=email, hashed_password=hash_password(DEFAULT_PASS)))
+        users.append(User(user_id=h, role=role, cf_handle=h, email_id=email, hashed_password=hash_password(DEFAULT_PASS), is_registered=True))
     banner(f"built {len(users)} users")
     db.add_all(users)
     db.commit()
@@ -559,6 +560,13 @@ def seed():
     db.add_all(reqs)
     db.add_all(new_memberships)
     db.commit()
+
+
+    # add a few unregistered users
+    print("adding unregistered users from contest 1890")
+    fetch_and_add_contest_to_db_from_cf(db, 1890)
+    update_contest_info_from_cf_api(db, 1890)
+    print("added unregistered users")
 
     banner("SEED2 DONE – happy hacking 🛠️")
     

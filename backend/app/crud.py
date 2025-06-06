@@ -66,6 +66,8 @@ def update_user(db: Session, user_id: str, payload: schemas.UserUpdate) -> Optio
     user = get_user(db, user_id)
     if not user:
         return None
+    if payload.cf_handle is not None:
+        user.cf_handle = payload.cf_handle
     if payload.password is not None:
         user.hashed_password = hash_password(payload.password)
     if payload.role is not None:
@@ -569,6 +571,13 @@ def update_upcoming_contests(db: Session) -> None:
         db.add_all(to_add)
         db.commit()
 
+def fetch_and_add_contest_to_db_from_cf(db: Session, cf_contest_id: str) -> None:
+    contest = cf_api.contest_standings(cf_contest_id)['contest']
+    db_contest = models.Contest(**map_cf_contest_to_internal(contest))
+    db.add(db_contest)
+    db.commit()
+    
+
 
 def update_contest_info_from_cf_api(db: Session, cf_contest_id: str, group_id: Optional[str] = None) -> None:
     contest = get_contest_by_internal_identifier(db, cf_contest_id)
@@ -578,11 +587,19 @@ def update_contest_info_from_cf_api(db: Session, cf_contest_id: str, group_id: O
     standings = cf_api.contest_standings(contest.internal_contest_identifier)
     group_rank: dict[str, int] = {}
     group_views: dict[str, dict[str, int]] = {}
+    unregistered_users = []
 
     for row in standings["rows"]:
         handle = row["handle"]
         user = get_user_by_handle(db, handle)
         if not user:
+            unregistered_users.append(
+                models.User(
+                    user_id=handle,
+                    cf_handle=handle,
+                    is_registered=False,
+                )
+            )
             continue
 
         parts = filter_contest_participations(
@@ -600,6 +617,7 @@ def update_contest_info_from_cf_api(db: Session, cf_contest_id: str, group_id: O
             )
             gv["total_participants"] += 1
 
+    db.add_all(unregistered_users)
     db.commit()
 
     update_contest(

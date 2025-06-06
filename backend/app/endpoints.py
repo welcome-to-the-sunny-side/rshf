@@ -1,8 +1,9 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import os
 from typing import List, Optional
 import sys
 import os
+import requests
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -23,7 +24,6 @@ async def user_key(request: FastApiRequest):
     return str(user.user_id)
 
 
-rate_dep = Depends(RateLimiter(times=2, seconds=60, identifier=user_key)) # rate limit: one hit per 30 seconds
 router = APIRouter(prefix="/api")
 
 # ---------- auth boilerplate ----------
@@ -212,11 +212,11 @@ def register_user(payload: schemas.UserRegister, db: Session = Depends(get_db)):
     user_id = cf_handle
 
     # Check if user with this cf_handle already exists (as user_id or cf_handle)
-    if crud.get_user(db, user_id) or crud.get_user_by_handle(db, cf_handle):
+    existing_user = crud.get_user(db, user_id) or crud.get_user_by_handle(db, cf_handle)
+    if existing_user and existing_user.is_registered:
         raise HTTPException(400, "A user with this Codeforces handle already exists.")
-
     # Fetch recent submissions from Codeforces API
-    import requests
+    
     try:
         resp = requests.get(
             f"https://codeforces.com/api/user.status?handle={cf_handle}&from=1&count=10"
@@ -239,13 +239,23 @@ def register_user(payload: schemas.UserRegister, db: Session = Depends(get_db)):
     if latest.get('verdict') != 'COMPILATION_ERROR':
         raise HTTPException(400, "Your latest submission to 1188/B is not a COMPILATION_ERROR.")
     # Check time (must be <5 minutes ago)
-    from datetime import datetime, timezone
+    
     now = datetime.now(timezone.utc).timestamp()
     sub_time = latest.get('creationTimeSeconds')
     if sub_time is None:
         raise HTTPException(400, "Could not determine submission time.")
     if now - sub_time > 5 * 60:
         raise HTTPException(400, "Your latest submission to 1188/B is older than 5 minutes.")
+
+    # user is already in db but not registered
+    if existing_user and not existing_user.is_registered:
+        return crud.update_user(db, user_id, schemas.UserUpdate(
+            is_registered=True,
+            email_id=payload.email_id,
+            cf_handle=cf_handle,
+            password=payload.password,
+            role=payload.role
+        ))
 
     # All checks passed, create user
     user_payload = schemas.UserRegister(

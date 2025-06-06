@@ -43,6 +43,7 @@ class UserLogin(BaseModel):
 
 class UserUpdate(BaseModel):
     email_id: Optional[str] = None
+    cf_handle: Optional[str] = None
     password: Optional[str] = None
     role:     Optional[Role] = None
 

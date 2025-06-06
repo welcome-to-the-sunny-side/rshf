@@ -45,7 +45,10 @@ class User(ModelBase):
     atcoder_handle = Column(String, unique=False, index=True, nullable=True)
     codechef_handle = Column(String, unique=False, index=True, nullable=True)
     twitter_handle = Column(String, unique=False, index=True, nullable=True)
-    email_id = Column(String, nullable=False)
+    email_id = Column(String, nullable=False, default="not_registered@rshf.net")
+
+    # registered flag -> has the user actually registered?
+    is_registered = Column(Boolean, nullable=False, default=False)
 
     # hqas to be hashed
     hashed_password = Column(String, nullable=False, default=hash_password("devpass"))
