@@ -17,6 +17,7 @@ import GroupReports from './pages/GroupReports';
 import Report from './pages/Report';
 import ModView from './pages/ModView';
 import GroupModViewRequests from './pages/GroupModViewRequests';
+import GroupModRoute from './components/GroupModRoute';
 import About from './pages/About';
 import Contests from './pages/Contests';
 import Post from './pages/Post';
@@ -95,14 +96,14 @@ export default function App() {
             </PrivateRoute>
           } />
           <Route path="/group/:groupId/modview" element={
-            <PrivateRoute>
+            <GroupModRoute>
               <ModView />
-            </PrivateRoute>
+            </GroupModRoute>
           } />
           <Route path="/group/:groupId/modview/requests" element={
-            <PrivateRoute>
+            <GroupModRoute>
               <GroupModViewRequests />
-            </PrivateRoute>
+            </GroupModRoute>
           } />
           <Route path="/contests" element={
             <PrivateRoute>
