@@ -27,7 +27,8 @@ from app.models import (
     Role,
     User,
     Request,
-    ContestType
+    ContestType,
+    BannedUser
 )
 from app.crud import fetch_and_add_contest_to_db_from_cf, update_contest_info_from_cf_api
 from app.codeforces_api import CodeforcesAPI
@@ -567,6 +568,21 @@ def seed():
     fetch_and_add_contest_to_db_from_cf(db, 1890)
     update_contest_info_from_cf_api(db, 1890)
     print("added unregistered users")
+
+
+    # add a few banned users
+    print("adding banned users")
+    banned_users = [
+        BannedUser(
+            cf_handle="misaki",
+        ),
+        BannedUser(
+            cf_handle="misaki-nakahara",
+        )
+    ]
+    db.add_all(banned_users)
+    db.commit()
+    print("added banned users")
 
     banner("SEED2 DONE – happy hacking 🛠️")
     

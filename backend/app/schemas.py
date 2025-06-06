@@ -46,6 +46,7 @@ class UserUpdate(BaseModel):
     cf_handle: Optional[str] = None
     password: Optional[str] = None
     role:     Optional[Role] = None
+    is_registered: Optional[bool] = None
 
 
 class UserOut(BaseModel):
@@ -58,6 +59,7 @@ class UserOut(BaseModel):
     atcoder_handle: Optional[str] = None
     codechef_handle: Optional[str] = None
     twitter_handle: Optional[str] = None
+    is_registered: Optional[bool] = None
 
     class Config:
         from_attributes = True

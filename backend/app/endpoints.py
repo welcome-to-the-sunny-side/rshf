@@ -211,6 +211,10 @@ def register_user(payload: schemas.UserRegister, db: Session = Depends(get_db)):
     cf_handle = payload.cf_handle.strip()
     user_id = cf_handle
 
+    # check if user is banned
+    if crud.check_if_user_is_banned(db, cf_handle):
+        raise HTTPException(400, " is banned.")
+
     # Check if user with this cf_handle already exists (as user_id or cf_handle)
     existing_user = crud.get_user(db, user_id) or crud.get_user_by_handle(db, cf_handle)
     if existing_user and existing_user.is_registered:
@@ -269,9 +273,13 @@ def register_user(payload: schemas.UserRegister, db: Session = Depends(get_db)):
 
 @router.post("/user/login", response_model=schemas.TokenOut)
 def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    # check if user is banned
+    if crud.check_if_user_is_banned(db, form.username):
+        raise HTTPException(401, "login failed")
+
     user = crud.authenticate_user(db, form.username, form.password)
     if not user:
-        raise HTTPException(401, "invalid credentials")
+        raise HTTPException(401, "login failed")
     token = create_access_token({"sub": user.user_id})
     return {"access_token": token, "token_type": "bearer"}
 

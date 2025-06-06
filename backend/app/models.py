@@ -192,3 +192,8 @@ class Request(ModelBase):
     resolve_timestamp = Column(DateTime, nullable=True, index=True)
     resolver_user_id = Column(String, ForeignKey("users.user_id"), nullable=True, index=True)
     resolver_cf_handle = Column(String, nullable=True, index=True)
+
+
+class BannedUser(ModelBase):
+    __tablename__ = "banned_users"
+    cf_handle = Column(String, primary_key=True, index=True)

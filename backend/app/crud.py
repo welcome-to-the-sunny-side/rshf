@@ -42,11 +42,15 @@ def create_user(db: Session, payload: schemas.UserRegister) -> models.User:
         email_id=payload.email_id,
         hashed_password=hash_password(payload.password),
         role=payload.role,
+        is_registered=payload.is_registered,
     )
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
     return db_user
+
+def check_if_user_is_banned(db: Session, cf_handle: str) -> bool:
+    return db.query(models.BannedUser).filter(models.BannedUser.cf_handle == cf_handle).first() is not None
 
 
 def get_user(db: Session, user_id: str) -> Optional[models.User]:
@@ -74,6 +78,8 @@ def update_user(db: Session, user_id: str, payload: schemas.UserUpdate) -> Optio
         user.role = payload.role
     if payload.email_id is not None:
         user.email_id = payload.email_id
+    if payload.is_registered is not None:
+        user.is_registered = payload.is_registered
     db.commit()
     db.refresh(user)
     return user
@@ -81,7 +87,7 @@ def update_user(db: Session, user_id: str, payload: schemas.UserUpdate) -> Optio
 
 def authenticate_user(db: Session, user_id: str, password: str) -> Optional[models.User]:
     user = get_user(db, user_id)
-    if not user or not verify_password(password, user.hashed_password):
+    if not user or user.is_registered == False or not verify_password(password, user.hashed_password):
         return None
     return user
 
