@@ -15,6 +15,9 @@ from app import schemas
 from app.codeforces_api import cf_api
 from app.schemas import ContestUpdate
 from app import rating
+from sqlalchemy.orm.attributes import flag_modified
+from app.models import ContestType
+
 
 # ───────────────────────────── internal enrichers ─────────────────────────────
 def _enrich_user(db: Session, user: models.User) -> models.User:
@@ -255,7 +258,6 @@ def add_membership(db: Session, payload: schemas.GroupMembershipAdd) -> models.G
     for contest in contests:
         if contest.group_views is not None:
             contest.group_views[payload.group_id]["total_members"] += 1
-            from sqlalchemy.orm.attributes import flag_modified
             flag_modified(contest, "group_views")   
             db.add(contest)
             db.commit()
@@ -292,7 +294,6 @@ def remove_membership(db: Session, user_id: str, group_id: str) -> bool:
         if contest.group_views is not None:
             contest.group_views[group_id]["total_participants"] -= 1
             contest.group_views[group_id]["total_members"] -= 1
-            from sqlalchemy.orm.attributes import flag_modified
             flag_modified(contest, "group_views")   
             db.add(contest)
             db.commit()
@@ -357,8 +358,6 @@ def register_contest_participation(
     )
     views["total_participants"] += 1
 
-    from sqlalchemy.orm.attributes import flag_modified
-
     flag_modified(contest, "group_views")
     db.commit()
     db.refresh(part)
@@ -383,8 +382,6 @@ def deregister_contest_participation(db: Session, user_id: str, group_id: str, c
         contest.group_views[group_id]["total_participants"] = max(
             0, contest.group_views[group_id]["total_participants"] - 1
         )
-        from sqlalchemy.orm.attributes import flag_modified
-
         flag_modified(contest, "group_views")
 
     db.delete(part)
@@ -586,7 +583,6 @@ def fetch_and_add_contest_to_db_from_cf(db: Session, cf_contest_id: str) -> None
     db.commit()
     
 
-from app.models import ContestType
 
 def update_contest_ratings_for_group(db: Session, group_id: str, contest_id: str):
     # Eagerly load contest_type to ensure it's available and to prevent N+1 issues if accessed later in a loop.

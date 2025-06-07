@@ -172,7 +172,9 @@ def check_removal_privileges(db: Session, requester_id: str, target_id: str, gro
     if not (requester_role_rank > target_role_rank or requester_membership.role == "admin"):
         raise HTTPException(status_code=403, detail="Insufficient privilege to remove this user from the group")
 
-
+def check_logged_in(current: models.User = Depends(get_current_user)):
+    if not current:
+        raise HTTPException(401, "not logged in")
 
 # ---------- user endpoints ----------
 
@@ -293,8 +295,7 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
     token = create_access_token({"sub": user.user_id})
     return {"access_token": token, "token_type": "bearer"}
 
-
-@router.get("/user", response_model=schemas.UserOut)
+@router.get("/user", response_model=schemas.UserOut, dependencies=[Depends(check_logged_in)])
 def get_user(
     user_id: str = Query(..., description="User ID to retrieve"),
     db: Session = Depends(get_db),
@@ -320,7 +321,7 @@ def update_user(
     current: models.User = Depends(get_current_user),
 ):
     if user_id != current.user_id:
-        assert_global_privilege(current, "moderator")
+        assert_global_privilege(current, "admin")
     updated = crud.update_user(db, user_id, payload)
     if not updated:
         raise HTTPException(404, "user not found")
@@ -334,15 +335,15 @@ def register_group(
     current: models.User = Depends(get_current_user),
 ):  
     # anyone can register a group
-    assert_global_privilege(current, "user")
+    assert_global_privilege(current, "admin")
     if crud.get_group(db, payload.group_id):
         raise HTTPException(400, "group already exists")
     return crud.create_group(db, payload)
 
-@router.get("/groups", response_model=List[schemas.GroupOut])
+@router.get("/groups", response_model=List[schemas.GroupOut], dependencies=[Depends(check_logged_in)])
 def get_groups(
-    # is_private: Optional[bool] = Query(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current: models.User = Depends(get_current_user),
 ):
     groups_with_counts = crud.list_groups(db)
     result = []
@@ -360,9 +361,7 @@ def get_groups(
         result.append(schemas.GroupOut(**group_dict))
     return result
 
-
-
-@router.get("/group", response_model=schemas.GroupSingle)
+@router.get("/group", response_model=schemas.GroupSingle, dependencies=[Depends(check_logged_in)])
 def get_single_group(
     group_id: str = Query(..., description="Group ID to retrieve"),
     db: Session = Depends(get_db),
@@ -402,31 +401,6 @@ def update_group(
     ensure_group_admin(db, current.user_id, payload.group_id)
     return crud.update_group(db, payload)
 
-
-@router.post("/add_to_group", response_model=schemas.GroupMembershipOut)
-def add_to_group(
-    payload: schemas.GroupMembershipAdd,
-    db: Session = Depends(get_db),
-    current: models.User = Depends(get_current_user),
-):
-    # cannot add someone with role >= your own
-    assert_group_privilege(db, current, payload.user_id, payload.group_id)
-    return crud.add_membership(db, payload)
-
-
-@router.post("/remove_from_group")
-def remove_from_group(
-    payload: schemas.GroupMembershipRemove,
-    db: Session = Depends(get_db),
-    current: models.User = Depends(get_current_user),
-):
-    assert_group_privilege(db, current, payload.user_id, payload.group_id)
-    success = crud.remove_membership(db, payload.user_id, payload.group_id)
-    if not success:
-        raise HTTPException(404, "membership not found")
-    return {"detail": "membership removed"}
-
-
 # ---------- contest ----------
 @router.post("/register_rated")
 def register_rated(
@@ -435,30 +409,31 @@ def register_rated(
     current: models.User = Depends(get_current_user),
 ):
     if payload.user_id != current.user_id:
-        assert_global_privilege(current, "moderator")
+        raise HTTPException(403, "You can only register yourself for contests")
     participation = crud.register_contest_participation(db, payload)
     return {"detail": "participation recorded", "participation_id": participation.contest_id}
 
 # ---------- contest look-up ----------
-@router.get("/contest_participations", response_model=List[schemas.ContestParticipationOut])
+@router.get("/contest_participations", response_model=List[schemas.ContestParticipationOut], dependencies=[Depends(check_logged_in)])
 def get_contest_participations(
     gid: Optional[str] = Query(None, description="group id"),
-    uid: Optional[str] = Query(None, description="user id"),
+    uid: str = Query(None, description="user id"),
     cid: Optional[str] = Query(None, description="contest id"),
     db: Session = Depends(database.get_db),
+    current: models.User = Depends(get_current_user),
 ):
-    if gid is None and uid is None and cid is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="provide at least one of gid, uid, or cid")
+    if uid is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="uid is required")
     return crud.filter_contest_participations(db, gid=gid, uid=uid, cid=cid)
 
 
-@router.get("/contest_participations_size", response_model=schemas.CountResponse)
+@router.get("/contest_participations_size", response_model=schemas.CountResponse, dependencies=[Depends(check_logged_in)])
 def get_contest_participations_size(
     gid: Optional[str] = Query(None, description="Filter by group ID"),
     uid: Optional[str] = Query(None, description="Filter by user ID"),
     cid: Optional[str] = Query(None, description="Filter by contest ID"),
     db: Session = Depends(get_db),
-    # current_user: models.User = Depends(get_current_user), # Add if auth is needed
+    current: models.User = Depends(get_current_user),
 ):
     """
     Get the count of contest participations based on optional filters.
@@ -474,7 +449,7 @@ def get_contest_participations_size(
     return schemas.CountResponse(count=count)
 
 
-@router.get("/contest_participations_range_fetch", response_model=schemas.ContestParticipationRangeFetchResponse)
+@router.get("/contest_participations_range_fetch", response_model=schemas.ContestParticipationRangeFetchResponse, dependencies=[Depends(check_logged_in)])
 def get_contest_participations_range_fetch(
     gid: Optional[str] = Query(None, description="Filter by group ID"),
     uid: Optional[str] = Query(None, description="Filter by user ID"),
@@ -490,6 +465,7 @@ def get_contest_participations_range_fetch(
     offset: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(25, ge=1, le=100, description="Maximum number of records to return"), # Max limit 100
     db: Session = Depends(database.get_db),
+    current: models.User = Depends(get_current_user),
 ):
     if gid is None and uid is None and cid is None:
         raise HTTPException(
@@ -510,7 +486,7 @@ def get_contest_participations_range_fetch(
     return schemas.ContestParticipationRangeFetchResponse(items=result['items'], total=result['total'])
 
 
-@router.get("/contests", response_model=List[schemas.ContestOut])
+@router.get("/contests", response_model=List[schemas.ContestOut], dependencies=[Depends(check_logged_in)])
 def list_contests(
     finished: Optional[bool] = Query(None, description="Filter contests by finished status"),
     db: Session = Depends(database.get_db),
@@ -529,7 +505,7 @@ def list_contests(
     """
     return crud.list_contests(db, finished)
 
-@router.get("/contest", response_model=schemas.ContestOut)
+@router.get("/contest", response_model=schemas.ContestOut, dependencies=[Depends(check_logged_in)])
 def get_contest(
     contest_id: str = Query(..., description="Contest ID"),
     db: Session = Depends(database.get_db),
@@ -564,15 +540,13 @@ def create_report(
     _=Depends(RateLimiter(times=2, seconds=60, identifier=user_key))
 ):
     # any member of the group can file
-    
     if not crud.get_membership(db, current.user_id, payload.group_id):
         raise HTTPException(403, "not a member of that group")
     
     # Generate report_id in O(1) time
-    
     return crud.create_report(db, payload)
 
-@router.get("/report", response_model=List[schemas.ReportOut])
+@router.get("/report", response_model=List[schemas.ReportOut], dependencies=[Depends(check_logged_in)])
 def get_reports(
     report_id: Optional[str] = Query(None, description="Filter by report ID"),
     group_id: Optional[str] = Query(None, description="Filter by group ID"),
@@ -613,7 +587,7 @@ def get_reports(
     return reports
 
 
-@router.get("/report_size", response_model=schemas.CountResponse)
+@router.get("/report_size", response_model=schemas.CountResponse, dependencies=[Depends(check_logged_in)])
 def get_report_size(
     report_id: Optional[str] = Query(None, description="Filter by report ID"),
     group_id: Optional[str] = Query(None, description="Filter by group ID"),
@@ -625,6 +599,7 @@ def get_report_size(
     resolver_cf_handle: Optional[str] = Query(None, description="Filter by resolver's CF handle"),
     accepted: Optional[bool] = Query(None, description="Filter by accepted status"),
     db: Session = Depends(database.get_db),
+    current: models.User = Depends(get_current_user),
 ) -> schemas.CountResponse:
     """
     Get the count of reports with optional filters.
@@ -666,16 +641,15 @@ def resolve_report(
     db: Session = Depends(get_db),
     current: models.User = Depends(get_current_user),
 ):
-    rpt = db.query(models.Report).filter(models.Report.report_id == payload.report_id).first()
-    if not rpt:
-        raise HTTPException(404, "report not found")
-
     # Auth: current user must be the resolver
     if current.user_id != payload.resolver_user_id:
         raise HTTPException(403, "You are not the resolver for this report.")
 
-    # Fetch reporter and respondent roles (after resolution, as provided in payload
+    rpt = db.query(models.Report).filter(models.Report.report_id == payload.report_id).first()
+    if not rpt:
+        raise HTTPException(404, "report not found")
 
+    # Fetch reporter and respondent roles (after resolution, as provided in payload
     reporter_membership = db.query(models.GroupMembership).filter(
         models.GroupMembership.user_id == rpt.reporter_user_id,
         models.GroupMembership.group_id == rpt.group_id,
@@ -696,13 +670,15 @@ def resolve_report(
     moderator_value = role_rank["moderator"]
     max_required = max(respondent_role_value, respondent_final_role_value, moderator_value)
 
+    if respondent_final_role_value > respondent_role_value:
+        raise HTTPException(403, "Respondent's final role is higher than their original role.")
+
     if current_role_value < max_required:
         raise HTTPException(403, f"Insufficient role to resolve this report. Current role: {current_role_value}, required role: {max_required}")
 
     return crud.resolve_report(db, payload)
 
-
-@router.get("/report_range_fetch", response_model=schemas.ReportRangeFetchResponse)
+@router.get("/report_range_fetch", response_model=schemas.ReportRangeFetchResponse, dependencies=[Depends(check_logged_in)])
 def get_reports_range_fetch_endpoint(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
@@ -719,6 +695,7 @@ def get_reports_range_fetch_endpoint(
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(25, ge=1, le=100, description="Maximum number of records to return (max 100)"),
 ):
+    check_logged_in(current_user)
     result = crud.get_reports_range_fetch(
         db=db,
         group_id=group_id,
@@ -749,7 +726,7 @@ def create_announcement(
     return crud.create_announcement(db, payload)
 
 
-@router.get("/announcement", response_model=List[schemas.AnnouncementOut])
+@router.get("/announcement", response_model=List[schemas.AnnouncementOut], dependencies=[Depends(check_logged_in)])
 def list_announcements(
     group_id: Optional[str] = Query(None),
     db: Session = Depends(get_db),
@@ -777,7 +754,7 @@ def update_announcement(
 
 # ========== custom group data endpoints ==========
 
-@router.get("/group_membership_size", response_model=schemas.CountResponse)
+@router.get("/group_membership_size", response_model=schemas.CountResponse, dependencies=[Depends(check_logged_in)])
 def get_group_membership_size(
     gid: str = Query(..., description="Group ID to retrieve member count for"),
     db: Session = Depends(get_db),
@@ -786,6 +763,7 @@ def get_group_membership_size(
     """
     Get the number of all memberships in a group (no status/user filtering).
     """
+    check_logged_in(current_user)
     group = crud.get_group(db, gid)
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
@@ -793,7 +771,7 @@ def get_group_membership_size(
     return schemas.CountResponse(count=count)
 
 
-@router.get("/group_membership_range_fetch", response_model=List[schemas.GroupMembershipOut])
+@router.get("/group_membership_range_fetch", response_model=List[schemas.GroupMembershipOut], dependencies=[Depends(check_logged_in)])
 def get_group_membership_range_fetch(
     gid: str = Query(..., description="Group ID to retrieve data for"),
     sort_by: schemas.GroupMemberSortByField = Query(schemas.GroupMemberSortByField.DATE_JOINED, description="Field to sort by"),
@@ -806,6 +784,7 @@ def get_group_membership_range_fetch(
     """
     Get paginated and sorted memberships for a group (no status/user filtering).
     """
+    check_logged_in(current_user)
     group = crud.get_group(db, gid)
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
@@ -821,7 +800,7 @@ def get_group_membership_range_fetch(
 
 
 
-@router.get("/group_members_custom_data", response_model=List[schemas.CustomMembershipData])
+@router.get("/group_members_custom_data", response_model=List[schemas.CustomMembershipData], dependencies=[Depends(check_logged_in)])
 def get_group_members_custom_data(
     group_id: str = Query(..., description="Group ID to retrieve custom data for"),
     db: Session = Depends(get_db),
@@ -850,7 +829,7 @@ def get_group_members_custom_data(
     return crud.get_group_custom_membership_data(db, group_id)
 
 
-@router.get("/group_members_custom_data_size", response_model=schemas.CountResponse)
+@router.get("/group_members_custom_data_size", response_model=schemas.CountResponse, dependencies=[Depends(check_logged_in)])
 def get_group_members_custom_data_size(
     group_id: str = Query(..., description="Group ID to retrieve member count for"),
     db: Session = Depends(get_db),
@@ -871,6 +850,7 @@ def get_group_members_custom_data_size(
     Raises:
         HTTPException: If group not found or user has insufficient privileges
     """
+    check_logged_in(current_user)
     # Check if the group exists
     group = crud.get_group(db, group_id)
     if not group:
@@ -881,7 +861,7 @@ def get_group_members_custom_data_size(
     return schemas.CountResponse(count=count)
 
 
-@router.get("/group_members_custom_data_range_fetch", response_model=List[schemas.CustomMembershipData])
+@router.get("/group_members_custom_data_range_fetch", response_model=List[schemas.CustomMembershipData], dependencies=[Depends(check_logged_in)])
 def get_group_members_custom_data_range_fetch(
     group_id: str = Query(..., description="Group ID to retrieve data for"),
     sort_by: schemas.GroupMemberSortByField = Query(schemas.GroupMemberSortByField.DATE_JOINED, description="Field to sort by"),
@@ -895,6 +875,7 @@ def get_group_members_custom_data_range_fetch(
     Get paginated and sorted custom membership data for a group.
     The 'number_of_rated_contests' field has been removed from the response.
     """
+    check_logged_in(current_user)
     # Authorization checks
     group = crud.get_group(db, group_id)
     if not group:
@@ -912,39 +893,9 @@ def get_group_members_custom_data_range_fetch(
         limit=limit
     )
 
-# ========== extension query endpoints ==========
-
-@router.post("/extension_query_1", response_model=schemas.ExtensionQuery1Response)
-def extension_query_1(
-    payload: schemas.ExtensionQuery1Request,
-    db: Session = Depends(get_db),
-    current: models.User = Depends(get_current_user),
-):
-    """
-    Get user_group_ratings for a list of cf_handles in a specific group.
-    
-    Args:
-        payload: Request containing group_id and list of cf_handles
-        db: Database session
-        current: Current authenticated user
-        
-    Returns:
-        List of ratings corresponding to each cf_handle
-    """
-    # Check if the group exists
-    group = crud.get_group(db, payload.group_id)
-    if not group:
-        raise HTTPException(404, "Group not found")
-        
-    # Get ratings for the cf_handles
-    ratings = crud.get_ratings_by_cf_handles(db, payload.group_id, payload.cf_handles)
-    
-    return {"ratings": ratings}
-
-
 # ========== membership query endpoint ==========
 
-@router.get("/membership", response_model=schemas.GroupMembershipOut)
+@router.get("/membership", response_model=schemas.GroupMembershipOut, dependencies=[Depends(check_logged_in)])
 def check_membership(
     group_id: str = Query(..., description="Group ID to check membership for"),
     user_id: str = Query(..., description="User ID to check membership for"),
@@ -981,8 +932,7 @@ def check_membership(
     
     return membership
 
-
-@router.get("/get_request", response_model=schemas.RequestOut)
+@router.get("/get_request", response_model=schemas.RequestOut, dependencies=[Depends(check_logged_in)])
 def get_request_endpoint(
     request_id: str = Query(..., description="Request ID to retrieve"),
     db: Session = Depends(get_db),
@@ -1067,42 +1017,6 @@ def update_upcoming_contests_endpoint(
     crud.update_upcoming_contests(db)
     
     return {"message": "Upcoming contests updated successfully"}
-
-
-@router.post("/dev/seed", status_code=status.HTTP_200_OK)
-def run_seed():
-    """
-    Development endpoint to reset and seed the database with test data.
-    This endpoint has NO authentication restrictions and should only be used in development.
-    
-    Returns:
-        Success message
-    """
-    # Import seed function from parent directory
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from devseed import seed
-    
-    # Run the seed function
-    seed()
-    
-    return {"message": "Database has been reset and seeded with test data"}
-
-@router.post("/devseed2", status_code=status.HTTP_200_OK)
-def run_seed2():
-    """
-    Development endpoint to run devseed2.py and seed the database with alternate test data.
-    This endpoint has NO authentication restrictions and should only be used in development.
-
-    Returns:
-        Success message
-    """
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from devseed2 import seed
-    seed()
-    return {"message": "Database has been seeded with devseed2 data"}
-
-
-# ------------------------- custom routes --------------------
 
 # ---------- group membership removal ----------
 @router.post("/remove_user_from_group", status_code=status.HTTP_200_OK)
@@ -1353,7 +1267,7 @@ def deregister_contest_participation_endpoint(
     
     return {"message": "Successfully deregistered from contest"}
 
-@router.get("/contest_group_counts")
+@router.get("/contest_group_counts", dependencies=[Depends(check_logged_in)])
 def contest_group_counts(
     contest_id: str = Query(..., description="Contest ID"),
     group_id: str = Query(..., description="Group ID"),
@@ -1580,7 +1494,7 @@ def resolve_request(
     return resolved_request
 
 
-@router.get("/request_range_fetch", response_model=schemas.RequestRangeFetchResponse)
+@router.get("/request_range_fetch", response_model=schemas.RequestRangeFetchResponse, dependencies=[Depends(check_logged_in)])
 def get_requests_range_fetch_endpoint(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
@@ -1628,7 +1542,7 @@ def get_requests_range_fetch_endpoint(
     return schemas.RequestRangeFetchResponse(items=result["items"], total=result["total"])
 
 
-@router.get("/requests_count", response_model=schemas.CountResponse)
+@router.get("/requests_count", response_model=schemas.CountResponse, dependencies=[Depends(check_logged_in)])
 def get_requests_count(
     group_id: Optional[str] = Query(None, description="Filter by group ID"),
     user_id: Optional[str] = Query(None, description="Filter by user ID"),
