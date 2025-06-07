@@ -144,7 +144,7 @@ def apply_codeforces_rating(participations: List["ContestParticipation"]):
         assert (
             p.contest_id == contest_id
             and p.group_id == group_id
-            and p.took_part
+            # and p.took_part
             and p.rank is not None
         ), "participation list inconsistent"
 
@@ -161,6 +161,8 @@ def apply_codeforces_rating(participations: List["ContestParticipation"]):
     for c in contestants:
         part: "ContestParticipation" = c.party
         part.rating_after = int(part.rating_before + c.delta)
+        part.rating_change = c.delta
+        part.delta = c.delta
 
     return participations
 
