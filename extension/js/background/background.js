@@ -9,8 +9,7 @@ const STORAGE_KEY_RATINGS_DATA = 'rshfRatingsData';
 const STORAGE_KEY_RATINGS_FILE_TIMESTAMP = 'rshfRatingsFileTimestamp'; // Timestamp from the data file
 const STORAGE_KEY_LAST_REFRESHED_AT = 'rshfLastRefreshedAt'; // Local timestamp of last successful refresh
 const STORAGE_KEY_DATA_FORMAT = 'rshfDataFormat'; // Format of the data for each user entry
-// const REFRESH_INTERVAL_SECONDS = 2 * 60 * 60;
-const REFRESH_INTERVAL_SECONDS = 60;
+const REFRESH_INTERVAL_SECONDS = 2 * 60 * 60;   // 2 hours
 const REFRESH_ALARM_NAME = 'rshfRatingsRefreshAlarm';
 
 

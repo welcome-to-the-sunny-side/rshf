@@ -1,24 +1,175 @@
-the next one will be /report_range_fetch 
-it will have the same filters as report, but it will also support sortability and pagination (just like how /contest_participations_range_fetch works for /contest_participations). It will be sortable along: report id, contest id, reporter cf handle, respondent cf handle, report date, 
-
-
-
-
-Let's make a new endpoint at @endpoints.py:
-
-
-type: POST
-url: "/contest_participation_register"
-inputs: 
-- user_id
-- group_id
-- contest_id
-
-what it does:
-- creates a contest participation object with the given parameters -> and also populates cf_handle for that contest_participation object from the given user's cf_handle.
-
-constraints:
-- user_id, group_id and contest_id must exist within their respective tables
-- the current logged in usr must be same as user_id
-- there must exist a group membership with (user_id, group_id) 
-- 
+<div class="roundbox sidebox borderTopRound " style="">
+        <div class="caption titled">→ Recent actions
+            <div class="top-links">
+            </div>
+        </div>
+        <div class="recent-actions">
+            <ul>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/Otherwordly" title="Pupil Otherwordly" class="rated-user user-green">Otherwordly</a>        →
+        <a href="/blog/entry/143571">Happy Eid!</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/89646/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/123gjweq2" title="Candidate Master 123gjweq2" class="rated-user user-violet">123gjweq2</a>        →
+        <a href="/blog/entry/143281">How fast can you type?</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/89646/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/stray" title="Specialist stray" class="rated-user user-cyan">stray</a>        →
+        <a href="/blog/entry/143570">i hate people</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/89646/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/MathModel" title="Specialist MathModel" class="rated-user user-cyan">MathModel</a>        →
+        <a href="/blog/entry/143241">Weekend Practice #7</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/89646/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/MuhammadJon_SundarStem" title="Pupil MuhammadJon_SundarStem" class="rated-user user-green">MuhammadJon_SundarStem</a>        →
+        <a href="/blog/entry/143592">Eid Mubarak to the Codeforces Community</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/89646/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/FelixArg" title="International Master FelixArg" class="rated-user user-orange">FelixArg</a>        →
+        <a href="/blog/entry/143528">Educational Codeforces Round 179 Editorial</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/89646/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/_Muhammad.Along_" title="Newbie _Muhammad.Along_" class="rated-user user-gray">_Muhammad.Along_</a>        →
+        <a href="/blog/entry/143588">Got TLE in 2110D</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/89646/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/MikeMirzayanov" title="Headquarters, MikeMirzayanov" class="rated-user user-admin">MikeMirzayanov</a>        →
+        <a href="/blog/entry/143352">Codeforces: .NET 9 = C# 13 + F# 9</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/89646/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/zhlzt" title="Candidate Master zhlzt" class="rated-user user-violet">zhlzt</a>        →
+        <a href="/blog/entry/143426">Would you like to reach M or any other ratings?</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/89646/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/atcoder_official" title="Unrated, atcoder_official" class="rated-user user-black">atcoder_official</a>        →
+        <a href="/blog/entry/143567">AtCoder Beginner Contest 409 Announcement</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/89646/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/Leo_Pranav" title="Specialist Leo_Pranav" class="rated-user user-cyan">Leo_Pranav</a>        →
+        <a href="/blog/entry/143590">pragma GCC optimize("Ofast") slows down the code!!</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/89646/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/-739397" title="Specialist -739397" class="rated-user user-cyan">-739397</a>        →
+        <a href="/blog/entry/142978">10x Your CP Workflow: A Smooth Bash Script to Automate Parsing, Testing, Stressing and many more</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/89646/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/trivela" title="Pupil trivela" class="rated-user user-green">trivela</a>        →
+        <a href="/blog/entry/143555">Rating you want to reach?</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/89646/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/BledDest" title="International Grandmaster BledDest" class="rated-user user-red">BledDest</a>        →
+        <a href="/blog/entry/118752">Educational Codeforces Round 152 — Editorial</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/89646/images/icons/comment-12x12.png" style="vertical-align:middle;">
+        <img alt="Necropost" title="Necropost" src="//codeforces.org/s/89646/images/icons/hourglass.png" style="vertical-align:middle; position: relative; top: 1px;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/yse" title="Expert yse" class="rated-user user-blue">yse</a>        →
+        <a href="/blog/entry/143502">Codeforces Round 1029 (Div. 3)</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/89646/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/VaishCodes" title="Newbie VaishCodes" class="rated-user user-gray">VaishCodes</a>        →
+        <a href="/blog/entry/143573">different output in vs code and codeforces</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/89646/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/temp-for-talk" title="Newbie temp-for-talk" class="rated-user user-gray">temp-for-talk</a>        →
+        <a href="/blog/entry/143574">LinkedIn Influencers Engagement Farming (Exploitative Version)</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/89646/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/StarSilk" title="Legendary Grandmaster StarSilk" class="rated-user user-legendary"><span class="legendary-user-first-letter">S</span>tarSilk</a>        →
+        <a href="/blog/entry/138866">Ethflow Round 1 (Codeforces Round 1001, Div. 1 + Div. 2) Editorial</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/89646/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/Otherwordly" title="Pupil Otherwordly" class="rated-user user-green">Otherwordly</a>        →
+        <a href="/blog/entry/142475">IOI 2025 Teams</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/89646/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/Nxxlt" title="Expert Nxxlt" class="rated-user user-blue">Nxxlt</a>        →
+        <a href="/blog/entry/143017">EGOI 2025 Teams</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/89646/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/NemanjaSo2005" title="Grandmaster NemanjaSo2005" class="rated-user user-red">NemanjaSo2005</a>        →
+        <a href="/blog/entry/142149">Codeforces Round 1019 (Div. 2) — Editorial</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/89646/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/Arth-Bairagi" title="Newbie Arth-Bairagi" class="rated-user user-gray">Arth-Bairagi</a>        →
+        <a href="/blog/entry/143209">Beginning of a journey</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/89646/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/flamestorm" title="International Master flamestorm" class="rated-user user-orange">flamestorm</a>        →
+        <a href="/blog/entry/116108">Codeforces Round 871 (Div. 4) Editorial</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/89646/images/icons/comment-12x12.png" style="vertical-align:middle;">
+        <img alt="Necropost" title="Necropost" src="//codeforces.org/s/89646/images/icons/hourglass.png" style="vertical-align:middle; position: relative; top: 1px;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/ZERO111" title="Pupil ZERO111" class="rated-user user-green">ZERO111</a>        →
+        <a href="/blog/entry/143582">Eid mubarak</a>
+&nbsp;&nbsp;<img alt="Text created or updated" title="Text created or updated" src="//codeforces.org/s/89646/images/icons/x-update-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/l-_-l" title="Expert l-_-l" class="rated-user user-blue">l-_-l</a>        →
+        <a href="/blog/entry/141047">Codeforces Round 1013 (Div. 3) Editorial</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/89646/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+            </ul>
+        </div>
+            <div class="bottom-links">
+                <table style="width:100%;">
+                    <tbody>
+                        <tr>
+                            <td style="text-align:left;">
+                            </td>
+                            <td style="text-align:right;">
+                                    <a href="/recent-actions">Detailed →</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+    </div>

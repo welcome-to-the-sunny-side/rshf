@@ -61,7 +61,7 @@ function getRatingColor(rating) {
  * Get the rank name based on rating
  */
 function getRankName(rating) {
-  if (rating < -999999999) return "Cheater";
+  if (rating <= -1e9) return "Cheater";
   if (rating < 1200) return "Newbie";
   if (rating < 1400) return "Pupil";
   if (rating < 1600) return "Specialist";
@@ -108,9 +108,198 @@ let rshfSelectedGroupData = null; // Data for the currently selected group
 let rshfDataFileTimestamp = null; // Timestamp from the data file itself
 let currentSelectedGroupId = null;
 
+// Comment filtering: rank order for comparison
+const RANK_ORDER = [
+  "Cheater",
+  "Newbie",
+  "Pupil",
+  "Specialist",
+  "Expert",
+  "Candidate Master",
+  "Master",
+  "International Master",
+  "Grandmaster",
+  "International Grandmaster",
+  "Legendary Grandmaster"
+];
+
+// Main comment filtering function
+function filterCommentsByRank(commentSettings) {
+  // Helper: get rank index
+  function getRankIndex(rank) {
+    return RANK_ORDER.indexOf(rank);
+  }
+
+  // Helper: get assumed rating for a user
+  function getAssumedRating(username, cfRating) {
+    if (rshfSelectedGroupData && rshfSelectedGroupData[username]) {
+      // In group
+      if (commentSettings.groupAssumedRating === 'rshf') {
+        return rshfSelectedGroupData[username][1];
+      } else if (commentSettings.groupAssumedRating === 'official_cf' && cfRating !== undefined && cfRating !== null) {
+        return cfRating;
+      } else {
+        return rshfSelectedGroupData[username][1];
+      }
+    } else {
+      // Not in group
+      if (commentSettings.nonMemberAssumedRating === 'newbie') {
+        return 0; // Newbie
+      } else if (commentSettings.nonMemberAssumedRating === 'official_cf' && cfRating !== undefined && cfRating !== null) {
+        return cfRating;
+      } else {
+        return 0;
+      }
+    }
+  }
+
+  // For each .comment
+  document.querySelectorAll('.comment').forEach(commentEl => {
+    // Try to get username from .avatar .rated-user or .avatar a[title]
+    let username = null;
+    let cfRating = null;
+    const avatarLink = commentEl.querySelector('.avatar .rated-user, .avatar a[title]');
+    if (avatarLink) {
+      // Username is always the last word in the title (e.g. "Newbie oaxplyn" or "Unrated, Conqueror_of_Dominater69")
+      const title = avatarLink.getAttribute('title') || '';
+      const match = title.match(/(?:\w+\s)?([\w-]+)$/);
+      if (match) {
+        username = match[1];
+      }
+      // Try to get CF rating from the class (user-*)
+      const classList = avatarLink.classList;
+      if (classList) {
+        const rank = classList[1];
+        if (rank === 'user-gray') cfRating = 0;
+        else if (rank === 'user-green') cfRating = 1200;
+        else if (rank === 'user-cyan') cfRating = 1400;
+        else if (rank === 'user-blue') cfRating = 1600;
+        else if (rank === 'user-violet') cfRating = 1900;
+        else if (rank === 'user-orange') cfRating = 2100;
+        else if (rank === 'user-red') cfRating = 2400;
+        else if (rank === 'user-legendary') cfRating = 3000;
+        else if (rank == 'user-4000') cfRating = 4000;
+        else cfRating = 0;
+      }
+    }
+
+    // If username not found, skip
+    if (!username) return;
+    // Get assumed rating and rank
+    const assumedRating = getAssumedRating(username, cfRating);
+    const userRank = getRankName(assumedRating);
+    const userRankIdx = getRankIndex(userRank);
+    const lowerboundIdx = getRankIndex(
+      getRankNameForDropdownValue(commentSettings.rankLowerbound)
+    );
+
+    // Show or hide comment based on comparison
+    const shownComment = commentEl.querySelector('.shown-comment');
+    const hiddenComment = commentEl.querySelector('.hidden-comment');
+    if (userRankIdx >= lowerboundIdx) {
+      // Show
+      if (shownComment) shownComment.style.display = '';
+      if (hiddenComment) hiddenComment.style.display = 'none';
+    } else {
+      // Hide
+      if (shownComment) shownComment.style.display = 'none';
+      if (hiddenComment) hiddenComment.style.display = '';
+    }
+  });
+}
+
+// Blog Filtering: Remove blogs from recent actions if below threshold
+function filterBlogsByRank(blogSettings) {
+  // Helper: get rank index
+  function getRankIndex(rank) {
+    return RANK_ORDER.indexOf(rank);
+  }
+  // Helper: get assumed rating for a user
+  function getAssumedRating(username, cfRating) {
+    if (rshfSelectedGroupData && rshfSelectedGroupData[username]) {
+      // In group
+      if (blogSettings.groupAssumedRating === 'rshf') {
+        return rshfSelectedGroupData[username][1];
+      } else if (blogSettings.groupAssumedRating === 'official_cf' && cfRating !== undefined && cfRating !== null) {
+        return cfRating;
+      } else {
+        return rshfSelectedGroupData[username][1];
+      }
+    } else {
+      // Not in group
+      if (blogSettings.nonMemberAssumedRating === 'newbie') {
+        return 0; // Newbie
+      } else if (blogSettings.nonMemberAssumedRating === 'official_cf' && cfRating !== undefined && cfRating !== null) {
+        return cfRating;
+      } else {
+        return 0;
+      }
+    }
+  }
+
+  console.log(blogSettings);
+
+  // Find all recent blog action <li> entries
+  document.querySelectorAll('.recent-actions li').forEach(li => {
+    const userLink = li.querySelector('a.rated-user');
+    if (!userLink) return;
+    // Username from link text or title
+    let username = null;
+    let cfRating = null;
+    // Try to get username from title (e.g. "Pupil Otherwordly")
+    const title = userLink.getAttribute('title') || '';
+    const match = title.match(/(?:\w+\s)?([\w-]+)$/);
+    if (match) {
+      username = match[1];
+    }
+    // Map user class to rating leftbound
+    const classList = userLink.classList;
+    if (classList) {
+      // Use same mapping as comment filtering
+      const rank = Array.from(classList).find(cls => cls.startsWith('user-'));
+      if (rank === 'user-gray') cfRating = 0;
+      else if (rank === 'user-green') cfRating = 1200;
+      else if (rank === 'user-cyan') cfRating = 1400;
+      else if (rank === 'user-blue') cfRating = 1600;
+      else if (rank === 'user-violet') cfRating = 1900;
+      else if (rank === 'user-orange') cfRating = 2100;
+      else if (rank === 'user-red') cfRating = 2400;
+      else if (rank === 'user-legendary') cfRating = 3000;
+      else if (rank == 'user-4000') cfRating = 4000;
+      else cfRating = 0;
+    }
+    if (!username) return;
+    const assumedRating = getAssumedRating(username, cfRating);
+    const userRank = getRankName(assumedRating);
+    const userRankIdx = getRankIndex(userRank);
+    const lowerboundIdx = getRankIndex(getRankNameForDropdownValue(blogSettings.rankLowerbound));
+    if (userRankIdx < lowerboundIdx) {
+      // Remove blog entry
+      li.remove();
+    }
+  });
+}
+
+// Map dropdown value to rank name (for legacy or display)
+function getRankNameForDropdownValue(val) {
+  switch (val) {
+    case 'cheater': return 'Cheater';
+    case 'newbie': return 'Newbie';
+    case 'pupil': return 'Pupil';
+    case 'specialist': return 'Specialist';
+    case 'expert': return 'Expert';
+    case 'candmaster': return 'Candidate Master';
+    case 'master': return 'Master';
+    case 'intmaster': return 'International Master';
+    case 'grandmaster': return 'Grandmaster';
+    case 'intgrandmaster': return 'International Grandmaster';
+    case 'legend': return 'Legendary Grandmaster';
+    default: return 'Newbie';
+  }
+}
+
 // Initialize content script
 (function() {
-  console.log('RSHF Codeforces Rating extension initialized');
   initializeExtension();
 })();
 
@@ -122,11 +311,22 @@ async function initializeExtension() {
 
   // Get selected group from storage
   const localData = await new Promise(resolve => {
-    chrome.storage.local.get(['selectedGroup', 'rshfRatingsData', 'rshfRatingsFileTimestamp'], result => resolve(result));
+    chrome.storage.local.get([
+      'selectedGroup',
+      'rshfRatingsData',
+      'rshfRatingsFileTimestamp',
+      // Comment filtering settings:
+      'commentGroupAssumedRating',
+      'commentNonMemberAssumedRating',
+      'commentRankLowerbound',
+      // Blog filtering settings:
+      'blogGroupAssumedRating',
+      'blogNonMemberAssumedRating',
+      'blogRankLowerbound'
+    ], resolve);
   });
 
   if (!localData.selectedGroup || !localData.selectedGroup.group_id) {
-    console.log('RSHF: No group selected.');
     return;
   }
   currentSelectedGroupId = localData.selectedGroup.group_id;
@@ -147,6 +347,26 @@ async function initializeExtension() {
   }
 
   const settings = await getStoredSettings();
+
+  // --- Comment Filtering ---
+  const commentSettings = {
+    groupAssumedRating: localData.commentGroupAssumedRating || 'rshf',
+    nonMemberAssumedRating: localData.commentNonMemberAssumedRating || 'official_cf',
+    rankLowerbound: localData.commentRankLowerbound || 'newbie'
+  };
+  // Only filter comments on blog entry pages
+  if (window.location.href.startsWith('https://codeforces.com/blog/entry')) {
+    filterCommentsByRank(commentSettings);
+  }
+
+  // --- Blog Filtering ---
+  const blogSettings = {
+    groupAssumedRating: localData.blogGroupAssumedRating || 'rshf',
+    nonMemberAssumedRating: localData.blogNonMemberAssumedRating || 'official_cf',
+    rankLowerbound: localData.blogRankLowerbound || 'newbie'
+  };
+  filterBlogsByRank(blogSettings);
+
   processPage(settings, localData.selectedGroup.group_name); // Pass group_name for display purposes
 }
 
@@ -239,14 +459,12 @@ async function processProfileBox(settings, group_display_name) {
   
   // Only on /profile pages: fetch data from API
   if (window.location.pathname.startsWith('/profile/')) {
-    console.log(`RSHF: Processing profile for ${username}`);
     
     // Remove any previous RSHF elements
     const existingRshfLi = profileBox.querySelector('.rshf-rating-li');
     if (existingRshfLi) existingRshfLi.remove();
     if (!rshfSelectedGroupData || !rshfSelectedGroupData[username]) {
         // User not found in memory data - apply non-member styling
-        console.log('RSHF: User not in group (checked in memory), applying non-member styling');
         const maxRatingSpans = ratingLiElement?.querySelectorAll('.smaller span');
         //Apply class to non-group members according to settings, using no hardcoded values
         switch (settings.nonMemberDisplay) {
@@ -282,9 +500,6 @@ async function processProfileBox(settings, group_display_name) {
       const rating = rshfSelectedGroupData[username][1];
       const maxRating = rshfSelectedGroupData[username][2];
       const groupName = group_display_name;
-      console.log(rshfSelectedGroupData[username]);
-
-      console.log(`RSHF: User ${username} has rating ${rating} and max rating ${maxRating} in group ${groupName}`);
       
       const ratingInfo = getRatingInfo(rating);
 

@@ -460,7 +460,7 @@ export default function Group() {
         {/* Announcements section - 75% width */}
         <div className={`${styles.contentBoxLeft} announcementsTable`}>
           <PagedTableBox 
-            title={<Link to={`/group/${groupId}/announcements`} className={titleStyles.titleLink}>Announcements</Link>}
+            title="Announcements"
             columns={announcementColumns}
             data={displayAnnouncementData}
             noDataMessage={announcementNoDataMessage}

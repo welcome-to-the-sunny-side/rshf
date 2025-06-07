@@ -24,9 +24,21 @@
         </button>
       </div>
     </div>
+
+        <!-- Refresh Data Box -->
+        <div class="content-box-title">Data</div>
+        <div class="content-box">
+          <div class="info-box">
+            The browser extension will automatically refresh rating data every 2 hours (note that the server pushes updates every hour, so changes may be delayed by up to an hour).
+          </div>
+          <div id="ratings-refresh-section">
+            <button id="refreshRatingsBtn" class="button green-button">Refresh</button>
+            <p id="refreshStatus" style="margin-top: 8px; font-size: 0.8rem; color: #666; white-space: pre-line;">Last refreshed: Never</p>
+          </div>
+        </div>
     
     <!-- Settings Box -->
-    <div class="content-box-title">Display Settings</div>
+    <div class="content-box-title">Rating/Color Display Settings</div>
     <div class="content-box">
       <div class="settings">
         <div class="form-group">
@@ -65,17 +77,131 @@
       </div>
     </div>
     
-    <!-- Refresh Data Box -->
-    <div class="content-box-title">Data</div>
+    <!-- Comment Filtering Box -->
+    <div class="content-box-title">Comment Filtering</div>
     <div class="content-box">
-      <div class="info-box">
-        The browser extension will automatically refresh rating data every 2 hours (note that the server pushes updates every hour, so changes may be delayed by up to an hour).
-      </div>
-      <div id="ratings-refresh-section">
-        <button id="refreshRatingsBtn" class="button green-button">Refresh</button>
-        <p id="refreshStatus" style="margin-top: 8px; font-size: 0.8rem; color: #666; white-space: pre-line;">Last refreshed: Never</p>
+      <div class="settings">
+        <div class="form-group">
+          <label for="comment-group-assumed-rating">Assumed rating for group members:</label>
+          <div class="custom-dropdown" id="comment-group-assumed-rating-dropdown">
+            <div class="dropdown-selected" tabindex="0" id="comment-group-assumed-rating-selected">RSHF Rating</div>
+            <ul class="dropdown-list" id="comment-group-assumed-rating-list" style="display: none;">
+              <li class="dropdown-option selected" data-value="rshf">RSHF Rating</li>
+              <li class="dropdown-option" data-value="official_cf">CF Rating</li>
+            </ul>
+            <select id="comment-group-assumed-rating" style="display: none;">
+              <option value="rshf">RSHF Rating</option>
+              <option value="official_cf">CF Rating</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="comment-non-member-assumed-rating">Assumed rating for non-members:</label>
+          <div class="custom-dropdown" id="comment-non-member-assumed-rating-dropdown">
+            <div class="dropdown-selected" tabindex="0" id="comment-non-member-assumed-rating-selected">CF Rating</div>
+            <ul class="dropdown-list" id="comment-non-member-assumed-rating-list" style="display: none;">
+              <li class="dropdown-option selected" data-value="official_cf">CF Rating</li>
+              <li class="dropdown-option" data-value="newbie">Newbie</li>
+            </ul>
+            <select id="comment-non-member-assumed-rating" style="display: none;">
+              <option value="official_cf">CF Rating</option>
+              <option value="newbie">Newbie</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="comment-rank-lowerbound">Rank lowerbound for shown comments (inclusive):</label>
+          <div class="custom-dropdown" id="comment-rank-lowerbound-dropdown">
+            <div class="dropdown-selected" tabindex="0" id="comment-rank-lowerbound-selected">Newbie</div>
+            <ul class="dropdown-list" id="comment-rank-lowerbound-list" style="display: none;">
+              <li class="dropdown-option selected" data-value="cheater">Cheater</li>
+              <li class="dropdown-option" data-value="newbie">Newbie</li>
+              <li class="dropdown-option" data-value="pupil">Pupil</li>
+              <li class="dropdown-option" data-value="specialist">Specialist</li>
+              <li class="dropdown-option" data-value="expert">Expert</li>
+              <li class="dropdown-option" data-value="candmaster">Candidate Master</li>
+              <li class="dropdown-option" data-value="master">Master</li>
+              <li class="dropdown-option" data-value="grandmaster">Grandmaster</li>
+              <li class="dropdown-option" data-value="legend">Legendary Grandmaster</li>
+            </ul>
+            <select id="comment-rank-lowerbound" style="display: none;">
+              <option value="cheater">Cheater</option>
+              <option value="newbie">Newbie</option>
+              <option value="pupil">Pupil</option>
+              <option value="specialist">Specialist</option>
+              <option value="expert">Expert</option>
+              <option value="candmaster">Candidate Master</option>
+              <option value="master">Master</option>
+              <option value="grandmaster">Grandmaster</option>
+              <option value="legend">Legendary Grandmaster</option>
+            </select>
+          </div>
+        </div>
       </div>
     </div>
+
+        <!-- Blog Filtering Box -->
+        <div class="content-box-title">Blog Filtering</div>
+        <div class="content-box">
+          <div class="settings">
+            <div class="form-group">
+              <label for="blog-group-assumed-rating">Assumed rating for group members:</label>
+              <div class="custom-dropdown" id="blog-group-assumed-rating-dropdown">
+                <div class="dropdown-selected" tabindex="0" id="blog-group-assumed-rating-selected">RSHF Rating</div>
+                <ul class="dropdown-list" id="blog-group-assumed-rating-list" style="display: none;">
+                  <li class="dropdown-option selected" data-value="rshf">RSHF Rating</li>
+                  <li class="dropdown-option" data-value="official_cf">CF Rating</li>
+                </ul>
+                <select id="blog-group-assumed-rating" style="display: none;">
+                  <option value="rshf" selected>RSHF Rating</option>
+                  <option value="official_cf">CF Rating</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="blog-non-member-assumed-rating">Assumed rating for non-members:</label>
+              <div class="custom-dropdown" id="blog-non-member-assumed-rating-dropdown">
+                <div class="dropdown-selected" tabindex="0" id="blog-non-member-assumed-rating-selected">CF Rating</div>
+                <ul class="dropdown-list" id="blog-non-member-assumed-rating-list" style="display: none;">
+                  <li class="dropdown-option selected" data-value="official_cf">CF Rating</li>
+                  <li class="dropdown-option" data-value="newbie">Newbie</li>
+                </ul>
+                <select id="blog-non-member-assumed-rating" style="display: none;">
+                  <option value="official_cf" selected>CF Rating</option>
+                  <option value="newbie">Newbie</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="blog-rank-lowerbound">Rank lowerbound for shown blogs (inclusive):</label>
+              <div class="custom-dropdown" id="blog-rank-lowerbound-dropdown">
+                <div class="dropdown-selected" tabindex="0" id="blog-rank-lowerbound-selected">Newbie</div>
+                <ul class="dropdown-list" id="blog-rank-lowerbound-list" style="display: none;">
+                  <li class="dropdown-option" data-value="cheater">Cheater</li>
+                  <li class="dropdown-option selected" data-value="newbie">Newbie</li>
+                  <li class="dropdown-option" data-value="pupil">Pupil</li>
+                  <li class="dropdown-option" data-value="specialist">Specialist</li>
+                  <li class="dropdown-option" data-value="expert">Expert</li>
+                  <li class="dropdown-option" data-value="candmaster">Candidate Master</li>
+                  <li class="dropdown-option" data-value="master">Master</li>
+                  <li class="dropdown-option" data-value="grandmaster">Grandmaster</li>
+                  <li class="dropdown-option" data-value="legend">Legendary Grandmaster</li>
+                </ul>
+                <select id="blog-rank-lowerbound" style="display: none;">
+                  <option value="cheater">Cheater</option>
+                  <option value="newbie" selected>Newbie</option>
+                  <option value="pupil">Pupil</option>
+                  <option value="specialist">Specialist</option>
+                  <option value="expert">Expert</option>
+                  <option value="candmaster">Candidate Master</option>
+                  <option value="master">Master</option>
+                  <option value="grandmaster">Grandmaster</option>
+                  <option value="legend">Legendary Grandmaster</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
   </div>
   <script src="js/popup/popup.js"></script>
 </body>

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "RSHF Codeforces Rating",
+  "name": "RSHF",
   "version": "1.0.0",
-  "description": "Replaces Codeforces ratings with RSHF alternative rating system",
+  "description": "qol improvements",
   "permissions": [
     "storage",
     "activeTab",
