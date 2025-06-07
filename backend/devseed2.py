@@ -404,6 +404,19 @@ def seed():
     for idx, (reporter, respondent) in enumerate(report_pairs):
         resolved = idx % 2 == 0
         resolver = random.choice(SPECIAL_USERS) if resolved else None
+
+        reporter_obj = db.query(User).filter_by(user_id=reporter).first()
+        respondent_obj = db.query(User).filter_by(user_id=respondent).first()
+        resolver_obj = db.query(User).filter_by(user_id=resolver).first() if resolver else None
+
+        reporter_membership = db.query(GroupMembership).filter_by(user_id=reporter, group_id="main").first()
+        respondent_membership = db.query(GroupMembership).filter_by(user_id=respondent, group_id="main").first()
+        resolver_membership = db.query(GroupMembership).filter_by(user_id=resolver, group_id="main").first() if resolver else None
+
+        reporter_rating_at_report_time = reporter_membership.user_group_rating
+        respondent_rating_at_report_time = respondent_membership.user_group_rating
+        resolver_rating_at_resolve_time = resolver_membership.user_group_rating if resolver else None
+
         report = Report(
             report_id=f"r{idx}",
             group_id="main",
@@ -419,6 +432,9 @@ def seed():
             resolved=resolved,
             resolver_user_id=resolver,
             resolver_cf_handle=resolver if resolver else None,
+            reporter_rating_at_report_time=reporter_rating_at_report_time,
+            respondent_rating_at_report_time=respondent_rating_at_report_time,
+            resolver_rating_at_resolve_time=resolver_rating_at_resolve_time,
             accepted=bool(random.getrandbits(1)) if resolved else None
         )
         reports.append(report)

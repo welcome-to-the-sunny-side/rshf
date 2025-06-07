@@ -593,7 +593,10 @@ def update_contest_info_from_cf_api(db: Session, cf_contest_id: str, group_id: O
     standings = cf_api.contest_standings(contest.internal_contest_identifier)
     group_rank: dict[str, int] = {}
     group_views: dict[str, dict[str, int]] = {}
+
+    # add unregistered users to db along with dummy memberships to "main"
     unregistered_users = []
+    unregistered_memberships = []
 
     for row in standings["rows"]:
         handle = row["handle"]
@@ -604,6 +607,14 @@ def update_contest_info_from_cf_api(db: Session, cf_contest_id: str, group_id: O
                     user_id=handle,
                     cf_handle=handle,
                     is_registered=False,
+                )
+            )
+            unregistered_memberships.append(
+                models.GroupMembership(
+                    user_id=handle,
+                    group_id="main",
+                    cf_handle=handle,
+                    role="user",
                 )
             )
             continue

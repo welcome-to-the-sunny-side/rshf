@@ -269,7 +269,17 @@ def register_user(payload: schemas.UserRegister, db: Session = Depends(get_db)):
         password=payload.password,
         role=payload.role
     )
-    return crud.create_user(db, user_payload)
+    user = crud.create_user(db, user_payload)
+
+    # Add user to the 'main' group
+    membership_payload = schemas.GroupMembershipAdd(
+        user_id=user.user_id,
+        group_id="main",
+        cf_handle=user.cf_handle,
+        role=schemas.Role.user
+    )
+    crud.add_membership(db, membership_payload)
+    return user
 
 @router.post("/user/login", response_model=schemas.TokenOut)
 def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
