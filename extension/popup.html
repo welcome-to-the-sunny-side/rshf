@@ -7,49 +7,73 @@
   <link rel="stylesheet" href="css/popup.css">
 </head>
 <body>
-  <div class="popup-container">
-    <!-- Main View (always visible, no login needed) -->
-    <div id="main-view" class="view" style="display: block;">
-      <div class="logo-container" style="text-align:center; margin-bottom:12px;">
-        <img src="images/logo.png" alt="RSHF Logo" class="logo" style="max-width:100px;" />
-      </div>
-      
+  <div class="popup-container standardTextFont">
+    <!-- Group Selection Box -->
+    <div class="content-box-title">Group Selection</div>
+    <div class="content-box">
       <div class="form-group">
-        <label for="group-input">Enter Group Name</label>
+        <label for="group-input">Group Name:</label>
         <input
           type="text"
           id="group-input"
           placeholder="Enter group name"
+          class="standardTextFont"
         />
-        <button id="set-group-button" class="button secondary-button" style="margin-top: 8px;">
+        <button id="set-group-button" class="button primary-button" style="margin-top: 12px;">
           Set Group
         </button>
       </div>
-      
+    </div>
+    
+    <!-- Settings Box -->
+    <div class="content-box-title">Display Settings</div>
+    <div class="content-box">
       <div class="settings">
-        <h4>Settings</h4>
         <div class="form-group">
-            <label for="in-group-display">Group-Members</label>
-            <select id="in-group-display">
+          <label for="in-group-display">Group Members</label>
+          <div class="custom-dropdown" id="in-group-dropdown">
+            <div class="dropdown-selected" tabindex="0" id="in-group-display-selected">RSHF Rating</div>
+            <ul class="dropdown-list" id="in-group-display-list" style="display: none;">
+              <li class="dropdown-option selected" data-value="rshf">RSHF Rating</li>
+              <li class="dropdown-option" data-value="official_cf">CF Rating</li>
+            </ul>
+            <select id="in-group-display" style="display: none;">
               <option value="rshf">RSHF Rating</option>
               <option value="official_cf">CF Rating</option>
             </select>
           </div>
-        <div class="form-group">
-          <label for="non-member-display">Non-members</label>
-          <select id="non-member-display">
-            <option value="transparent">Transparent</option>
-            <option value="strike-through">Strike-through</option>
-            <option value="newbie">Gray</option>
-            <option value="plain">CF Rating</option>
-          </select>
         </div>
-
+        
+        <div class="form-group">
+          <label for="non-member-display">Non-Members:</label>
+          <div class="custom-dropdown" id="non-member-dropdown">
+            <div class="dropdown-selected" tabindex="0" id="non-member-display-selected">Transparent</div>
+            <ul class="dropdown-list" id="non-member-display-list" style="display: none;">
+              <li class="dropdown-option selected" data-value="transparent">Transparent</li>
+              <li class="dropdown-option" data-value="strike-through">Strike-through</li>
+              <li class="dropdown-option" data-value="newbie">Gray</li>
+              <li class="dropdown-option" data-value="plain">CF Rating</li>
+            </ul>
+            <select id="non-member-display" style="display: none;">
+              <option value="transparent">Transparent</option>
+              <option value="strike-through">Strike-through</option>
+              <option value="newbie">Gray</option>
+              <option value="plain">CF Rating</option>
+            </select>
+          </div>
+        </div>
       </div>
-      
-      <div id="ratings-refresh-section" style="margin-top: 16px;">
-        <button id="refreshRatingsBtn" class="button">Refresh Ratings Data</button>
-        <p id="refreshStatus">Last refreshed: Never</p>
+    </div>
+    
+    <!-- Refresh Data Box -->
+    <div class="content-box-title">Data</div>
+    <div class="content-box">
+      <div class="info-box">
+        The browser extension will automatically refresh rating data every 2 hours (note that the server pushes updates every hour, so changes may be delayed by up to an hour).
+      </div>
+      <div id="ratings-refresh-section">
+        <button id="refreshRatingsBtn" class="button green-button">Refresh</button>
+        <p id="refreshStatus" style="margin-top: 8px; font-size: 0.8rem; color: #666; white-space: pre-line;">Last refreshed: Never</p>
       </div>
     </div>
   </div>
