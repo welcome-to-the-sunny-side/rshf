@@ -48,7 +48,7 @@ class User(ModelBase):
     email_id = Column(String, nullable=False, default="not_registered@rshf.net")
 
     # registered flag -> has the user actually registered?
-    is_registered = Column(Boolean, nullable=False, default=False)
+    is_registered = Column(Boolean, nullable=False, default=True)
 
     # hqas to be hashed
     hashed_password = Column(String, nullable=False, default=hash_password("devpass"))
@@ -77,8 +77,8 @@ class Group(ModelBase):
 class GroupMembership(ModelBase):
     __tablename__ = "group_memberships"
 
-    user_id = Column(String, ForeignKey("users.user_id"))
-    group_id = Column(String, ForeignKey("groups.group_id"))
+    user_id = Column(String, ForeignKey("users.user_id"), index=True)
+    group_id = Column(String, ForeignKey("groups.group_id"), index=True)
     role = Column(Enum(Role), nullable=False, default=Role.user, index=True)
 
     user_group_rating = Column(Integer, nullable=False, default=1500, index=True)
@@ -99,7 +99,7 @@ class Contest(ModelBase):
     __tablename__ = "contests"
     contest_id = Column(String, primary_key=True, index=True)
     contest_name = Column(String, nullable=False)
-    platform = Column(String, nullable=False, default="Codeforces")
+    platform = Column(String, nullable=False, default="Codeforces", index=True)
     start_time_posix = Column(Integer, nullable=False, index=True)
     duration_seconds = Column(Integer, nullable=True)
     link = Column(String, nullable=False)
@@ -120,9 +120,9 @@ class Contest(ModelBase):
 class ContestParticipation(ModelBase):
     __tablename__ = "contest_participations"
 
-    user_id = Column(String, ForeignKey("users.user_id"), primary_key=True)
-    group_id = Column(String, ForeignKey("groups.group_id"), primary_key=True)
-    contest_id = Column(String, ForeignKey("contests.contest_id"), primary_key=True)
+    user_id = Column(String, ForeignKey("users.user_id"), primary_key=True, index=True)
+    group_id = Column(String, ForeignKey("groups.group_id"), primary_key=True, index=True)
+    contest_id = Column(String, ForeignKey("contests.contest_id"), primary_key=True, index=True)
 
     rank = Column(Integer, nullable=True, index=True)
     delta = Column(Integer, nullable=True)

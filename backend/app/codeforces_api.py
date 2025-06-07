@@ -9,6 +9,12 @@ import hashlib
 import secrets
 from typing import List, Dict, Any, Optional, Union
 from datetime import datetime
+import os
+import json
+import logging
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 
 class CodeforcesAPI:
@@ -33,13 +39,16 @@ class CodeforcesAPI:
         self.api_secret = api_secret
         self.session = requests.Session()
         self.last_request_time = 0
+        logger.info("CodeforcesAPI client initialized.")
         
     def _rate_limit(self):
         """Ensure we don't exceed 5 requests per second."""
         current_time = time.time()
         time_since_last_request = current_time - self.last_request_time
         if time_since_last_request < 0.2:  # 5 requests per second = 0.2 seconds between requests
-            time.sleep(0.2 - time_since_last_request)
+            sleep_duration = 0.2 - time_since_last_request
+            logger.info(f"Rate limiting: sleeping for {sleep_duration:.3f} seconds.")
+            time.sleep(sleep_duration)
         self.last_request_time = time.time()
     
     def _generate_api_sig(self, method: str, params: Dict[str, Any]) -> str:
@@ -81,6 +90,7 @@ class CodeforcesAPI:
         Raises:
             Exception: If API returns error status
         """
+        logger.info(f"Initiating API request. Method: {method}, Params: {params}")
         self._rate_limit()
         
         if params is None:
@@ -93,14 +103,20 @@ class CodeforcesAPI:
             params['apiSig'] = self._generate_api_sig(method, params)
         
         url = f"{self.BASE_URL}/{method}"
+        logger.info(f"Sending GET request to URL: {url} with params: {params}")
         response = self.session.get(url, params=params)
+        logger.info(f"Received response for {method}. Status: {response.status_code}")
         response.raise_for_status()
         
+        logger.info(f"Attempting to parse JSON response for {method}")
         data = response.json()
+        logger.info(f"Successfully parsed JSON response for {method}")
         
         if data['status'] != 'OK':
+            logger.error(f"API Error for {method}: {data.get('comment', 'Unknown error')}. Full response data: {data}")
             raise Exception(f"API Error: {data.get('comment', 'Unknown error')}")
             
+        logger.info(f"Successfully completed API request for {method}. Returning result.")
         return data.get('result', {})
     
     # ========== BLOG METHODS ==========
@@ -174,7 +190,21 @@ class CodeforcesAPI:
             List of RatingChange objects
         """
         return self._make_request("contest.ratingChanges", {"contestId": contest_id})
-    
+        
+    def process_standings_obj(self, standingsObj):
+        rows = []
+        for el in standingsObj["rows"]:
+            rows.append(
+                {
+                    'handle': el['party']['members'][0]['handle'],
+                    'rank': el['rank'],
+                    'points': el['points'],
+                    'penalty': el['penalty']
+                }
+            )
+        standingsObj["rows"] = rows
+        return standingsObj
+
     def contest_standings(self, contest_id: int, from_: int = 1, count: int = None,
                          handles: Optional[List[str]] = None, room: Optional[int] = None,
                          show_unofficial: bool = False, as_manager: bool = False) -> Dict[str, Any]:
@@ -209,18 +239,8 @@ class CodeforcesAPI:
             params["asManager"] = "true"
             
         standingsObj = self._make_request("contest.standings", params)
-        rows = []
-        for el in standingsObj["rows"]:
-            rows.append(
-                {
-                    'handle': el['party']['members'][0]['handle'],
-                    'rank': el['rank'],
-                    'points': el['points'],
-                    'penalty': el['penalty']
-                }
-            )
-        standingsObj["rows"] = rows
-        return standingsObj
+        return self.process_standings_obj(standingsObj)
+
     
     def contest_status(self, contest_id: int, handle: Optional[str] = None,
                       from_: int = 1, count: int = 100, as_manager: bool = False) -> List[Dict[str, Any]]:
@@ -431,6 +451,45 @@ class CodeforcesAPI:
                 fetched_contests.append(contest)
 
         return fetched_contests
+
+
+    # custom functions
+    def get_full_standings(self, contest_id: int):
+        logger.info(f"Executing get_full_standings for contest_id: {contest_id}")
+        cache_dir = os.path.join(os.path.dirname(__file__), '..', 'cache', 'cf_api_cache')
+        os.makedirs(cache_dir, exist_ok=True)
+        cache_file_path = os.path.join(cache_dir, f"{contest_id}.json")
+        logger.debug(f"Cache directory: {cache_dir}, Cache file path: {cache_file_path}")
+
+        if os.path.exists(cache_file_path):
+            try:
+                with open(cache_file_path, 'r') as f:
+                    # print(f"Cache hit for contest {contest_id}") # Optional: for debugging
+                    logger.info(f"Cache hit for contest_id: {contest_id}. Loading from {cache_file_path}")
+                    loaded_data = json.load(f)
+                    logger.info(f"Successfully loaded standings for contest_id: {contest_id} from cache.")
+                    return loaded_data
+            except json.JSONDecodeError:
+                # print(f"Cache corrupted for contest {contest_id}, fetching fresh data.") # Optional: for debugging
+                logger.warning(f"Cache file {cache_file_path} for contest_id: {contest_id} is corrupted or unreadable. Fetching fresh data.", exc_info=True)
+                pass # Fall through to fetch fresh data if cache is corrupted
+
+        print(f"Cache miss for contest {contest_id}, fetching fresh data.") # Optional: for debugging
+        logger.info(f"Cache miss or corruption for contest_id: {contest_id}. Fetching fresh data from API via self.contest_standings.")
+        params = {
+            "contestId": contest_id,
+            "participantType": 'CONTESTANT,OUT_OF_COMPETITION'
+        }
+        standings_data = self.process_standings_obj(self._make_request("contest.standings", params))
+        logger.info(f"Successfully fetched fresh standings for contest_id: {contest_id} from API.")
+        
+        with open(cache_file_path, 'w') as f:
+            logger.info(f"Writing standings for contest_id: {contest_id} to cache file: {cache_file_path}")
+            json.dump(standings_data, f)
+            logger.info(f"Successfully wrote standings for contest_id: {contest_id} to cache.")
+            
+        logger.info(f"Finished get_full_standings for contest_id: {contest_id}")
+        return standings_data
 
 cf_api = CodeforcesAPI()
 

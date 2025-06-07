@@ -577,7 +577,7 @@ def update_upcoming_contests(db: Session) -> None:
             update_contest(db, ContestUpdate(**c))
 
 def fetch_and_add_contest_to_db_from_cf(db: Session, cf_contest_id: str) -> None:
-    contest = cf_api.contest_standings(cf_contest_id)['contest']
+    contest = cf_api.get_full_standings(cf_contest_id)['contest']
     db_contest = models.Contest(**map_cf_contest_to_internal(contest))
     db.add(db_contest)
     db.commit()
@@ -631,7 +631,7 @@ def update_contest_info_from_cf_api(db: Session, cf_contest_id: str, group_id: O
     if contest is None:
         return
 
-    standings = cf_api.contest_standings(contest.internal_contest_identifier)
+    standings = cf_api.get_full_standings(contest.internal_contest_identifier)
     group_rank: dict[str, int] = {}
     group_views: dict[str, dict[str, int]] = {}
 
