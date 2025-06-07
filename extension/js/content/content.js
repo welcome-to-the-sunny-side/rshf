@@ -612,6 +612,37 @@ function handleNonGroupMember(element, displayMode) {
       element.classList.add(RANK_CLASSES.newbie);
       element.style.color = RANK_COLORS.newbie;
       break;
+    case ':holyfuck:':
+      // Avoid duplicating the image if already present
+      if (!element.nextSibling || !(element.nextSibling.classList && element.nextSibling.classList.contains('rshf-holyfuck-img'))) {
+        const img = document.createElement('img');
+        img.src = chrome.runtime.getURL('assets/holyFuck.png');
+        img.alt = ':holyfuck:';
+        img.className = 'rshf-holyfuck-img';
+        img.style.height = '1.3em';
+        img.style.width = 'auto';
+        img.style.verticalAlign = 'middle';
+        img.style.marginLeft = '2px';
+        element.parentNode.insertBefore(img, element.nextSibling);
+      }
+      break;
+    case ':holyfuck:+':
+      // Avoid duplicating the image if already present
+      if (!element.nextSibling || !(element.nextSibling.classList && element.nextSibling.classList.contains('rshf-holyfuck-img'))) {
+        const img = document.createElement('img');
+        img.src = chrome.runtime.getURL('assets/holyFuck.png');
+        img.alt = ':holyfuck+:';
+        img.className = 'rshf-holyfuck-img';
+        img.style.height = '1.5em';
+        img.style.width = 'auto';
+        img.style.verticalAlign = 'middle';
+        img.style.marginLeft = '2px';
+        // Randomly choose clockwise or counterclockwise spin
+        const isCw = Math.random() < 0.5;
+        img.style.animation = (isCw ? 'rshf-rotate' : 'rshf-rotate-ccw') + ' 1.2s linear infinite';
+        element.parentNode.insertBefore(img, element.nextSibling);
+      }
+      break;
     case 'plain':
     default:
       break;
@@ -631,12 +662,11 @@ function removeRatingClasses(element) {
   });
 }
 
-
 async function getStoredSettings() {
   return new Promise(resolve => {
-    chrome.storage.local.get(['nonMemberDisplay', 'inGroupDisplay'], result => {
+    chrome.storage.local.get(['nonMemberDisplay', 'inGroupDisplay', 'selectedGroup'], result => {
       resolve({
-        nonMemberDisplay: result.nonMemberDisplay || 'transparent',
+        nonMemberDisplay: result.nonMemberDisplay || 'newbie', // Default to Gray
         inGroupDisplay: result.inGroupDisplay || 'rshf' // Default to RSHF ratings
       });
     });

@@ -111,6 +111,16 @@ a.rated-user.rshf-strike-through,
   z-index: 1000;
 }
 
+@keyframes rshf-rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes rshf-rotate-ccw {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(-360deg); }
+}
+
 .rshf-tooltip:hover::after {
   visibility: visible;
   opacity: 1;

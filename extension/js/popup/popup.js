@@ -56,6 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Setup custom dropdown functionality
+// Note: :holyfuck: non-member display mode is handled generically here
 function setupCustomDropdowns() {
   // In-group display dropdown
   inGroupDisplaySelected.addEventListener('click', () => {
@@ -263,19 +264,21 @@ function loadGroups() {
   chrome.storage.local.get(['selectedGroup'], (result) => {
     if (result.selectedGroup) {
       groupInput.value = result.selectedGroup.group_name;
+    } else {
+    //   groupInput.value = 'main';
     }
   });
 }
 
 // Load display preferences
 function loadDisplayPreferences() {
-  chrome.storage.local.get(['nonMemberDisplay', 'inGroupDisplay'], (result) => {
-    // Set values for hidden select elements
-    if (result.nonMemberDisplay) {
-      nonMemberDisplay.value = result.nonMemberDisplay;
+    chrome.storage.local.get(['nonMemberDisplay', 'inGroupDisplay'], (result) => {
+      // Set values for hidden select elements
+      const nonMemberValue = result.nonMemberDisplay || 'newbie'; // Default to 'newbie' (Gray)
+      nonMemberDisplay.value = nonMemberValue;
       
       // Update the visible dropdown text and selected option
-      const selectedOption = document.querySelector(`#non-member-display-list .dropdown-option[data-value="${result.nonMemberDisplay}"]`);
+      const selectedOption = document.querySelector(`#non-member-display-list .dropdown-option[data-value="${nonMemberValue}"]`);
       if (selectedOption) {
         nonMemberDisplaySelected.textContent = selectedOption.textContent;
         
@@ -285,24 +288,23 @@ function loadDisplayPreferences() {
         });
         selectedOption.classList.add('selected');
       }
-    }
-    
-    // Set default for inGroupDisplay if not already set
-    const inGroupValue = result.inGroupDisplay || 'rshf';
-    inGroupDisplay.value = inGroupValue;
-    
-    // Update the visible dropdown text and selected option
-    const selectedInGroupOption = document.querySelector(`#in-group-display-list .dropdown-option[data-value="${inGroupValue}"]`);
-    if (selectedInGroupOption) {
-      inGroupDisplaySelected.textContent = selectedInGroupOption.textContent;
       
-      // Update selected class
-      document.querySelectorAll('#in-group-display-list .dropdown-option').forEach(opt => {
-        opt.classList.remove('selected');
-      });
-      selectedInGroupOption.classList.add('selected');
-    }
-  });
+      // Handle inGroupDisplay similarly with a default
+      const inGroupValue = result.inGroupDisplay || 'rshf';
+      inGroupDisplay.value = inGroupValue;
+      
+      // Update the visible dropdown text and selected option
+      const selectedInGroupOption = document.querySelector(`#in-group-display-list .dropdown-option[data-value="${inGroupValue}"]`);
+      if (selectedInGroupOption) {
+        inGroupDisplaySelected.textContent = selectedInGroupOption.textContent;
+        
+        // Update selected class
+        document.querySelectorAll('#in-group-display-list .dropdown-option').forEach(opt => {
+          opt.classList.remove('selected');
+        });
+        selectedInGroupOption.classList.add('selected');
+      }
+    });
 }
 
 // --- Load Blog Filtering Preferences ---

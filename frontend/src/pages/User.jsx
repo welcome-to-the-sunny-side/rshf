@@ -17,6 +17,8 @@ import codeforcesIconPath from '../assets/codeforces-icon-180x180.png';
 import atcoderIconPath from '../assets/atcoder-icon.png';
 import codechefIconPath from '../assets/codechef-icon.ico';
 
+import robotIcon from '../assets/robot.png';
+
 // Social platform icons components
 const CodeforcesIcon = ({ active }) => (
   <img
@@ -341,11 +343,23 @@ export default function User() {
                   style={{ 
                     fontSize: '1.5rem', 
                     fontWeight: 'bold',
-                    display: 'inline-block',
+                    display: 'flex', 
+                    alignItems: 'center', 
                     color: selectedGroup ? selectedGroup[3] : getRatingColor(userData.group_memberships?.[0]?.user_group_rating || 0)
                   }}
                 >
                   {userData.user_id}
+                  {!userData.is_registered && (
+                    <img 
+                      src={robotIcon} 
+                      alt="Unregistered User"
+                      title="This user's account was automatically created due to their participation in a codeforces contest. They haven't claimed this account yet."
+                      style={{ 
+                        height: '1.5rem', 
+                        marginLeft: '8px' 
+                      }} 
+                    />
+                  )}
                 </span>
                 {/* Add margin between username and stats list */}
                 <div style={{ marginBottom: '7px' }}></div>

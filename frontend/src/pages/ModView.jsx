@@ -204,6 +204,9 @@ export default function ModView() {
       {/* General Settings box */}
       <ContentBoxWithTitle title="General Settings" backgroundColor="rgb(230, 240, 255)" contentPadding="0.5rem 1rem 0rem 1rem">
         <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto', padding: '5px' }}>
+          <div className={infoboxStyles.infoBox}>
+            Note: These can only be modified by admins.
+          </div>
           {/* Feedback Message (one only, above form) */}
           {groupError && (
             <div className="api-error">{groupError}</div>
