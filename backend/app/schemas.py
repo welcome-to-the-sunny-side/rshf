@@ -48,7 +48,6 @@ class UserUpdate(BaseModel):
     role:     Optional[Role] = None
     is_registered: Optional[bool] = None
 
-
 class UserOut(BaseModel):
     user_id: str
     cf_handle: str
