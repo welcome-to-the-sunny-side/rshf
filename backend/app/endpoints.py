@@ -695,7 +695,6 @@ def get_reports_range_fetch_endpoint(
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(25, ge=1, le=100, description="Maximum number of records to return (max 100)"),
 ):
-    check_logged_in(current_user)
     result = crud.get_reports_range_fetch(
         db=db,
         group_id=group_id,
@@ -763,7 +762,6 @@ def get_group_membership_size(
     """
     Get the number of all memberships in a group (no status/user filtering).
     """
-    check_logged_in(current_user)
     group = crud.get_group(db, gid)
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
@@ -784,7 +782,6 @@ def get_group_membership_range_fetch(
     """
     Get paginated and sorted memberships for a group (no status/user filtering).
     """
-    check_logged_in(current_user)
     group = crud.get_group(db, gid)
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
@@ -850,7 +847,6 @@ def get_group_members_custom_data_size(
     Raises:
         HTTPException: If group not found or user has insufficient privileges
     """
-    check_logged_in(current_user)
     # Check if the group exists
     group = crud.get_group(db, group_id)
     if not group:
@@ -875,7 +871,6 @@ def get_group_members_custom_data_range_fetch(
     Get paginated and sorted custom membership data for a group.
     The 'number_of_rated_contests' field has been removed from the response.
     """
-    check_logged_in(current_user)
     # Authorization checks
     group = crud.get_group(db, group_id)
     if not group:

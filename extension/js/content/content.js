@@ -61,7 +61,7 @@ function getRatingColor(rating) {
  * Get the rank name based on rating
  */
 function getRankName(rating) {
-  if (rating <= -1e9) return "Cheater";
+  if (rating < -999999999) return "Cheater";
   if (rating < 1200) return "Newbie";
   if (rating < 1400) return "Pupil";
   if (rating < 1600) return "Specialist";

@@ -18,7 +18,7 @@ export const RANK_COLORS = {
 
 // RANK BANDS
 export const RANK_BANDS = [
-  { y1: -1e9, y2: -1e9 + 1, color: RANK_COLORS.cheater }, // [-1e9, -1e9] inclusive
+  { y1: -1000000000, y2: -999999999, color: RANK_COLORS.cheater }, // [-1e9, -1e9] inclusive
   { y1: 0,    y2: 1200, color: RANK_COLORS.newbie },
   { y1: 1200, y2: 1400, color: RANK_COLORS.pupil },
   { y1: 1400, y2: 1600, color: RANK_COLORS.specialist },
