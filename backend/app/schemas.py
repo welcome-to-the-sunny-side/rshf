@@ -152,6 +152,19 @@ class ContestRegistration(BaseModel):
     group_id: str
     user_id: str
 
+class ContestUpdate(BaseModel):
+    contest_id: str
+    contest_name: Optional[str] = None
+    platform: Optional[str] = None
+    start_time_posix: Optional[int] = None
+    duration_seconds: Optional[int] = None
+    link: Optional[str] = None
+    internal_contest_identifier: Optional[str] = None
+    standings: Optional[dict] = None
+    finished: Optional[bool] = None
+    group_views: Optional[Dict[str, "GroupViewDetail"]] = None
+    contest_type: Optional[ContestType] = None
+
 
 class TokenOut(BaseModel):
     access_token: str

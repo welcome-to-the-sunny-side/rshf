@@ -13,6 +13,8 @@ from app import models
 from app.utils import hash_password, verify_password
 from app import schemas
 from app.codeforces_api import cf_api
+from app.schemas import ContestUpdate
+from app import rating
 
 # ───────────────────────────── internal enrichers ─────────────────────────────
 def _enrich_user(db: Session, user: models.User) -> models.User:
@@ -532,38 +534,27 @@ def create_contest(db: Session, data: Dict[str, Any]) -> Optional[models.Contest
         return None
 
 
-def update_contest(
-    db: Session,
-    contest_id: str,
-    *,
-    finished: Optional[bool] = None,
-    contest_name: Optional[str] = None,
-    start_time_posix: Optional[int] = None,
-    duration_seconds: Optional[int] = None,
-    standings: Optional[Dict[str, Any]] = None,
-    group_views: Optional[Dict[str, Any]] = None,
-    contest_type: Optional[models.ContestType] = None,
-) -> Optional[models.Contest]:
-    c = db.query(models.Contest).filter(models.Contest.contest_id == contest_id).first()
+def update_contest(db: Session, payload: schemas.ContestUpdate) -> Optional[models.Contest]:
+    c = db.query(models.Contest).filter(models.Contest.contest_id == payload.contest_id).first()
     if not c:
         return None
-    if finished is not None:
-        c.finished = finished
-    if contest_name is not None:
-        c.contest_name = contest_name
-    if start_time_posix is not None:
-        c.start_time_posix = start_time_posix
-    if duration_seconds is not None:
-        c.duration_seconds = duration_seconds
-    if standings is not None:
-        c.standings = standings
-    if group_views is not None:
-        c.group_views = group_views
-    if contest_type is not None:
-        c.contest_type = contest_type
+
+    # .model_dump(exclude_unset=True) converts the entire Pydantic payload,
+    # including any nested Pydantic models like GroupViewDetail within group_views,
+    # into a dictionary structure suitable for JSON serialization.
+    update_data = payload.model_dump(exclude_unset=True) 
+
+    for field, value in update_data.items():
+        # The 'value' for 'group_views' (if present in update_data) will already be a Dict[str, Dict],
+        # which is what SQLAlchemy needs for the JSON field.
+        # The same applies to 'contest_type' if it were a Pydantic model.
+        if value is not None: 
+            setattr(c, field, value)
+            
     db.commit()
     db.refresh(c)
     return c
+
 
 
 def update_upcoming_contests(db: Session) -> None:
@@ -573,9 +564,20 @@ def update_upcoming_contests(db: Session) -> None:
         for cf_c in upcoming
         if get_contest_by_internal_identifier(db, cf_c["id"]) is None
     ]
+
+    to_modify = [
+        map_cf_contest_to_internal(cf_c)
+        for cf_c in upcoming
+        if get_contest_by_internal_identifier(db, cf_c["id"]) is not None
+    ]
+
     if to_add:
         db.add_all(to_add)
         db.commit()
+
+    if to_modify:
+        for c in to_modify:
+            update_contest(db, ContestUpdate(**c))
 
 def fetch_and_add_contest_to_db_from_cf(db: Session, cf_contest_id: str) -> None:
     contest = cf_api.contest_standings(cf_contest_id)['contest']
@@ -583,6 +585,49 @@ def fetch_and_add_contest_to_db_from_cf(db: Session, cf_contest_id: str) -> None
     db.add(db_contest)
     db.commit()
     
+
+from app.models import ContestType
+
+def update_contest_ratings_for_group(db: Session, group_id: str, contest_id: str):
+    # Eagerly load contest_type to ensure it's available and to prevent N+1 issues if accessed later in a loop.
+    contest = db.query(models.Contest).options(joinedload(models.Contest.contest_type)).filter(
+        models.Contest.contest_id == contest_id
+    ).first()
+
+    if not contest or not contest.contest_type:
+        # If contest or its type is not found, or contest_type has no rating_upper_bound,
+        # it's an issue. Log it (e.g., using app.logger) and return empty list,
+        # implying no ratings were updated or participations processed.
+        # Consider raising an HTTPException if this is an API-triggered path for clearer error reporting.
+        # e.g., from app.logger import logger; logger.warning(f"Contest {contest_id} or its type not found/configured. Skipping rating updates for group {group_id}.")
+        return [] 
+
+    valid_participations = db.query(models.ContestParticipation).filter(
+        models.ContestParticipation.group_id == group_id,
+        models.ContestParticipation.contest_id == contest_id,
+        models.ContestParticipation.rank.isnot(None),
+        models.ContestParticipation.rating_before <= contest.contest_type.rating_upper_bound # Safe due to the check above
+    ).all()
+
+    # apply_codeforces_rating mutates participations in-place and returns the same list.
+    updated_participations = rating.apply_codeforces_rating(valid_participations)
+
+    for participation in updated_participations:
+        # Ensure user_id and rating_after are available before proceeding.
+        if participation.user_id is not None and hasattr(participation, 'rating_after') and participation.rating_after is not None:
+            membership = db.query(models.GroupMembership).filter(
+                models.GroupMembership.user_id == participation.user_id,
+                models.GroupMembership.group_id == group_id  # group_id is available from function arguments
+            ).first()
+
+            if membership:
+                membership.user_group_rating = participation.rating_after
+                # GroupMembership.user_group_max_rating has a default and is not nullable.
+                membership.user_group_max_rating = max(membership.user_group_max_rating, participation.rating_after)
+                # No explicit db.add(membership) needed as SQLAlchemy tracks changes to managed objects.
+    
+    db.commit() # Commit all changes (ContestParticipation and GroupMembership) together.
+    return updated_participations # Return the list of updated participations.
 
 
 def update_contest_info_from_cf_api(db: Session, cf_contest_id: str, group_id: Optional[str] = None) -> None:
@@ -624,7 +669,6 @@ def update_contest_info_from_cf_api(db: Session, cf_contest_id: str, group_id: O
         )
         for part in parts:
             mem = get_membership(db, user.user_id, part.group_id)
-            part.rating_before = mem.user_group_rating
             part.rank = group_rank.get(part.group_id, 0)
             group_rank[part.group_id] = part.rank + 1
 
@@ -639,18 +683,23 @@ def update_contest_info_from_cf_api(db: Session, cf_contest_id: str, group_id: O
 
     update_contest(
         db,
-        contest.contest_id,
-        finished=True,
-        standings=standings,
-        group_views=group_views,
+        ContestUpdate(
+            contest_id=contest.contest_id,
+            finished=True,
+            standings=standings,
+            group_views=group_views,
+        )
     )
 
 
 def update_finished_contests(db: Session, group_id: Optional[str] = None, cutoff_days: Optional[int] = None) -> None:
     finished = cf_api.fetch_finished_contests(cutoff_days)
+    updated_contests = []
     for cf_c in finished:
         if get_contest_by_internal_identifier(db, cf_c["id"]):
             update_contest_info_from_cf_api(db, cf_c["id"], group_id)
+            updated_contests.append(f"cf_{cf_c['id']}")
+    return updated_contests
 
 # ───────────── reports ─────────────
 

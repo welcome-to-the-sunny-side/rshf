@@ -1,0 +1,2 @@
+ cron job to update contests
+ 
