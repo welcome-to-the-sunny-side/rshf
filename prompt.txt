@@ -1,292 +1,3 @@
-<div id="sidebar">
-
-    <div class="roundbox sidebox borderTopRound " style="">
-        <div class="caption titled">→ Pay attention
-            <div class="top-links">
-            </div>
-        </div>
-<div style="padding: 0.5em;">
-        <div style="text-align:center;">
-            <span class="contest-state-phase">Before contest</span><br><a href="/contests/2117">Codeforces Round 1029 (Div. 3)</a><br><span class="countdown" home="//codeforces.org/s/25720" noredirection="true" textbeforeredirect="" cdid="i1">11:03:34</span>
-        </div>
-</div>
-    </div>
-
-<style data-nocturne="true" type="text/css">
-._StreamsSidebarFrame_frame {
-  padding: 0.5em 0.5em 0 0.5em;
-}
-._StreamsSidebarFrame_frame ._StreamsSidebarFrame_stream {
-  text-align: center;
-  border-bottom: 1px solid #b9b9b9;
-  margin: 0 -0.5em 0.5em -0.5em;
-  padding: 0 1em 0.5em 1em;
-}
-._StreamsSidebarFrame_frame ._StreamsSidebarFrame_stream ._StreamsSidebarFrame_user {
-  margin: 0 0 0.5em 0;
-  font-size: 0.8em;
-}
-._StreamsSidebarFrame_frame ._StreamsSidebarFrame_stream ._StreamsSidebarFrame_timeMark {
-  color: #777;
-  font-size: 0.9em;
-}
-._StreamsSidebarFrame_frame ._StreamsSidebarFrame_stream:last-of-type {
-  border-bottom: unset;
-  margin: unset;
-  padding: 0 0.5em 0.5em 1em;
-}
-._StreamsSidebarFrame_frame ._viewAll {
-  text-align: right;
-}
-.moreRunningStreamsSidebarNote {
-  color: #777 !important;
-  text-decoration: none;
-}
-</style>
-
-
-<script data-nocturne="true"> $(function () {
-
-}); </script>
-
-
-    <style>
-        .personal-sidebar {
-            margin: 1em;
-        }
-
-        .personal-sidebar .for-avatar {
-            float: right;
-        }
-
-        .personal-sidebar li {
-            font-size: 0.8em;
-        }
-
-        .personal-sidebar .nav-links {
-            margin-top: 0.5em;
-        }
-
-        .personal-sidebar .nav-links li {
-            list-style: disc;
-            list-style-position: inside;
-        }
-
-        .personal-sidebar .propertyLinks li img {
-            margin-right: 0.5em;
-        }
-    </style>
-
-
-    <div class="roundbox sidebox borderTopRound " style="">
-        <div class="caption titled">→ overcompensate
-            <div class="top-links">
-            </div>
-        </div>
-    <div class="personal-sidebar">
-<div class="for-avatar"><div class="avatar"><a href="/profile/overcompensate" style="position: relative;"><img src="https://userpic.codeforces.org/no-avatar.jpg"></a><div><a href="/profile/overcompensate" title="Master overcompensate" class="rated-user user-gray" style="color: rgb(128, 128, 128);">overcompensate</a></div></div></div><div><ul class="propertyLinks"><li><img style="vertical-align:middle;position:relative;top:-2px" src="//codeforces.org/s/25720/images/icons/rating-16x16.png" alt="User''s contest rating in Codeforces community" title="User''s contest rating in Codeforces community">Rating:&nbsp;<span style="font-weight: bold; color: rgb(128, 128, 128);" class="user-gray">2204</span></li><li><img style="vertical-align:middle;position:relative;top:-2px" src="//codeforces.org/s/25720/images/icons/star_blue_16.png" alt="User''s contribution into Codeforces community" title="User''s contribution into Codeforces community">Contribution:&nbsp;<span style="color:gray;font-weight:bold;">0</span></li></ul><ul class="nav-links"><li><a href="/settings/general">Settings</a></li><li><a href="/blog/overcompensate">Blog</a></li><li><a href="/teams">Teams</a></li><li><a href="/submissions/overcompensate">Submissions</a></li><li><a href="/contests/writer/overcompensate">Problemsetting</a></li><li><a href="/proposals/contests">Propose a contest/problems</a></li><li><a href="/usertalk">Talks</a></li><li><a href="/contests/with/overcompensate">Contests</a></li></ul></div>    </div>
-    </div>
-<div class="roundbox sidebox top-contributed borderTopRound " style="">
-<div class="caption titled">→ Top rated
-<div class="top-links">
-</div>
-</div>
-<table class="rtable ">
-<tbody>
-<tr>
-<th class="left" style="width:2.25em;">#</th>
-<th class="">User</th>
-<th class="" style="width:5em;">Rating</th>
-</tr>
-<tr>
-<td class="left dark">1</td>
-<td class=" dark"><a href="/profile/tourist" title="Legendary Grandmaster tourist" class="rated-user user-legendary" style="color: rgb(255, 0, 0);"><span class="legendary-user-first-letter">t</span>ourist</a></td>
-<td class=" dark">3777</td>
-</tr>
-<tr>
-<td class="left ">2</td>
-<td class=""><a href="/profile/jiangly" title="Legendary Grandmaster jiangly" class="rated-user user-gray" style="color: rgb(128, 128, 128);"><span class="legendary-user-first-letter">j</span>iangly</a></td>
-<td class="">3756</td>
-</tr>
-<tr>
-<td class="left dark">3</td>
-<td class=" dark"><a href="/profile/orzdevinwang" title="Legendary Grandmaster orzdevinwang" class="rated-user user-legendary" style="color: rgb(255, 0, 0);"><span class="legendary-user-first-letter">o</span>rzdevinwang</a></td>
-<td class=" dark">3696</td>
-</tr>
-<tr>
-<td class="left ">4</td>
-<td class=""><a href="/profile/Kevin114514" title="Legendary Grandmaster Kevin114514" class="rated-user user-red" style="color: rgb(255, 0, 0);"><span class="legendary-user-first-letter">K</span>evin114514</a></td>
-<td class="">3647</td>
-</tr>
-<tr>
-<td class="left dark">5</td>
-<td class=" dark"><a href="/profile/Radewoosh" title="Legendary Grandmaster Radewoosh" class="rated-user user-legendary" style="color: rgb(255, 0, 0);"><span class="legendary-user-first-letter">R</span>adewoosh</a></td>
-<td class=" dark">3631</td>
-</tr>
-<tr>
-<td class="left ">6</td>
-<td class=""><a href="/profile/ksun48" title="Legendary Grandmaster ksun48" class="rated-user user-legendary" style="color: rgb(255, 0, 0);"><span class="legendary-user-first-letter">k</span>sun48</a></td>
-<td class="">3574</td>
-</tr>
-<tr>
-<td class="left dark">7</td>
-<td class=" dark"><a href="/profile/maroonrk" title="Legendary Grandmaster maroonrk" class="rated-user user-legendary" style="color: rgb(255, 0, 0);"><span class="legendary-user-first-letter">m</span>aroonrk</a></td>
-<td class=" dark">3565</td>
-</tr>
-<tr>
-<td class="left ">8</td>
-<td class=""><a href="/profile/Benq" title="Legendary Grandmaster Benq" class="rated-user user-legendary" style="color: rgb(255, 0, 0);"><span class="legendary-user-first-letter">B</span>enq</a></td>
-<td class="">3527</td>
-</tr>
-<tr>
-<td class="left dark">9</td>
-<td class=" dark"><a href="/profile/ecnerwala" title="Legendary Grandmaster ecnerwala" class="rated-user user-legendary" style="color: rgb(255, 0, 0);"><span class="legendary-user-first-letter">e</span>cnerwala</a></td>
-<td class=" dark">3526</td>
-</tr>
-<tr>
-<td class="left bottom">10</td>
-<td class="bottom"><a href="/profile/Um_nik" title="Legendary Grandmaster Um_nik" class="rated-user user-gray" style="color: rgb(128, 128, 128);"><span class="legendary-user-first-letter">U</span>m_nik</a></td>
-<td class="bottom">3418</td>
-</tr>
-</tbody>
-</table>
-<div class="bottom-links">
-<table style="width:100%;">
-<tbody>
-<tr>
-<td style="text-align:left;">
-<a href="/ratings/countries">Countries</a> |
-<a href="/ratings/cities">Cities</a> |
-<a href="/ratings/organizations">Organizations</a>
-</td>
-<td style="text-align:right;">
-<a href="/ratings">View all →</a>
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div><div class="roundbox sidebox top-contributed borderTopRound " style="">
-        <div class="caption titled">→ Top contributors
-            <div class="top-links">
-            </div>
-        </div>
-        <table class="rtable ">
-            <tbody>
-                <tr>
-                            <th class="left" style="width:2.25em;">#</th>
-                            <th class="">User</th>
-                            <th class="" style="width:5em;">Contrib.</th>
-                </tr>
-                    <tr>
-                                <td class="left  dark">1</td>
-                                <td class=" dark"><a href="/profile/Dominater069" title="International Grandmaster Dominater069" class="rated-user user-red" style="color: rgb(255, 0, 0);">Dominater069</a></td>
-                                <td class=" dark">161</td>
-                    </tr>
-                    <tr>
-                                <td class="left ">2</td>
-                                <td class=""><a href="/profile/Qingyu" title="Legendary Grandmaster Qingyu" class="rated-user user-gray" style="color: rgb(128, 128, 128);"><span class="legendary-user-first-letter">Q</span>ingyu</a></td>
-                                <td class="">160</td>
-                    </tr>
-                    <tr>
-                                <td class="left  dark">2</td>
-                                <td class=" dark"><a href="/profile/cry" title="International Master cry" class="rated-user user-gray" style="color: rgb(128, 128, 128);">cry</a></td>
-                                <td class=" dark">160</td>
-                    </tr>
-                    <tr>
-                                <td class="left ">4</td>
-                                <td class=""><a href="/profile/adamant" title="Grandmaster adamant" class="rated-user user-orange" style="color: rgb(255, 140, 0);">adamant</a></td>
-                                <td class="">158</td>
-                    </tr>
-                    <tr>
-                                <td class="left  dark">4</td>
-                                <td class=" dark"><a href="/profile/-is-this-fft-" title="Grandmaster -is-this-fft-" class="rated-user user-red" style="color: rgb(255, 0, 0);">-is-this-fft-</a></td>
-                                <td class=" dark">158</td>
-                    </tr>
-                    <tr>
-                                <td class="left ">6</td>
-                                <td class=""><a href="/profile/atcoder_official" title="Unrated, atcoder_official" class="rated-user user-gray" style="color: rgb(128, 128, 128);">atcoder_official</a></td>
-                                <td class="">156</td>
-                    </tr>
-                    <tr>
-                                <td class="left  dark">7</td>
-                                <td class=" dark"><a href="/profile/luogu_official" title="Unrated, luogu_official" class="rated-user user-gray" style="color: rgb(128, 128, 128);">luogu_official</a></td>
-                                <td class=" dark">154</td>
-                    </tr>
-                    <tr>
-                                <td class="left ">8</td>
-                                <td class=""><a href="/profile/errorgorn" title="Legendary Grandmaster errorgorn" class="rated-user user-red" style="color: rgb(255, 0, 0);"><span class="legendary-user-first-letter">e</span>rrorgorn</a></td>
-                                <td class="">150</td>
-                    </tr>
-                    <tr>
-                                <td class="left  dark">8</td>
-                                <td class=" dark"><a href="/profile/djm03178" title="Master djm03178" class="rated-user user-orange" style="color: rgb(255, 140, 0);">djm03178</a></td>
-                                <td class=" dark">150</td>
-                    </tr>
-                    <tr>
-                                <td class="left bottom">10</td>
-                                <td class="bottom"><a href="/profile/chromate00" title="Expert chromate00" class="rated-user user-blue" style="color: rgb(0, 0, 255);">chromate00</a></td>
-                                <td class="bottom">144</td>
-                    </tr>
-            </tbody>
-        </table>
-            <div class="bottom-links">
-                <table style="width:100%;">
-                    <tbody>
-                        <tr>
-                            <td style="text-align:left;">
-                            </td>
-                            <td style="text-align:right;">
-                                    <a href="/top-contributed">View all →</a>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-    </div>
-
-    <script type="text/javascript">
-        $(document).ready(function () {
-        });
-    </script>
-
-
-    <div class="roundbox sidebox borderTopRound " style="">
-        <div class="caption titled">→ Find user
-            <div class="top-links">
-            </div>
-        </div>
-        <form class="handleForm" method="post" autocomplete="off"><input type="hidden" name="csrf_token" value="506b5023073926c37b8e5e28b12d2bb1">
-            <div style="padding:1em;text-align:right;">
-                <label style="padding-right:1em;">Handle:
-                    <input style="width:12em;" type="text" class="handleBox ac_input" autocomplete="off">
-                </label>
-            </div>
-            <div style="padding: 0 1em 1em 1em;text-align:right;">
-                <input style="height:1.65em;padding:0 0.75em;" type="submit" value="Find">
-            </div>
-        <input type="hidden" name="_tta" value="226"></form>
-    </div>
-    <script type="text/javascript">
-        $(document).ready(function () {
-    $(".handleBox").autocomplete("/data/handles", {
-        delay: 200,
-        width: 200,
-        selectFirst: false,
-        matchContains: true,
-        minChars: 3
-    });
-    $(".handleForm").attr("autocomplete", "off").submit(function () {
-        var link = "/profile/userHandle".replace(
-            "userHandle", $(this).find(".handleBox").val()
-        );
-        window.location = link;
-        return false;
-    });
-        });
-    </script>
-
-
 <div class="roundbox sidebox borderTopRound " style="">
         <div class="caption titled">→ Recent actions
             <div class="top-links">
@@ -294,47 +5,156 @@
         </div>
         <div class="recent-actions">
             <ul>
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
                         <li><div style="font-size:0.9em;padding:0.5em 0;">
-<a href="/profile/DanTheMan." title="Grandmaster DanTheMan." class="rated-user user-red" style="color: rgb(255, 0, 0);">DanTheMan.</a>        →
-        <a href="/blog/entry/143040">mBIT 2025 Editorial</a>
-&nbsp;&nbsp;<img alt="Text created or updated" title="Text created or updated" src="//codeforces.org/s/25720/images/icons/x-update-12x12.png" style="vertical-align:middle;">
+<a href="/profile/atcoder_official" title="Unrated, atcoder_official" class="rated-user user-black">atcoder_official</a>        →
+        <a href="/blog/entry/143354">AtCoder Beginner Contest 408 Announcement</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/93823/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/ZERO111" title="Pupil ZERO111" class="rated-user user-green">ZERO111</a>        →
+        <a href="/blog/entry/143582">Eid mubarak</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/93823/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/turzo_sawroop" title="Newbie turzo_sawroop" class="rated-user user-gray">turzo_sawroop</a>        →
+        <a href="/blog/entry/94447">Every Possible Bitwise Equations we could Make</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/93823/images/icons/comment-12x12.png" style="vertical-align:middle;">
+        <img alt="Necropost" title="Necropost" src="//codeforces.org/s/93823/images/icons/hourglass.png" style="vertical-align:middle; position: relative; top: 1px;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/Otherwordly" title="Pupil Otherwordly" class="rated-user user-green">Otherwordly</a>        →
+        <a href="/blog/entry/143571">Happy Eid!</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/93823/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/Newtech66" title="Specialist Newtech66" class="rated-user user-cyan">Newtech66</a>        →
+        <a href="/blog/entry/100938">Codeforces Round #782 (Div. 2) Editorial</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/93823/images/icons/comment-12x12.png" style="vertical-align:middle;">
+        <img alt="Necropost" title="Necropost" src="//codeforces.org/s/93823/images/icons/hourglass.png" style="vertical-align:middle; position: relative; top: 1px;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/trivela" title="Pupil trivela" class="rated-user user-green">trivela</a>        →
+        <a href="/blog/entry/143555">Rating you want to reach?</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/93823/images/icons/comment-12x12.png" style="vertical-align:middle;">
 </div>
 </li>
                         
-                        
                         <li><div style="font-size:0.9em;padding:0.5em 0;">
-<a href="/profile/TadijaSebez" title="International Grandmaster TadijaSebez" class="rated-user user-red" style="color: rgb(255, 0, 0);">TadijaSebez</a>        →
-        <a href="/blog/entry/95774">Mirror of Bubble Cup 14 Finals on Codeforces</a>
-&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/25720/images/icons/comment-12x12.png" style="vertical-align:middle;">
-        <img alt="Necropost" title="Necropost" src="//codeforces.org/s/25720/images/icons/hourglass.png" style="vertical-align:middle; position: relative; top: 1px;">
+<a href="/profile/PvPro" title="Grandmaster PvPro" class="rated-user user-red">PvPro</a>        →
+        <a href="/blog/entry/143186">Codeforces Round 1026 (Div. 2) Editorial</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/93823/images/icons/comment-12x12.png" style="vertical-align:middle;">
 </div>
 </li>
-                        
-                        
-                        
-                        
-                        
                         <li><div style="font-size:0.9em;padding:0.5em 0;">
-<a href="/profile/Gellyfish" title="Grandmaster Gellyfish" class="rated-user user-gray" style="color: rgb(128, 128, 128);">Gellyfish</a>        →
+<a href="/profile/aryanc403" title="Master aryanc403" class="rated-user user-orange">aryanc403</a>        →
+        <a href="/blog/entry/137208">The World Champion is Gukesh D</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/93823/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/stray" title="Specialist stray" class="rated-user user-cyan">stray</a>        →
+        <a href="/blog/entry/143570">i hate people</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/93823/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/MathModel" title="Specialist MathModel" class="rated-user user-cyan">MathModel</a>        →
+        <a href="/blog/entry/143241">Weekend Practice #7</a>
+&nbsp;&nbsp;<img alt="Text created or updated" title="Text created or updated" src="//codeforces.org/s/93823/images/icons/x-update-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/thunder_fart" title="Pupil thunder_fart" class="rated-user user-green">thunder_fart</a>        →
+        <a href="/blog/entry/143597">Why is this solution submitting in C++ 17 but showing tle for C++ 23</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/93823/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/atcoder_official" title="Unrated, atcoder_official" class="rated-user user-black">atcoder_official</a>        →
+        <a href="/blog/entry/143567">AtCoder Beginner Contest 409 Announcement</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/93823/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/FelixArg" title="International Master FelixArg" class="rated-user user-orange">FelixArg</a>        →
+        <a href="/blog/entry/143528">Educational Codeforces Round 179 Editorial</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/93823/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/Gellyfish" title="Grandmaster Gellyfish" class="rated-user user-red">Gellyfish</a>        →
         <a href="/blog/entry/143418">Codeforces Round 1028 (Div.1, Div.2) Editorial</a>
-&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/25720/images/icons/comment-12x12.png" style="vertical-align:middle;">
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/93823/images/icons/comment-12x12.png" style="vertical-align:middle;">
 </div>
 </li>
-                        
-                        
-                        
-                        
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/temp-for-talk" title="Newbie temp-for-talk" class="rated-user user-gray">temp-for-talk</a>        →
+        <a href="/blog/entry/143312">Meet the Legendary Abuser and Cyan Cheater aaryaibtedafoyez</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/93823/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/joe_zxq" title="Specialist joe_zxq" class="rated-user user-cyan">joe_zxq</a>        →
+        <a href="/blog/entry/143272">Algo Beat Contest 002 Announcement</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/93823/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/Otherwordly" title="Pupil Otherwordly" class="rated-user user-green">Otherwordly</a>        →
+        <a href="/blog/entry/142475">IOI 2025 Teams</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/93823/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/awoo" title="Master awoo" class="rated-user user-orange">awoo</a>        →
+        <a href="/blog/entry/72330">Educational Codeforces Round 78 Editorial</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/93823/images/icons/comment-12x12.png" style="vertical-align:middle;">
+        <img alt="Necropost" title="Necropost" src="//codeforces.org/s/93823/images/icons/hourglass.png" style="vertical-align:middle; position: relative; top: 1px;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/Vladosiya" title="Candidate Master Vladosiya" class="rated-user user-violet">Vladosiya</a>        →
+        <a href="/blog/entry/143268">Codeforces Round #1027 (Div. 3) Editorial</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/93823/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/charan2628" title="Pupil charan2628" class="rated-user user-green">charan2628</a>        →
+        <a href="/blog/entry/118344">Google Kickstart official problem archive</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/93823/images/icons/comment-12x12.png" style="vertical-align:middle;">
+        <img alt="Necropost" title="Necropost" src="//codeforces.org/s/93823/images/icons/hourglass.png" style="vertical-align:middle; position: relative; top: 1px;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/yse" title="Expert yse" class="rated-user user-blue">yse</a>        →
+        <a href="/blog/entry/143502">Codeforces Round 1029 (Div. 3)</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/93823/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/Farias" title="Newbie Farias" class="rated-user user-gray">Farias</a>        →
+        <a href="/blog/entry/68684">Dijkstra Modified</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/93823/images/icons/comment-12x12.png" style="vertical-align:middle;">
+        <img alt="Necropost" title="Necropost" src="//codeforces.org/s/93823/images/icons/hourglass.png" style="vertical-align:middle; position: relative; top: 1px;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/DanTheMan." title="Grandmaster DanTheMan." class="rated-user user-red">DanTheMan.</a>        →
+        <a href="/blog/entry/143040">mBIT 2025 Editorial</a>
+&nbsp;&nbsp;<img alt="Text created or updated" title="Text created or updated" src="//codeforces.org/s/93823/images/icons/x-update-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
+                        <li><div style="font-size:0.9em;padding:0.5em 0;">
+<a href="/profile/MuhammadJon_SundarStem" title="Pupil MuhammadJon_SundarStem" class="rated-user user-green">MuhammadJon_SundarStem</a>        →
+        <a href="/blog/entry/143592">Eid Mubarak to the Codeforces Community</a>
+&nbsp;&nbsp;<img alt="New comment(s)" title="New comment(s)" src="//codeforces.org/s/93823/images/icons/comment-12x12.png" style="vertical-align:middle;">
+</div>
+</li>
             </ul>
         </div>
             <div class="bottom-links">
@@ -350,4 +170,4 @@
                     </tbody>
                 </table>
             </div>
-    </div></div>
+    </div>

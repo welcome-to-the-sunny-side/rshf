@@ -108,6 +108,10 @@ let rshfSelectedGroupData = null; // Data for the currently selected group
 let rshfDataFileTimestamp = null; // Timestamp from the data file itself
 let currentSelectedGroupId = null;
 
+// Global variable for the <ul> of the new "Recent Actions (Filtered)" box
+let filteredBlogsListElement = null;
+const FILTERED_BOX_ID = 'rshf-filtered-actions-box';
+
 // Comment filtering: rank order for comparison
 const RANK_ORDER = [
   "Cheater",
@@ -208,7 +212,7 @@ function filterCommentsByRank(commentSettings) {
   });
 }
 
-// Blog Filtering: Remove blogs from recent actions if below threshold
+// Blog Filtering: Remove blogs from recent actions if below threshold, move to filtered box
 function filterBlogsByRank(blogSettings) {
   // Helper: get rank index
   function getRankIndex(rank) {
@@ -239,14 +243,43 @@ function filterBlogsByRank(blogSettings) {
 
   console.log(blogSettings);
 
-  // Find all recent blog action <li> entries
-  document.querySelectorAll('.recent-actions li').forEach(li => {
+  // Find all recent blog action 
+  if (!filteredBlogsListElement) {
+    const existingFilteredBox = document.getElementById(FILTERED_BOX_ID);
+    if (existingFilteredBox) {
+        filteredBlogsListElement = existingFilteredBox.querySelector('.recent-actions ul');
+    }
+    // No warning here, as it's okay if no filtered box exists (e.g. no recent actions box at all)
+  }
+
+  // Find the original "Recent actions" list (ul element)
+  let originalRecentActionsULElement = null;
+  const sideboxes = document.querySelectorAll('.roundbox.sidebox');
+  for (const box of sideboxes) {
+    if (box.id === FILTERED_BOX_ID) continue; // Skip our filtered box
+
+    const caption = box.querySelector('.caption.titled');
+    if (caption && caption.textContent.trim().startsWith('→ Recent actions')) {
+      originalRecentActionsULElement = box.querySelector('.recent-actions ul');
+      break;
+    }
+  }
+
+  if (!originalRecentActionsULElement) {
+    // console.warn('RSHF: Original "Recent actions" list (ul) not found for filtering.');
+    return;
+  }
+
+  // Iterate over a static copy of child nodes (LI elements), as we're modifying the list
+  const blogEntryLIs = Array.from(originalRecentActionsULElement.children);
+
+  blogEntryLIs.forEach(li => {
+    if (!(li.tagName === 'LI')) return; // Process only LI elements
     const userLink = li.querySelector('a.rated-user');
     if (!userLink) return;
     // Username from link text or title
     let username = null;
     let cfRating = null;
-    // Try to get username from title (e.g. "Pupil Otherwordly")
     const title = userLink.getAttribute('title') || '';
     const match = title.match(/(?:[\w\s]+\s)?([\w.-]+)$/);
     if (match) {
@@ -257,26 +290,36 @@ function filterBlogsByRank(blogSettings) {
     const classList = userLink.classList;
     if (classList) {
       // Use same mapping as comment filtering
-      const rank = Array.from(classList).find(cls => cls.startsWith('user-'));
-      if (rank === 'user-gray') cfRating = 0;
-      else if (rank === 'user-green') cfRating = 1200;
-      else if (rank === 'user-cyan') cfRating = 1400;
-      else if (rank === 'user-blue') cfRating = 1600;
-      else if (rank === 'user-violet') cfRating = 1900;
-      else if (rank === 'user-orange') cfRating = 2100;
-      else if (rank === 'user-red') cfRating = 2400;
-      else if (rank === 'user-legendary') cfRating = 3000;
-      else if (rank == 'user-4000') cfRating = 4000;
-      else cfRating = 0;
+      const rankClass = Array.from(classList).find(cls => cls.startsWith('user-') && cls !== 'user-black' && cls !== 'rated-user');
+      if (rankClass) {
+        switch (rankClass) {
+          case 'user-gray': cfRating = 1100; break;      // Newbie approx.
+          case 'user-green': cfRating = 1300; break;     // Pupil approx.
+          case 'user-cyan': cfRating = 1500; break;      // Specialist approx.
+          case 'user-blue': cfRating = 1700; break;       // Expert approx.
+          case 'user-violet': cfRating = 2000; break;    // CM approx.
+          case 'user-orange': cfRating = 2200; break;    // Master/IM approx.
+          case 'user-red': cfRating = 2500; break;        // GM+ approx.
+          default: cfRating = undefined;
+        }
+      }
     }
+
     if (!username) return;
-    const assumedRating = getAssumedRating(username, cfRating);
+
+    const assumedRating = getAssumedRating(username, cfRating); // blogSettings is in scope
     const userRank = getRankName(assumedRating);
     const userRankIdx = getRankIndex(userRank);
-    const lowerboundIdx = getRankIndex(getRankNameForDropdownValue(blogSettings.rankLowerbound));
-    if (userRankIdx < lowerboundIdx) {
-      // Remove blog entry
-      li.remove();
+    const lowerboundSetting = blogSettings.rankLowerbound || 'newbie'; // Ensure default
+    const lowerboundIdx = getRankIndex(getRankNameForDropdownValue(lowerboundSetting));
+
+    if (userRankIdx < lowerboundIdx && username !== 'atcoder_official' && username !== 'MikeMirzayanov') {
+      // Blog entry should be filtered
+      if (filteredBlogsListElement) {
+        filteredBlogsListElement.appendChild(li); // Move to the filtered list
+      } else {
+        li.remove(); // Fallback: remove if the filtered box isn't set up
+      }
     }
   });
 }
@@ -303,6 +346,81 @@ function getRankNameForDropdownValue(val) {
 (function() {
   initializeExtension();
 })();
+
+// Function to set up the "Recent Actions (Filtered)" box
+function setupFilteredBlogsBox() {
+  // Check if the filtered box already exists
+  if (document.getElementById(FILTERED_BOX_ID)) {
+    const existingFilteredBox = document.getElementById(FILTERED_BOX_ID);
+    filteredBlogsListElement = existingFilteredBox.querySelector('.recent-actions ul');
+    return;
+  }
+
+  const sideboxes = document.querySelectorAll('.roundbox.sidebox');
+  let originalRecentActionsBox = null;
+
+  for (const box of sideboxes) {
+    const caption = box.querySelector('.caption.titled');
+    // Ensure it's the main recent actions box and not one we might create elsewhere
+    if (caption && caption.textContent.trim().startsWith('→ Recent actions')) {
+      originalRecentActionsBox = box;
+      break;
+    }
+  }
+
+  if (!originalRecentActionsBox) {
+    // console.warn('RSHF: Original "Recent actions" box not found. Filtered box not created.');
+    return;
+  }
+
+  // Clone the original box
+  const filteredBox = originalRecentActionsBox.cloneNode(true);
+  filteredBox.id = FILTERED_BOX_ID; // Assign an ID to the new box
+
+  // Change the title
+  const captionElement = filteredBox.querySelector('.caption.titled');
+  if (captionElement) {
+    let textNodeToChange = null;
+    for (const child of captionElement.childNodes) {
+        if (child.nodeType === Node.TEXT_NODE && child.nodeValue.includes('→ Recent actions')) {
+            textNodeToChange = child;
+            break;
+        }
+    }
+    if (textNodeToChange) {
+        textNodeToChange.nodeValue = textNodeToChange.nodeValue.replace('→ Recent actions', '→ Recent Actions (Filtered)');
+    } else {
+        // Fallback, might not be perfectly styled if arrow is separate
+        captionElement.textContent = '→ Recent Actions (Filtered)'; 
+        console.warn("RSHF: Could not precisely change title for filtered box. Used fallback.");
+    }
+  }
+
+  // Get and clear the <ul> for filtered blogs
+  const ulElement = filteredBox.querySelector('.recent-actions ul');
+  if (ulElement) {
+    ulElement.innerHTML = ''; // Clear any copied list items
+    filteredBlogsListElement = ulElement;
+  } else {
+    console.warn('RSHF: Could not find <ul> in cloned filtered box. Creating one.');
+    const recentActionsDiv = filteredBox.querySelector('.recent-actions');
+    if(recentActionsDiv) {
+        const newUl = document.createElement('ul');
+        recentActionsDiv.innerHTML = ''; // Clear potential non-ul content
+        recentActionsDiv.appendChild(newUl);
+        filteredBlogsListElement = newUl;
+    }
+  }
+
+  // Remove the "Detailed →" link from the new box
+  const bottomLinks = filteredBox.querySelector('.bottom-links');
+  if (bottomLinks) {
+    bottomLinks.remove();
+  }
+
+  // Insert the new box after the original one
+  originalRecentActionsBox.parentNode.insertBefore(filteredBox, originalRecentActionsBox.nextSibling);
+}
 
 // Main initialization function
 async function initializeExtension() {
@@ -359,6 +477,11 @@ async function initializeExtension() {
   if (window.location.href.startsWith('https://codeforces.com/blog/entry')) {
     filterCommentsByRank(commentSettings);
   }
+
+  // --- Blog Filtering Setup ---
+  // This needs to be done only if there's a recent actions box on the page.
+  // The setup function itself checks for the original box.
+  setupFilteredBlogsBox();
 
   // --- Blog Filtering ---
   const blogSettings = {
