@@ -1,6 +1,9 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
+from dotenv import load_dotenv
 import os
+
+load_dotenv()
 
 # Use the environment variable DATABASE_URL if available, otherwise use a default local URL for development
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", 'postgresql://evapilotno17:devpass@localhost:5432/evapilotno17')
