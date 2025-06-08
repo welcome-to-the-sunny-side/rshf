@@ -248,10 +248,11 @@ function filterBlogsByRank(blogSettings) {
     let cfRating = null;
     // Try to get username from title (e.g. "Pupil Otherwordly")
     const title = userLink.getAttribute('title') || '';
-    const match = title.match(/(?:\w+\s)?([\w-]+)$/);
+    const match = title.match(/(?:[\w\s]+\s)?([\w.-]+)$/);
     if (match) {
       username = match[1];
     }
+    console.log(username);
     // Map user class to rating leftbound
     const classList = userLink.classList;
     if (classList) {
@@ -370,6 +371,40 @@ async function initializeExtension() {
   processPage(settings, localData.selectedGroup.group_name); // Pass group_name for display purposes
 }
 
+// Adds "View on RSHF" link to sidebar Pay attention box if present
+function processSidebarContestBox() {
+  const sidebar = document.getElementById('sidebar');
+  if (!sidebar) return;
+  // Find all roundbox/sidebox elements
+  const boxes = sidebar.querySelectorAll('.roundbox.sidebox');
+  for (const box of boxes) {
+    const caption = box.querySelector('.caption.titled');
+    if (!caption) continue;
+    if (/pay attention/i.test(caption.textContent)) {
+      // Find the contest link in this box
+      const contestLink = box.querySelector('a[href^="/contests/"]');
+      if (!contestLink) continue;
+      // Avoid duplicate
+      if (contestLink.parentNode.querySelector('.rshf-view-link')) continue;
+      // Try to extract contest ID from the link (e.g. /contests/2117)
+      const match = contestLink.getAttribute('href').match(/\/(?:contests|contest)\/(\d+)/);
+      if (!match) continue;
+      const contestId = match[1];
+      // Create the RSHF link
+      const rshfLink = document.createElement('a');
+      rshfLink.href = `https://rshf.net/contest/cf_${contestId}`;
+      rshfLink.textContent = 'View on RSHF »';
+      rshfLink.className = 'rshf-view-link';
+      rshfLink.target = '_blank';
+      rshfLink.style.display = 'block';
+      rshfLink.style.margin = '0.2em 0 -1em 0';
+      rshfLink.style.fontSize = '0.9em';
+      contestLink.insertAdjacentElement('afterend', rshfLink);
+      break; // Only one Pay attention box
+    }
+  }
+}
+
 // Process Codeforces page to replace ratings
 async function processPage(settings, group_display_name) { // Added group_display_name
   const userElements = document.querySelectorAll(
@@ -386,7 +421,71 @@ async function processPage(settings, group_display_name) { // Added group_displa
   if (window.location.pathname.startsWith('/profile/')) {
     processProfileBox(settings, group_display_name);
   }
+
+  // Call sidebar contest box processing second last
+  processSidebarContestBox();
+  // Call contest page processing last
+  processContestPage();
 }
+
+
+// Adds "View on RSHF" links to the past contests table and "Register (RSHF)" to upcoming contests on /contests
+function processContestPage() {
+  if (!window.location.href.startsWith('https://codeforces.com/contests')) return;
+
+  // --- Past contests table ---
+  const tables = Array.from(document.querySelectorAll('div.contests-table table, div.datatable table'));
+  let pastTable = null;
+  let upcomingTable = null;
+  for (const table of tables) {
+    // Heuristically: past table has 'Enter', upcoming/active has 'Register' or 'Before start'
+    if (!pastTable && table.innerHTML.includes('Enter')) {
+      pastTable = table;
+    }
+    // Heuristically: upcoming/active table has 'Register' or 'Before start' or 'Before registration'
+    if (!upcomingTable && (table.innerHTML.includes('Register') || table.innerHTML.includes('Before start') || table.innerHTML.includes('Before registration'))) {
+      upcomingTable = table;
+    }
+  }
+
+  // For both past and upcoming/active contests, add "View on RSHF" below contest title (leftmost column)
+  function addRshfLinksToTable(table) {
+    const rows = table.querySelectorAll('tr[data-contestid]');
+    rows.forEach(row => {
+      const contestId = row.getAttribute('data-contestid');
+      if (!contestId) return;
+      const cells = row.querySelectorAll('td');
+      if (cells.length === 0) return;
+      const leftCell = cells[0];
+      // Avoid duplicates
+      if (leftCell.querySelector('.rshf-view-link')) return;
+      // Find the contest title link (usually the first <a> in the cell)
+      const titleLink = leftCell.querySelector('a');
+      // Create the RSHF link
+      const rshfLink = document.createElement('a');
+      rshfLink.href = `https://rshf.net/contest/cf_${contestId}`;
+      rshfLink.textContent = 'View on RSHF »';
+      rshfLink.className = 'rshf-view-link';
+      rshfLink.target = '_blank';
+      rshfLink.style.display = 'inline-block';
+      rshfLink.style.marginTop = '0';
+      rshfLink.style.marginLeft = '0';
+      rshfLink.style.fontSize = '0.8em';
+      if (titleLink) {
+        titleLink.insertAdjacentElement('afterend', rshfLink);
+        titleLink.insertAdjacentElement('afterend', document.createElement('br'));
+      } else {
+        // Fallback: just append to cell
+        leftCell.appendChild(document.createElement('br'));
+        leftCell.appendChild(rshfLink);
+      }
+    });
+  }
+  if (pastTable) addRshfLinksToTable(pastTable);
+  if (upcomingTable) addRshfLinksToTable(upcomingTable);
+
+}
+
 
 // Process profile sidebar to replace rating
 async function processProfileSidebar(settings, group_display_name) {
@@ -612,13 +711,13 @@ function handleNonGroupMember(element, displayMode) {
       element.classList.add(RANK_CLASSES.newbie);
       element.style.color = RANK_COLORS.newbie;
       break;
-    case ':holyfuck:':
+    case ':holyf:':
       // Avoid duplicating the image if already present
-      if (!element.nextSibling || !(element.nextSibling.classList && element.nextSibling.classList.contains('rshf-holyfuck-img'))) {
+      if (!element.nextSibling || !(element.nextSibling.classList && element.nextSibling.classList.contains('rshf-holyf-img'))) {
         const img = document.createElement('img');
-        img.src = chrome.runtime.getURL('assets/holyFuck.png');
-        img.alt = ':holyfuck:';
-        img.className = 'rshf-holyfuck-img';
+        img.src = chrome.runtime.getURL('assets/holyf.png');
+        img.alt = ':holyf:';
+        img.className = 'rshf-holyf-img';
         img.style.height = '1.3em';
         img.style.width = 'auto';
         img.style.verticalAlign = 'middle';
@@ -626,13 +725,13 @@ function handleNonGroupMember(element, displayMode) {
         element.parentNode.insertBefore(img, element.nextSibling);
       }
       break;
-    case ':holyfuck:+':
+    case ':holyf:+':
       // Avoid duplicating the image if already present
-      if (!element.nextSibling || !(element.nextSibling.classList && element.nextSibling.classList.contains('rshf-holyfuck-img'))) {
+      if (!element.nextSibling || !(element.nextSibling.classList && element.nextSibling.classList.contains('rshf-holyf-img'))) {
         const img = document.createElement('img');
-        img.src = chrome.runtime.getURL('assets/holyFuck.png');
-        img.alt = ':holyfuck+:';
-        img.className = 'rshf-holyfuck-img';
+        img.src = chrome.runtime.getURL('assets/holyf.png');
+        img.alt = ':holyf:+';
+        img.className = 'rshf-holyf-img';
         img.style.height = '1.5em';
         img.style.width = 'auto';
         img.style.verticalAlign = 'middle';
@@ -648,6 +747,7 @@ function handleNonGroupMember(element, displayMode) {
       break;
   }
 }
+
 
 // Remove Codeforces rating classes from element
 function removeRatingClasses(element) {

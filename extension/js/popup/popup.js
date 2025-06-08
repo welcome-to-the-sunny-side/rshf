@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Setup custom dropdown functionality
-// Note: :holyfuck: non-member display mode is handled generically here
+// Note: :holyf: non-member display mode is handled generically here
 function setupCustomDropdowns() {
   // In-group display dropdown
   inGroupDisplaySelected.addEventListener('click', () => {

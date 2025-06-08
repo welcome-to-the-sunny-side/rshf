@@ -1,4 +1,4 @@
-/* 
+/*
  * RSHF Codeforces Rating - Content CSS
  * This CSS file is injected into Codeforces pages to style elements modified by the extension
  */
@@ -121,8 +121,3 @@ a.rated-user.rshf-strike-through,
   100% { transform: rotate(-360deg); }
 }
 
-.rshf-tooltip:hover::after {
-  visibility: visible;
-  opacity: 1;
-  transition-delay: 1.5s;
-}
