@@ -18,6 +18,9 @@ from app.cf_contest_utils import simulate_contest_events_2 # Added for /simulate
 from typing import List, Optional
 from typing import Union
 
+# Import devseed function
+from final_devseed import devseed
+
 async def user_key(request: FastApiRequest):
     user = getattr(request.state, "user", None)
     if not user:
@@ -1609,6 +1612,24 @@ def simulate_contest_endpoint(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"An error occurred during simulation for contest {contest_id}: {str(e)}"
+        )
+
+
+@router.post("/run_devseed", status_code=status.HTTP_200_OK, tags=["Development/Testing"])
+def run_devseed_endpoint(
+    db: Session = Depends(get_db),
+):
+    """
+    Runs the devseed function to reset the database and populate it with test data.
+    This endpoint has no authentication restrictions.
+    """
+    try:
+        devseed()
+        return {"message": "Database seeded successfully"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An error occurred while seeding the database: {str(e)}"
         )
 
 
