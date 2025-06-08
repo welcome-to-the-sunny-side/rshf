@@ -7,9 +7,6 @@
     "storage",
     "alarms"
   ],
-  "host_permissions": [
-    "https://*.codeforces.com/*"
-  ],
   "background": {
     "service_worker": "js/background/background.js"
   },
