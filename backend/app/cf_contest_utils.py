@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from sqlalchemy.orm import Session, joinedload
 from app import rating
 load_dotenv()
+from datetime import datetime
 
 contest_ids = [2096, 2110, 2114, 2116, 2115, 2111]
 default_password = "devpass"
@@ -272,6 +273,170 @@ def simulate_contest_events(db, cid):
     db.commit()
 
     print("🌟 Rating updates complete — simulation wrapped!")
+    
+    # Generate reports for the contest
+    print("📝 Generating reports...")
+    
+    report_count = db.query(func.count(Report.report_id)).scalar() or 0
+    
+    # Get all participations for this contest
+    contest_participations = db.query(ContestParticipation).filter(
+        ContestParticipation.contest_id == c.contest_id
+    ).all()
+    
+    # Create a pool of users that will be reporters and respondents
+    participation_users = [p.user_id for p in contest_participations]
+    
+    # Reports to add
+    reports = []
+    
+    # Generate between 5-15 reports
+    num_reports = random.randint(5, 15)
+    
+    for i in range(num_reports):
+        # Get random reporter and respondent
+        if len(participation_users) < 2:
+            continue
+        
+        reporter_user_id = random.choice(participation_users)
+        # Make sure respondent is different from reporter
+        respondent_user_id = random.choice([u for u in participation_users if u != reporter_user_id])
+        
+        # Get group for the report (randomly choose from one where both users are members)
+        group_memberships = db.query(GroupMembership).all()
+        reporter_groups = set(m.group_id for m in group_memberships if m.user_id == reporter_user_id)
+        respondent_groups = set(m.group_id for m in group_memberships if m.user_id == respondent_user_id)
+        common_groups = list(reporter_groups.intersection(respondent_groups))
+        
+        if not common_groups:  # Skip if no common groups
+            continue
+            
+        group_id = random.choice(common_groups)
+        
+        # Get memberships for reporter and respondent in this group
+        reporter_membership = db.query(GroupMembership).filter(
+            GroupMembership.user_id == reporter_user_id,
+            GroupMembership.group_id == group_id
+        ).first()
+        
+        respondent_membership = db.query(GroupMembership).filter(
+            GroupMembership.user_id == respondent_user_id,
+            GroupMembership.group_id == group_id
+        ).first()
+        
+        # Report descriptions
+        report_reasons = [
+            "Suspicious activity during contest",
+            "Possible cheating detected",
+            "Shared solutions during contest",
+            "Code similarity above threshold",
+            "Disrespectful behavior in contest chat",
+            "Violation of contest rules",
+            "Multiple accounts used in same contest"
+        ]
+        
+        # Create report
+        report_id = f"r{report_count + i + 1}"
+        report = Report(
+            report_id=report_id,
+            group_id=group_id,
+            contest_id=c.contest_id,
+            reporter_user_id=reporter_user_id,
+            respondent_user_id=respondent_user_id,
+            reporter_cf_handle=reporter_membership.cf_handle,
+            respondent_cf_handle=respondent_membership.cf_handle,
+            reporter_rating_at_report_time=reporter_membership.user_group_rating,
+            respondent_rating_at_report_time=respondent_membership.user_group_rating,
+            reporter_role_before=reporter_membership.role,
+            respondent_role_before=respondent_membership.role,
+            respondent_role_after=respondent_membership.role,  # Initially same as before
+            report_description=random.choice(report_reasons),
+            resolved=False,
+            accepted=None
+        )
+        
+        reports.append(report)
+    
+    # Add all reports to DB
+    if reports:
+        db.add_all(reports)
+        db.commit()
+    
+    # Resolve about half of the reports
+    resolve_count = len(reports) // 2
+    reports_to_resolve = random.sample(reports, resolve_count) if resolve_count > 0 else []
+    
+    # Get moderators or admins who can resolve reports
+    resolver_memberships = db.query(GroupMembership).filter(
+        GroupMembership.role.in_([Role.admin, Role.moderator])
+    ).all()
+    
+    # Resolution messages
+    resolution_messages = [
+        "After reviewing the evidence, this report is valid.",
+        "Investigation confirmed rule violation.",
+        "No substantial evidence found to support claim.",
+        "Report accepted based on chat logs and submission patterns.",
+        "Insufficient evidence to take action.",
+        "We reviewed the situation and cannot verify the claim.",
+        "Clear rule violation detected, action taken."
+    ]
+    
+    # Possible actions for accepted reports
+    possible_role_changes = [
+        Role.user,  # No change
+    ]
+    
+    # Current time for resolution timestamp
+    current_time = datetime.utcnow()
+    
+    for report in reports_to_resolve:
+        # Find a resolver from the same group
+        potential_resolvers = [m for m in resolver_memberships if m.group_id == report.group_id 
+                             and m.user_id != report.reporter_user_id 
+                             and m.user_id != report.respondent_user_id]
+        
+        if not potential_resolvers:  # Skip if no suitable resolver
+            continue
+            
+        resolver_membership = random.choice(potential_resolvers)
+        
+        # 60% chance of accepting the report
+        accepted = random.random() < 0.6
+        
+        # For accepted reports, maybe change respondent role
+        new_role = Role.user  # Default no change
+        if accepted:
+            new_role = random.choice(possible_role_changes)
+        
+        # Update the report
+        report.resolved = True
+        report.resolver_user_id = resolver_membership.user_id
+        report.resolver_cf_handle = resolver_membership.cf_handle
+        report.resolver_rating_at_resolve_time = resolver_membership.user_group_rating
+        report.resolve_message = random.choice(resolution_messages)
+        report.accepted = accepted
+        report.respondent_role_after = new_role
+        report.resolve_timestamp = current_time
+        
+        # Apply role change if report is accepted and role should change
+        if accepted and new_role != report.respondent_role_before:
+            respondent_membership = db.query(GroupMembership).filter(
+                GroupMembership.user_id == report.respondent_user_id,
+                GroupMembership.group_id == report.group_id
+            ).first()
+            
+            if respondent_membership:
+                if new_role == Role.kicked:
+                    db.delete(respondent_membership)
+                else:
+                    respondent_membership.role = new_role
+    
+    # Commit all report resolutions
+    if reports_to_resolve:
+        db.commit()
+    
+    print(f"✅ Generated {len(reports)} reports and resolved {len(reports_to_resolve)} of them")
     print("-"*100)
 
 
@@ -372,5 +537,169 @@ def simulate_contest_events_2(db, cid, N: int):
     db.commit()
 
     print("🌟 Rating updates complete — simulation wrapped!")
+    
+    # Generate reports for the contest
+    print("📝 Generating reports...")
+    
+    report_count = db.query(func.count(Report.report_id)).scalar() or 0
+    
+    # Get all participations for this contest
+    contest_participations = db.query(ContestParticipation).filter(
+        ContestParticipation.contest_id == c.contest_id
+    ).all()
+    
+    # Create a pool of users that will be reporters and respondents
+    participation_users = [p.user_id for p in contest_participations]
+    
+    # Reports to add
+    reports = []
+    
+    # Generate between 5-15 reports
+    num_reports = random.randint(5, 15)
+    
+    for i in range(num_reports):
+        # Get random reporter and respondent
+        if len(participation_users) < 2:
+            continue
+        
+        reporter_user_id = random.choice(participation_users)
+        # Make sure respondent is different from reporter
+        respondent_user_id = random.choice([u for u in participation_users if u != reporter_user_id])
+        
+        # Get group for the report (randomly choose from one where both users are members)
+        group_memberships = db.query(GroupMembership).all()
+        reporter_groups = set(m.group_id for m in group_memberships if m.user_id == reporter_user_id)
+        respondent_groups = set(m.group_id for m in group_memberships if m.user_id == respondent_user_id)
+        common_groups = list(reporter_groups.intersection(respondent_groups))
+        
+        if not common_groups:  # Skip if no common groups
+            continue
+            
+        group_id = random.choice(common_groups)
+        
+        # Get memberships for reporter and respondent in this group
+        reporter_membership = db.query(GroupMembership).filter(
+            GroupMembership.user_id == reporter_user_id,
+            GroupMembership.group_id == group_id
+        ).first()
+        
+        respondent_membership = db.query(GroupMembership).filter(
+            GroupMembership.user_id == respondent_user_id,
+            GroupMembership.group_id == group_id
+        ).first()
+        
+        # Report descriptions
+        report_reasons = [
+            "Suspicious activity during contest",
+            "Possible cheating detected",
+            "Shared solutions during contest",
+            "Code similarity above threshold",
+            "Disrespectful behavior in contest chat",
+            "Violation of contest rules",
+            "Multiple accounts used in same contest"
+        ]
+        
+        # Create report
+        report_id = f"r{report_count + i + 1}"
+        report = Report(
+            report_id=report_id,
+            group_id=group_id,
+            contest_id=c.contest_id,
+            reporter_user_id=reporter_user_id,
+            respondent_user_id=respondent_user_id,
+            reporter_cf_handle=reporter_membership.cf_handle,
+            respondent_cf_handle=respondent_membership.cf_handle,
+            reporter_rating_at_report_time=reporter_membership.user_group_rating,
+            respondent_rating_at_report_time=respondent_membership.user_group_rating,
+            reporter_role_before=reporter_membership.role,
+            respondent_role_before=respondent_membership.role,
+            respondent_role_after=respondent_membership.role,  # Initially same as before
+            report_description=random.choice(report_reasons),
+            resolved=False,
+            accepted=None
+        )
+        
+        reports.append(report)
+    
+    # Add all reports to DB
+    if reports:
+        db.add_all(reports)
+        db.commit()
+    
+    # Resolve about half of the reports
+    resolve_count = len(reports) // 2
+    reports_to_resolve = random.sample(reports, resolve_count) if resolve_count > 0 else []
+    
+    # Get moderators or admins who can resolve reports
+    resolver_memberships = db.query(GroupMembership).filter(
+        GroupMembership.role.in_([Role.admin, Role.moderator])
+    ).all()
+    
+    # Resolution messages
+    resolution_messages = [
+        "After reviewing the evidence, this report is valid.",
+        "Investigation confirmed rule violation.",
+        "No substantial evidence found to support claim.",
+        "Report accepted based on chat logs and submission patterns.",
+        "Insufficient evidence to take action.",
+        "We reviewed the situation and cannot verify the claim.",
+        "Clear rule violation detected, action taken."
+    ]
+    
+    # Possible actions for accepted reports
+    possible_role_changes = [
+        Role.user,  # No change
+    ]
+    
+    # Current time for resolution timestamp
+    current_time = datetime.utcnow()
+    
+    for report in reports_to_resolve:
+        # Find a resolver from the same group
+        potential_resolvers = [m for m in resolver_memberships if m.group_id == report.group_id 
+                             and m.user_id != report.reporter_user_id 
+                             and m.user_id != report.respondent_user_id]
+        
+        if not potential_resolvers:  # Skip if no suitable resolver
+            continue
+            
+        resolver_membership = random.choice(potential_resolvers)
+        
+        # 60% chance of accepting the report
+        accepted = random.random() < 0.6
+        
+        # For accepted reports, maybe change respondent role
+        new_role = Role.user  # Default no change
+        if accepted:
+            new_role = random.choice(possible_role_changes)
+        
+        # Update the report
+        report.resolved = True
+        report.resolver_user_id = resolver_membership.user_id
+        report.resolver_cf_handle = resolver_membership.cf_handle
+        report.resolver_rating_at_resolve_time = resolver_membership.user_group_rating
+        report.resolve_message = random.choice(resolution_messages)
+        report.accepted = accepted
+        report.respondent_role_after = new_role
+        report.resolve_timestamp = current_time
+        
+        # Apply role change if report is accepted and role should change
+        if accepted and new_role != report.respondent_role_before:
+            respondent_membership = db.query(GroupMembership).filter(
+                GroupMembership.user_id == report.respondent_user_id,
+                GroupMembership.group_id == report.group_id
+            ).first()
+            
+            if respondent_membership:
+                if new_role == Role.kicked:
+                    db.delete(respondent_membership)
+                else:
+                    respondent_membership.role = new_role
+    
+    # Commit all report resolutions
+    if reports_to_resolve:
+        db.commit()
+    
+    print(f"✅ Generated {len(reports)} reports and resolved {len(reports_to_resolve)} of them")
     print("-"*100)
 
