@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "RSHF",
   "version": "1.0.0",
-  "description": "qol improvements",
+  "description": "QOL improvements for Codeforces, and integration with RSHF",
   "permissions": [
     "storage",
     "activeTab",
