@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from app import crud, database, models, schemas
+from app.cf_contest_utils import simulate_contest_events_2 # Added for /simulate_contest
 from typing import List, Optional
 from typing import Union
 
@@ -1575,6 +1576,40 @@ def get_requests_count(
         resolver_cf_handle=resolver_cf_handle
     )
     return schemas.CountResponse(count=count)
+
+
+# New endpoint for contest simulation (no auth)
+@router.post("/simulate_contest", status_code=status.HTTP_200_OK, tags=["Development/Testing"])
+def simulate_contest_endpoint(
+    contest_id: int = Query(..., description="Codeforces contest ID to simulate"),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+    N: int = Query(800, description="Number of top standings to consider for simulation"),
+):
+    """
+    Simulates contest events for a given Codeforces contest ID.
+    This is a development/testing endpoint and does not require authentication.
+    Calls `simulate_contest_events_2` to perform the simulation.
+    """
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You must be an admin to simulate contests"
+        )
+    try:
+        simulate_contest_events_2(db, contest_id, N)
+        return {"message": f"Simulation for contest {contest_id} initiated successfully."}
+    except HTTPException:
+        # Re-raise HTTPExceptions if they are already of that type from simulate_contest_events_2 or its callees
+        raise
+    except Exception as e:
+        # Consider logging the exception here if a logger is configured
+        # from fastapi.logger import logger
+        # logger.error(f"Error during contest simulation {contest_id}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An error occurred during simulation for contest {contest_id}: {str(e)}"
+        )
 
 
 @router.post("/delete_announcement", status_code=status.HTTP_200_OK)

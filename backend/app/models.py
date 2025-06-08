@@ -109,7 +109,7 @@ class Contest(ModelBase):
     group_views = Column(JSON, nullable=True) # this is derived data
 
     contest_type = Column(Enum(ContestType), nullable=False, default=ContestType.DIV1)
-    
+    processed = Column(Boolean, nullable=False, default=False)
 
     participations = relationship("ContestParticipation", back_populates="contest", cascade="all, delete")
     def __repr__(self):
