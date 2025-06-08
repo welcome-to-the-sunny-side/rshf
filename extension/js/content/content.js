@@ -613,35 +613,39 @@ async function processProfileBox(settings, group_display_name) {
       let rshfLi = document.createElement('li');
       rshfLi.classList.add('rshf-rating-li');
       
-      // Build HTML exactly matching the example format, with a link to the group
+      // Build HTML for RSHF Rating and add the RSHF profile symbol link ONLY after the max rating
       let rshfHtml = `
-        <img style="vertical-align:middle;margin-right:0.5em;" src="//codeforces.org/s/45865/images/icons/rating-24x24.png">
-        RSHF Rating [<a href="https://rshf.net/group/${groupName}" target="_blank">${groupName}</a>]: 
+        <img style="vertical-align:middle;margin-right:0.5em; height:1.5em; width:1.5em;" src="${chrome.runtime.getURL('/images/logo_small.png')}">
+        Group Rating [<a href="https://rshf.net/group/${groupName}" target="_blank">${groupName}</a>]: 
         <span style="font-weight:bold;" class="${ratingInfo.cssClass}">${rating}</span>
       `;
       
       // Add max rating if available - format exactly like the example
       const maxRatingInfo = getRatingInfo(maxRating);
       rshfHtml += ` <span class="smaller">(max. <span style="font-weight:bold;" class="${maxRatingInfo.cssClass}">${maxRatingInfo.name}, </span> <span style="font-weight:bold;" class="${maxRatingInfo.cssClass}">${maxRating}</span>)</span>`;
+      // Add a single RSHF profile link as a bigger symbol after max rating
+      rshfHtml += ` <a href="https://rshf.net/user/${username}" target="_blank" title="View RSHF profile" style="margin-left:0.5em; font-size:1em; vertical-align:middle; text-decoration:none; opacity:0.8; display:inline-block; line-height:1;">
+        <svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' style='vertical-align:middle;'><path fill='currentColor' d='M14 3v2h3.59L10 12.59l1.41 1.41L19 6.41V10h2V3z'/><path fill='currentColor' d='M5 5v14h14v-7h-2v5H7V7h5V5z' opacity='.5'/></svg>
+      </a>`;
       
       rshfLi.innerHTML = rshfHtml;
       
       // Modify the CF rating label text
-      if (ratingLiElement) {
-        // Get all text nodes in the rating element
-        const textNodes = Array.from(ratingLiElement.childNodes)
-          .filter(node => node.nodeType === Node.TEXT_NODE);
+    //   if (ratingLiElement) {
+    //     // Get all text nodes in the rating element
+    //     const textNodes = Array.from(ratingLiElement.childNodes)
+    //       .filter(node => node.nodeType === Node.TEXT_NODE);
         
-        // Find the text node that contains "Contest rating:"
-        const ratingTextNode = textNodes.find(node => 
-          node.textContent.includes('Contest rating:'));
+    //     // Find the text node that contains "Contest rating:"
+    //     const ratingTextNode = textNodes.find(node => 
+    //       node.textContent.includes('Contest rating:'));
           
-        if (ratingTextNode) {
-          // Replace "Contest rating:" with "CF Rating:"
-          ratingTextNode.textContent = ratingTextNode.textContent.replace(
-            'Contest rating:', 'CF Rating:');
-        }
-      }
+    //     if (ratingTextNode) {
+    //       // Replace "Contest rating:" with "CF Rating:"
+    //       ratingTextNode.textContent = ratingTextNode.textContent.replace(
+    //         'Contest rating:', 'CF Rating:');
+    //     }
+    //   }
       
       // Insert before the contest rating li
       if (ratingLiElement && ratingLiElement.parentNode) {
