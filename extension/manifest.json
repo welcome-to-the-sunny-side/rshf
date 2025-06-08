@@ -5,11 +5,9 @@
   "description": "QOL improvements for Codeforces, and integration with RSHF",
   "permissions": [
     "storage",
-    "activeTab",
     "alarms"
   ],
   "host_permissions": [
-    "http://localhost:8000/*",
     "https://*.codeforces.com/*"
   ],
   "background": {
@@ -38,7 +36,7 @@
   "web_accessible_resources": [
     {
       "resources": ["images/*", "assets/*"],
-      "matches": ["<all_urls>"]
+      "matches": ["https://*.codeforces.com/*"]
     }
   ]
 
