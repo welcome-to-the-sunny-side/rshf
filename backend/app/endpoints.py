@@ -20,6 +20,7 @@ from typing import Union
 
 # Import devseed function
 from final_devseed import devseed
+from devseed2 import seed
 
 async def user_key(request: FastApiRequest):
     user = getattr(request.state, "user", None)
@@ -1615,16 +1616,45 @@ def simulate_contest_endpoint(
         )
 
 
-@router.post("/run_devseed", status_code=status.HTTP_200_OK, tags=["Development/Testing"])
+@router.post("/run_final_devseed", status_code=status.HTTP_200_OK, tags=["Development/Testing"])
 def run_devseed_endpoint(
     db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
 ):
     """
     Runs the devseed function to reset the database and populate it with test data.
-    This endpoint has no authentication restrictions.
+    This endpoint requires admin authentication.
     """
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You must be an admin to run database seed functions"
+        )
     try:
         devseed()
+        return {"message": "Database seeded successfully"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An error occurred while seeding the database: {str(e)}"
+        )
+
+@router.post("/run_devseed2", status_code=status.HTTP_200_OK, tags=["Development/Testing"])
+def run_devseed2_endpoint(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """
+    Runs the devseed2 function to reset the database and populate it with test data.
+    This endpoint requires admin authentication.
+    """
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You must be an admin to run database seed functions"
+        )
+    try:
+        seed()
         return {"message": "Database seeded successfully"}
     except Exception as e:
         raise HTTPException(
