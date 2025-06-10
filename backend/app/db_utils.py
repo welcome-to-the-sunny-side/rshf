@@ -1,4 +1,3 @@
-import pandas as pd
 from sqlalchemy import inspect, text, MetaData
 from sqlalchemy.ext.declarative import declarative_base
 from contextlib import contextmanager
@@ -45,23 +44,7 @@ def drop_table(table_name: str) -> None:
         print(f"Table '{table_name}' does not exist.")
 
 
-def to_df(table_name: str) -> pd.DataFrame:
-    """
-    Convert a table to a pandas DataFrame.
-    
-    Args:
-        table_name: The name of the table to convert
-        
-    Returns:
-        pandas DataFrame containing the table data
-    """
-    try:
-        query = f"SELECT * FROM {table_name}"
-        df = pd.read_sql_query(query, engine)
-        return df
-    except Exception as e:
-        print(f"Error converting table '{table_name}' to DataFrame: {e}")
-        return pd.DataFrame()
+
 
 
 def get_table_names() -> list:

@@ -2,27 +2,34 @@ import sys
 import json
 import requests
 import gzip
+import app.r2_utils as r2
+
+from datetime import datetime, timezone
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python run.py <output_json_file>")
-        sys.exit(1)
+    group_id = "main"
+    user_data = {
+        "negative-xp": ["negative-xp", 1500, 1500],
+        "RoomTemperatureIQ": ["RoomTemperatureIQ", -1000000000, -1000000000]
+    }
 
-    url = "https://pub-e98285daadd4482fb56021ad394144c1.r2.dev/extension_data"
-    output_file = sys.argv[1]
+    payload = {
+        'timestamp': datetime.utcnow().replace(tzinfo=timezone.utc).isoformat(),
+        'data': {
+            group_id: user_data
+        },
+        'data_format': ['cf_handle', 'user_group_rating', 'user_group_max_rating']
+    }
 
-    # Download the gzipped JSON file from the hardcoded public R2 URL
-    resp = requests.get(url, timeout=30)
-    resp.raise_for_status()
-    raw = resp.content
+    print(f"Preparing to write data for group '{group_id}': {user_data}")
 
-    # Try to decompress as gzip, fallback to raw if not gzipped
-    try:
-        raw = gzip.decompress(raw)
-    except OSError:
-        pass
+    # Write the main extension data (gzipped)
+    extension_data_url = r2.write_to_r2(payload, 'extension_data', use_gzip=True)
+    print(f"Successfully wrote extension data to: {extension_data_url}")
 
-    data = json.loads(raw.decode("utf-8"))
-    with open(output_file, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-    print(f"Downloaded and extracted JSON saved to {output_file}")
+    # Also update the simple timestamp file (not gzipped)
+    # This matches the behavior of write_extension_data_to_r2
+    timestamp_payload = {'timestamp': datetime.utcnow().replace(tzinfo=timezone.utc).isoformat()}
+    timestamp_url = r2.write_to_r2(timestamp_payload, 'timestamp', use_gzip=False) # Typically not gzipped
+    print(f"Successfully wrote timestamp file to: {timestamp_url}")
+
