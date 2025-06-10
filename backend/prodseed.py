@@ -1,6 +1,7 @@
 from app.models import *
 from app.db_utils import *
-import logging as logger
+import logging
+logger = logging.getLogger(__name__)
 
 def prodseed():
     with open("handles.txt","r",encoding="utf-8") as f:
