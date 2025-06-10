@@ -18,7 +18,7 @@ from app.cf_contest_utils import *
 def devseed():
     contest_ids = [1853, 1854, 1855, 1856, 1857, 1858, 1859]
     default_password = "devpass"
-    seed = 88
+    seed = 32324
     random.seed(seed)
     Faker.seed(seed)
     faker = Faker()
@@ -30,7 +30,6 @@ def devseed():
         st = cf_api.get_full_standings(i)
         for h in st["rows"]:
             handles.add(h["handle"])
-
 
     # populate users
 
