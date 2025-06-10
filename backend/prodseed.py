@@ -1,7 +1,15 @@
 from app.models import *
 from app.db_utils import *
 import logging
+import time
+import psutil
+import os
+
+start_time = time.time()
+process = psutil.Process(os.getpid())
 logger = logging.getLogger(__name__)
+
+
 
 
 def prodseed():
@@ -95,3 +103,8 @@ def prodseed():
     
 if __name__ == "__main__":
     prodseed()
+    end_time = time.time()
+    memory_info = process.memory_info()
+
+    print(f"Runtime: {end_time - start_time:.2f} seconds")
+    print(f"RSS memory: {memory_info.rss / (1024 * 1024):.2f} MB")
