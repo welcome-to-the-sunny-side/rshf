@@ -1,125 +1,162 @@
 from dotenv import load_dotenv
 load_dotenv()
 
+import logging
+import os
+import asyncio
+import redis.asyncio as redis
 from fastapi import FastAPI
-from app.database import Base, engine
-from app import models
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi_limiter import FastAPILimiter
+
+from app.database import Base, engine, SessionLocal
+from app import models # This will ensure models are registered with Base.metadata
 from app.models import User, Group, GroupMembership, Role
 from app.endpoints import router as api_router
-import asyncio
-from app.crud import update_upcoming_contests, update_finished_contests
-from app.database import SessionLocal
-import os
-from fastapi_limiter import FastAPILimiter
 from app.utils import hash_password
+# from app.crud import update_upcoming_contests, update_finished_contests # Not used in startup
 
-from fastapi.middleware.cors import CORSMiddleware
-import redis.asyncio as redis
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
+logger.info("🚀 Application starting up...")
+
+logger.info("Ensuring database tables are created...")
 Base.metadata.create_all(bind=engine)
+logger.info("✅ Database tables ensured.")
+
 app = FastAPI(title="rshf api")
+logger.info("✅ FastAPI app instance created.")
 
 @app.on_event("startup")
 async def startup():
+    logger.info("🚀 Executing startup event...")
     # Initialize Redis for rate limiting
     redis_url = os.getenv("REDIS_URL")
-    r = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
-    await FastAPILimiter.init(r)
-    
-    # Prepopulate the database with admin users, main group, and memberships
+    if not redis_url:
+        logger.error("❌ REDIS_URL environment variable not set. Rate limiting will not work.")
+        # Depending on requirements, you might want to raise an exception here or proceed without rate limiting
+    else:
+        logger.info(f"🔌 Connecting to Redis at {redis_url}...")
+        try:
+            r = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
+            await r.ping() # Verify connection
+            await FastAPILimiter.init(r)
+            logger.info("✅ Redis initialized and FastAPILimiter configured.")
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize Redis or FastAPILimiter: {e}")
+            # Depending on requirements, you might want to raise an exception here
+
+    logger.info("🌱 Prepopulating database (if necessary)...")
+    db = None  # Initialize db to None to ensure it's defined in finally block
     try:
         db = SessionLocal()
+        logger.info("ℹ️ Database session started for prepopulation.")
         
-        # Default password for admin users
         default_password = "devpass"
+        hashed_default_password = hash_password(default_password)
         
-        # Create admin users if they don't exist
-        users = [
+        users_to_create = [
             User(
                 user_id='negative-xp',
                 role='admin',
                 cf_handle='negative-xp',
                 email_id='nonadhocproblems@gmail.com',
-                hashed_password=hash_password(default_password),
+                hashed_password=hashed_default_password,
             ),
             User(
                 user_id='roomTemperatureIQ',
                 role='admin',
                 cf_handle='roomTemperatureIQ',
                 email_id='evapilotno17@gmail.com',
-                hashed_password=hash_password(default_password),
+                hashed_password=hashed_default_password,
             )
         ]
         
-        for user in users:
-            # Check if user already exists to avoid duplicates
-            existing_user = db.query(User).filter(User.user_id == user.user_id).first()
+        for user_data in users_to_create:
+            existing_user = db.query(User).filter(User.user_id == user_data.user_id).first()
             if not existing_user:
-                db.add(user)
-                print(f"✅ Created admin user: {user.user_id}")
+                db.add(user_data)
+                logger.info(f"➕ Creating admin user: {user_data.user_id}")
+            else:
+                logger.info(f"ℹ️ Admin user {user_data.user_id} already exists.")
         
-        # Create main group if it doesn't exist
-        main_group = Group(
+        main_group_data = Group(
             group_id='main',
             group_name='main',
             group_description='the main group - all users will be a part of this group',
             is_private=False
         )
         
-        existing_group = db.query(Group).filter(Group.group_id == main_group.group_id).first()
+        existing_group = db.query(Group).filter(Group.group_id == main_group_data.group_id).first()
         if not existing_group:
-            db.add(main_group)
-            print(f"✅ Created main group: {main_group.group_id}")
+            db.add(main_group_data)
+            logger.info(f"➕ Creating main group: {main_group_data.group_id}")
+        else:
+            logger.info(f"ℹ️ Main group {main_group_data.group_id} already exists.")
         
-        # Commit to ensure users and group are in the database
-        db.commit()
+        db.commit() # Commit users and group first
+        logger.info("✅ Users and group committed to database.")
         
-        # Add admin users to the main group with admin role
-        for user in users:
-            # Check if membership already exists
+        for user_data in users_to_create:
             membership = db.query(GroupMembership).filter(
-                GroupMembership.user_id == user.user_id,
+                GroupMembership.user_id == user_data.user_id,
                 GroupMembership.group_id == 'main'
             ).first()
             
             if not membership:
-                membership = GroupMembership(
-                    user_id=user.user_id,
+                new_membership = GroupMembership(
+                    user_id=user_data.user_id,
                     group_id='main',
                     role=Role.admin,
-                    cf_handle=user.cf_handle
+                    cf_handle=user_data.cf_handle
                 )
-                db.add(membership)
-                print(f"✅ Added {user.user_id} to main group with admin role")
+                db.add(new_membership)
+                logger.info(f"➕ Added {user_data.user_id} to main group with admin role.")
+            else:
+                logger.info(f"ℹ️ Membership for {user_data.user_id} in main group already exists.")
         
-        # Commit all changes
         db.commit()
+        logger.info("✅ Memberships committed. Database prepopulation complete.")
     except Exception as e:
-        print(f"❌ Error prepopulating database: {e}")
-        db.rollback()
+        logger.error(f"❌ Error during database prepopulation: {e}")
+        if db: # Check if db session was successfully created
+            db.rollback()
+            logger.info("↩️ Database transaction rolled back.")
     finally:
-        db.close()
+        if db: # Check if db session was successfully created
+            db.close()
+            logger.info("ℹ️ Database session closed for prepopulation.")
+    logger.info("🏁 Startup event finished.")
 
 @app.on_event("shutdown")
 async def shutdown():
+    logger.info("🌙 Executing shutdown event...")
     await FastAPILimiter.close()
+    logger.info("🔌 FastAPILimiter closed.")
+    logger.info("🏁 Shutdown event finished.")
 
+logger.info("🔌 Including API router...")
 app.include_router(api_router)
-db = SessionLocal()
+logger.info("✅ API router included.")
 
+# Removed global db = SessionLocal()
 
+logger.info("➕ Adding CORS middleware...")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173",          # Vite dev server
-        "http://127.0.0.1:5173",          # Vite dev server alternative
-        "https://rshf.net",               # Production domain
-        "https://rshf-frontend.onrender.com", # Render.com frontend domain
-        "*",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "https://rshf.net",
+        "https://rshf-frontend.onrender.com",
+        "*", # Consider restricting this in production for security
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
 )
+logger.info("✅ CORS middleware added.")
 
-print("✅ tables created & routes loaded. ready to go.")
+logger.info("🎉 Application setup complete. Ready to serve requests.")
