@@ -8,7 +8,7 @@ vomitignore.txt
 vomit.txt
 vomitinclude.txt
 *.py[cod]
-.ipynb*
+*.ipynb
 __pycache__/
 *venv*
 changes.md
