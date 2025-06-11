@@ -15,7 +15,7 @@ import logging
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-
+from app.performance_utils import track_performance
 
 class CodeforcesAPI:
     """
@@ -121,6 +121,7 @@ class CodeforcesAPI:
     
     # ========== BLOG METHODS ==========
     
+    @track_performance
     def blogEntry_comments(self, blog_entry_id: int) -> List[Dict[str, Any]]:
         """
         Returns a list of comments to the specified blog entry.
@@ -133,6 +134,7 @@ class CodeforcesAPI:
         """
         return self._make_request("blogEntry.comments", {"blogEntryId": blog_entry_id})
     
+    @track_performance
     def blogEntry_view(self, blog_entry_id: int) -> Dict[str, Any]:
         """
         Returns blog entry.
@@ -147,6 +149,7 @@ class CodeforcesAPI:
     
     # ========== CONTEST METHODS ==========
     
+    @track_performance
     def contest_hacks(self, contest_id: int, as_manager: bool = False) -> List[Dict[str, Any]]:
         """
         Returns list of hacks in the specified contests.
@@ -164,6 +167,7 @@ class CodeforcesAPI:
             params["asManager"] = "true"
         return self._make_request("contest.hacks", params)
     
+    @track_performance
     def contest_list(self, gym: bool = False) -> List[Dict[str, Any]]:
         """
         Returns information about all available contests.
@@ -179,6 +183,7 @@ class CodeforcesAPI:
             params["gym"] = "true"
         return self._make_request("contest.list", params)
     
+    @track_performance
     def contest_ratingChanges(self, contest_id: int) -> List[Dict[str, Any]]:
         """
         Returns rating changes after the contest.
@@ -190,7 +195,8 @@ class CodeforcesAPI:
             List of RatingChange objects
         """
         return self._make_request("contest.ratingChanges", {"contestId": contest_id})
-        
+
+    @track_performance   
     def process_standings_obj(self, standingsObj):
         rows = []
         for el in standingsObj["rows"]:
@@ -205,6 +211,7 @@ class CodeforcesAPI:
         standingsObj["rows"] = rows
         return standingsObj
 
+    @track_performance
     def contest_standings(self, contest_id: int, from_: int = 1, count: int = None,
                          handles: Optional[List[str]] = None, room: Optional[int] = None,
                          show_unofficial: bool = False, as_manager: bool = False) -> Dict[str, Any]:
@@ -272,6 +279,7 @@ class CodeforcesAPI:
     
     # ========== PROBLEMSET METHODS ==========
     
+    @track_performance
     def problemset_problems(self, tags: Optional[List[str]] = None,
                            problemset_name: Optional[str] = None) -> Dict[str, Any]:
         """
@@ -292,6 +300,7 @@ class CodeforcesAPI:
             
         return self._make_request("problemset.problems", params)
     
+    @track_performance
     def problemset_recentStatus(self, count: int = 50,
                                problemset_name: Optional[str] = None) -> List[Dict[str, Any]]:
         """
@@ -312,6 +321,7 @@ class CodeforcesAPI:
     
     # ========== RECENT ACTIONS METHODS ==========
     
+    @track_performance
     def recentActions(self, max_count: int = 30) -> List[Dict[str, Any]]:
         """
         Returns recent actions.
@@ -326,6 +336,7 @@ class CodeforcesAPI:
     
     # ========== USER METHODS ==========
     
+    @track_performance
     def user_blogEntries(self, handle: str) -> List[Dict[str, Any]]:
         """
         Returns a list of all user's blog entries.
@@ -355,6 +366,7 @@ class CodeforcesAPI:
             
         return self._make_request("user.friends", params)
     
+    @track_performance
     def user_info(self, handles: Union[str, List[str]],
                   check_historic_handles: bool = True) -> List[Dict[str, Any]]:
         """
@@ -376,6 +388,8 @@ class CodeforcesAPI:
             
         return self._make_request("user.info", params)
     
+
+    @track_performance
     def user_ratedList(self, active_only: bool = True,
                        include_retired: bool = False) -> List[Dict[str, Any]]:
         """
@@ -396,6 +410,8 @@ class CodeforcesAPI:
             
         return self._make_request("user.ratedList", params)
     
+
+    @track_performance
     def user_rating(self, handle: str) -> List[Dict[str, Any]]:
         """
         Returns rating history of the specified user.
@@ -407,7 +423,8 @@ class CodeforcesAPI:
             List of RatingChange objects
         """
         return self._make_request("user.rating", {"handle": handle})
-    
+
+    @track_performance 
     def user_status(self, handle: str, from_: int = 1, count: int = 50) -> List[Dict[str, Any]]:
         """
         Returns submissions of specified user.
@@ -426,6 +443,7 @@ class CodeforcesAPI:
             "count": count
         })
 
+    @track_performance
     def fetch_upcoming_contests(self, cutoff_days: Optional[int] = None):
         """
             fetch upcoming contests from cf api
@@ -439,6 +457,8 @@ class CodeforcesAPI:
 
         return fetched_contests
 
+
+    @track_performance
     def fetch_finished_contests(self, cutoff_days: Optional[int] = None):
         """
             fetch finished contests from cf api
@@ -454,6 +474,7 @@ class CodeforcesAPI:
 
 
     # custom functions
+    @track_performance
     def get_full_standings(self, contest_id: int):
         logger.info(f"Executing get_full_standings for contest_id: {contest_id}")
         cache_dir = os.path.join(os.path.dirname(__file__), '..', 'cache', 'cf_api_cache')

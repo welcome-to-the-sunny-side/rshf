@@ -15,10 +15,12 @@ from __future__ import annotations
 
 import math
 from typing import List
+from app.performance_utils import track_performance
 
 # ---------------------------------------------------------------------------
 # helpers
 # ---------------------------------------------------------------------------
+
 
 def _elo_win_prob(ra: float, rb: float) -> float:
     """classical elo win probability"""
@@ -133,6 +135,7 @@ def _validate_deltas(contestants: List[_Contestant]):
 # public api
 # ---------------------------------------------------------------------------
 
+@track_performance
 def apply_codeforces_rating(participations: List["ContestParticipation"]):
     """mutates each `ContestParticipation` with `rating_after` and returns list."""
     if not participations:

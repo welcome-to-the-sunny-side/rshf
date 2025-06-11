@@ -10,6 +10,7 @@ import os
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session, joinedload
 from app import rating
+from app.performance_utils import track_performance
 load_dotenv()
 from datetime import datetime
 
@@ -21,6 +22,7 @@ Faker.seed(seed)
 faker = Faker()
 
 
+@track_performance
 def map_cf_contest_to_internal(cf_contest):
     contest_name = cf_contest.get("name", "Unknown Contest").lower()
 
@@ -52,6 +54,7 @@ def map_cf_contest_to_internal(cf_contest):
     }
 
 
+@track_performance
 def fetch_and_add_contest_to_db_from_cf(db, contest_id):
     print(f"🌟 Checking if contest cf_{contest_id} already lives in the DB...")
 
@@ -75,6 +78,7 @@ def fetch_and_add_contest_to_db_from_cf(db, contest_id):
     return contest
 
 
+@track_performance
 def update_finished_contest_from_cf(db, cf_contest_id: str):
     print(f"🔎 Retrieving contest cf_{cf_contest_id} from DB...")
     contest = (
@@ -173,6 +177,7 @@ def update_finished_contest_from_cf(db, cf_contest_id: str):
     return contest
 
 
+@track_performance
 def update_contest_ratings_for_group(db: Session, group_id: str, contest_id: str):
     contest = db.query(models.Contest).filter(
         models.Contest.contest_id == contest_id
@@ -206,6 +211,7 @@ def update_contest_ratings_for_group(db: Session, group_id: str, contest_id: str
 
 
 
+@track_performance
 def simulate_contest_events(db, cid):
     BATCH_SIZE = 500
     print(f"🎲 Starting simulation for contest {cid}...")
@@ -378,6 +384,7 @@ def simulate_contest_events(db, cid):
 
 
 
+@track_performance
 def simulate_contest_events_2(db, cid, N: int):
     
     print(f"🎲 Starting simulation for contest {cid}...")

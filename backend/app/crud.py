@@ -17,9 +17,11 @@ from app.schemas import ContestUpdate
 from app import rating
 from sqlalchemy.orm.attributes import flag_modified
 from app.models import ContestType
+from app.performance_utils import track_performance
 
 
 # ───────────────────────────── internal enrichers ─────────────────────────────
+@track_performance
 def _enrich_user(db: Session, user: models.User) -> models.User:
     """Attach memberships and participations so Pydantic can serialise them."""
     user.group_memberships = list(user.memberships)
@@ -31,6 +33,7 @@ def _enrich_user(db: Session, user: models.User) -> models.User:
     return user
 
 
+@track_performance
 def _enrich_group(db: Session, group: models.Group) -> models.Group:
     group.contest_participations = (
         db.query(models.ContestParticipation)
@@ -40,6 +43,7 @@ def _enrich_group(db: Session, group: models.Group) -> models.Group:
     return group
 
 # ───────────────────────────── USERS ─────────────────────────────
+@track_performance
 def create_user(db: Session, payload: schemas.UserRegister) -> models.User:
     db_user = models.User(
         user_id=payload.user_id,
@@ -54,16 +58,20 @@ def create_user(db: Session, payload: schemas.UserRegister) -> models.User:
     db.refresh(db_user)
     return db_user
 
+@track_performance
 def check_if_user_is_banned(db: Session, cf_handle: str) -> bool:
     return db.query(models.BannedUser).filter(models.BannedUser.cf_handle == cf_handle).first() is not None
 
+@track_performance
 def get_user(db: Session, user_id: str) -> Optional[models.User]:
     usr = db.query(models.User).filter(models.User.user_id == user_id).first()
     return _enrich_user(db, usr) if usr else None
 
+@track_performance
 def get_user_by_handle(db: Session, cf_handle: str) -> Optional[models.User]:
     return db.query(models.User).filter(models.User.cf_handle == cf_handle).first()
 
+@track_performance
 def update_user(db: Session, user_id: str, payload: schemas.UserUpdate) -> Optional[models.User]:
     user = get_user(db, user_id)
     if not user:
@@ -82,6 +90,7 @@ def update_user(db: Session, user_id: str, payload: schemas.UserUpdate) -> Optio
     db.refresh(user)
     return user
 
+@track_performance
 def authenticate_user(db: Session, user_id: str, password: str) -> Optional[models.User]:
     user = get_user(db, user_id)
     if not user or user.is_registered == False or not verify_password(password, user.hashed_password):
@@ -89,6 +98,7 @@ def authenticate_user(db: Session, user_id: str, password: str) -> Optional[mode
     return user
 
 # ───────────────────────────── GROUPS ─────────────────────────────
+@track_performance
 def create_group(db: Session, payload: schemas.GroupRegister) -> models.Group:
     """
     A group's display label is now its `group_id`; descriptive metadata is optional.
@@ -116,9 +126,11 @@ def create_group(db: Session, payload: schemas.GroupRegister) -> models.Group:
     return grp
 
 
+@track_performance
 def get_group(db: Session, group_id: str) -> Optional[models.Group]:
     return db.query(models.Group).filter(models.Group.group_id == group_id).first()
 
+@track_performance
 def list_groups(db: Session):
     """
     Returns (Group, member_count) tuples with O(G) complexity where G is the number of groups.
@@ -150,6 +162,7 @@ def list_groups(db: Session):
     return result
 
 
+@track_performance
 def update_group(db: Session, payload: schemas.GroupUpdate):
     grp = db.query(models.Group).filter(models.Group.group_id == payload.group_id).first()
     if not grp:
@@ -210,6 +223,7 @@ def update_group(db: Session, payload: schemas.GroupUpdate):
     return grp
 
 # ───────────────────────────── MEMBERSHIPS ─────────────────────────────
+@track_performance
 def add_membership(db: Session, payload: schemas.GroupMembershipAdd) -> models.GroupMembership:
     cf_handle = payload.cf_handle
     if cf_handle is None:
@@ -240,6 +254,7 @@ def add_membership(db: Session, payload: schemas.GroupMembershipAdd) -> models.G
     return m
 
 
+@track_performance
 def remove_membership(db: Session, user_id: str, group_id: str) -> bool:
     m = (
         db.query(models.GroupMembership)
@@ -278,6 +293,7 @@ def remove_membership(db: Session, user_id: str, group_id: str) -> bool:
     db.commit()
     return True
 
+@track_performance
 def get_membership(db: Session, user_id: str, group_id: str) -> Optional[models.GroupMembership]:
     return (
         db.query(models.GroupMembership)
@@ -285,6 +301,7 @@ def get_membership(db: Session, user_id: str, group_id: str) -> Optional[models.
         .first()
     )
     
+@track_performance
 def update_membership_role(db: Session, user_id: str, group_id: str, new_role: models.Role) -> Optional[models.GroupMembership]:
     """
     Update the role of a user in a group.
@@ -308,6 +325,7 @@ def update_membership_role(db: Session, user_id: str, group_id: str, new_role: m
     return membership
 
 # ───────────────────────────── CONTEST PARTICIPATIONS ─────────────────────────────
+@track_performance
 def register_contest_participation(
     db: Session, payload: schemas.ContestRegistration
 ) -> models.ContestParticipation:
@@ -339,6 +357,7 @@ def register_contest_participation(
     return part
 
 
+@track_performance
 def deregister_contest_participation(db: Session, user_id: str, group_id: str, contest_id: str) -> bool:
     part = (
         db.query(models.ContestParticipation)
@@ -364,6 +383,7 @@ def deregister_contest_participation(db: Session, user_id: str, group_id: str, c
     return True
 
 
+@track_performance
 def filter_contest_participations(
     db: Session,
     gid: Optional[str] = None,
@@ -380,6 +400,7 @@ def filter_contest_participations(
     return q.all()
 
 
+@track_performance
 def count_contest_participations(
     db: Session,
     group_id: Optional[str] = None,
@@ -396,6 +417,7 @@ def count_contest_participations(
     return q.count()
 
 
+@track_performance
 def get_contest_participations_range_fetch(
     db: Session,
     gid: Optional[str] = None,
@@ -432,6 +454,7 @@ def get_contest_participations_range_fetch(
     return {"items": items}
 
 # ───────────────────────────── CONTEST METADATA & CF SYNC ─────────────────────────────
+@track_performance
 def list_contests(db: Session, finished: Optional[bool] = None) -> List[models.Contest]:
     q = db.query(models.Contest)
     if finished is not None:
@@ -439,6 +462,7 @@ def list_contests(db: Session, finished: Optional[bool] = None) -> List[models.C
     return q.all()
 
 
+@track_performance
 def map_cf_contest_to_internal(cf_contest: Dict[str, Any]) -> Dict[str, Any]:
     contest_name = cf_contest.get("name", "Unknown Contest").lower()
     
@@ -470,6 +494,7 @@ def map_cf_contest_to_internal(cf_contest: Dict[str, Any]) -> Dict[str, Any]:
         "contest_type": contest_type,
     }
 
+@track_performance
 def get_contest(db: Session, contest_id: str) -> Optional[models.Contest]:
     """
     Fetch a single Contest row by primary-key `contest_id`.
@@ -481,6 +506,7 @@ def get_contest(db: Session, contest_id: str) -> Optional[models.Contest]:
     )
 
 
+@track_performance
 def get_contest_by_internal_identifier(db: Session, iid: str | int) -> Optional[models.Contest]:
     return (
         db.query(models.Contest)
