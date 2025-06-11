@@ -26,7 +26,8 @@ def prodseed():
     bootstrap.add_all([
         User(user_id=u, role='admin', cf_handle=u,
              email_id=f"{u}@gmail.com",
-             hashed_password=hash_password(default_pwd))
+             hashed_password=hash_password(default_pwd),
+             is_registered=True)
         for u in uw
     ])
     bootstrap.add(

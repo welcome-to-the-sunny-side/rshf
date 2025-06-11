@@ -47,6 +47,7 @@ def devseed():
             cf_handle='negative-xp',
             email_id='nonadhocproblems@gmail.com',
             hashed_password=hash_password(default_password),
+            is_registered=True
         ),
         User(
             user_id='roomTemperatureIQ',
@@ -54,6 +55,7 @@ def devseed():
             cf_handle='roomTemperatureIQ',
             email_id='evapilotno17@gmail.com',
             hashed_password=hash_password(default_password),
+            is_registered=True
         )
     ]
     
@@ -114,6 +116,7 @@ def devseed():
                 cf_handle=h,
                 email_id=h+'@gmail.com',
                 hashed_password=hash_password(default_password),
+                is_registered=True
             )
         )
         

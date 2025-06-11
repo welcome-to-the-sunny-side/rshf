@@ -294,11 +294,11 @@ def register_user(payload: schemas.UserRegister, db: Session = Depends(get_db)):
 def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     # check if user is banned
     if crud.check_if_user_is_banned(db, form.username):
-        raise HTTPException(401, "login failed")
+        raise HTTPException(401, "user is banned")
 
     user = crud.authenticate_user(db, form.username, form.password)
     if not user:
-        raise HTTPException(401, "login failed")
+        raise HTTPException(401, "user does not exist")
     token = create_access_token({"sub": user.user_id})
     return {"access_token": token, "token_type": "bearer"}
 
