@@ -9,8 +9,10 @@ vomit.txt
 vomitinclude.txt
 *.py[cod]
 *.ipynb
+.ipynb*
 __pycache__/
 *venv*
 changes.md
 a.json
 .cph
+*playground*
