@@ -488,8 +488,7 @@ def get_contest_participations_range_fetch(
         offset=offset,
         limit=limit,
     )
-    return schemas.ContestParticipationRangeFetchResponse(items=result['items'], total=result['total'])
-
+    return schemas.ContestParticipationRangeFetchResponse(items=result['items'])
 
 @router.get("/contests", response_model=List[schemas.ContestOut], dependencies=[Depends(check_logged_in)])
 def list_contests(

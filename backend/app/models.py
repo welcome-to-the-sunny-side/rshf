@@ -28,8 +28,6 @@ class ContestType(str, enum.Enum):
             ContestType.EDU: 2099,
         }[self]
 
-    
-
 class ModelBase(Base):
     __abstract__ = True
     timestamp = Column(DateTime, server_default=func.timezone('UTC', func.now()), nullable=False, index=True)
@@ -94,7 +92,6 @@ class GroupMembership(ModelBase):
     def __repr__(self):
         return f"<GroupMembership(user_id={self.user_id}, group_id={self.group_id}, cf_handle={self.cf_handle}, role={self.role}, rating={self.user_group_rating})>"
 
-
 class Contest(ModelBase):
     __tablename__ = "contests"
     contest_id = Column(String, primary_key=True, index=True)
@@ -104,7 +101,6 @@ class Contest(ModelBase):
     duration_seconds = Column(Integer, nullable=True)
     link = Column(String, nullable=False)
     internal_contest_identifier = Column(String, nullable=True)
-    standings = Column(JSON, nullable=True)
     finished = Column(Boolean, nullable=False, default=False)
     group_views = Column(JSON, nullable=True) # this is derived data
 
@@ -114,7 +110,6 @@ class Contest(ModelBase):
     participations = relationship("ContestParticipation", back_populates="contest", cascade="all, delete")
     def __repr__(self):
         return f"<Contest(id={self.contest_id}, name={self.contest_name})>"
-
 
 
 class ContestParticipation(ModelBase):

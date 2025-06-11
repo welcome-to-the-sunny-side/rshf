@@ -62,14 +62,8 @@ def get_user(db: Session, user_id: str) -> Optional[models.User]:
     usr = db.query(models.User).filter(models.User.user_id == user_id).first()
     return _enrich_user(db, usr) if usr else None
 
-
-def list_users(db: Session) -> List[models.User]:
-    return [_enrich_user(db, u) for u in db.query(models.User).all()]
-
-
 def get_user_by_handle(db: Session, cf_handle: str) -> Optional[models.User]:
     return db.query(models.User).filter(models.User.cf_handle == cf_handle).first()
-
 
 def update_user(db: Session, user_id: str, payload: schemas.UserUpdate) -> Optional[models.User]:
     user = get_user(db, user_id)
@@ -88,7 +82,6 @@ def update_user(db: Session, user_id: str, payload: schemas.UserUpdate) -> Optio
     db.commit()
     db.refresh(user)
     return user
-
 
 def authenticate_user(db: Session, user_id: str, password: str) -> Optional[models.User]:
     user = get_user(db, user_id)
@@ -127,43 +120,14 @@ def create_group(db: Session, payload: schemas.GroupRegister) -> models.Group:
 def get_group(db: Session, group_id: str) -> Optional[models.Group]:
     return db.query(models.Group).filter(models.Group.group_id == group_id).first()
 
-
-# def list_groups(db: Session):
-#     """
-#     Returns (Group, member_count) tuples.
-#     """
-#     rows = (
-#         db.query(models.Group, func.count(models.GroupMembership.user_id).label("member_count"))
-#         .outerjoin(models.GroupMembership, models.Group.group_id == models.GroupMembership.group_id)
-#         .group_by(models.Group.group_id)
-#         .all()
-#     )
-#     return rows
-
 def list_groups(db: Session):
     """
-    Returns (Group, member_count) tuples with O(G) complexity.
+    Returns (Group, member_count) tuples with O(G) complexity where G is the number of groups.
+    Uses indexed queries instead of expensive joins.
     """
-    # Create a subquery that counts memberships per group
-    membership_count = (
-        db.query(
-            models.GroupMembership.group_id,
-            func.count(models.GroupMembership.user_id).label("member_count")
-        )
-        .group_by(models.GroupMembership.group_id)
-        .subquery()
-    )
-    
-    # Query groups and left join with the count subquery
-    rows = (
-        db.query(
-            models.Group,
-            func.coalesce(membership_count.c.member_count, 0).label("member_count")
-        )
-        .outerjoin(
-            membership_count,
-            models.Group.group_id == membership_count.c.group_id
-        )
+    # Fetch all groups first - O(G) operation
+    groups = (
+        db.query(models.Group)
         .options(
             # Explicitly avoid loading relationships
             orm.lazyload(models.Group.memberships),
@@ -172,7 +136,19 @@ def list_groups(db: Session):
         .all()
     )
     
-    return rows
+    result = []
+    for group in groups:
+        # For each group, get the member count with an indexed query - O(1) operation
+        member_count = (
+            db.query(func.count(models.GroupMembership.user_id))
+            .filter(models.GroupMembership.group_id == group.group_id)
+            .scalar() or 0
+        )
+        
+        # Add the group and its member count to the result
+        result.append((group, member_count))
+    
+    return result
 
 
 def update_group(db: Session, payload: schemas.GroupUpdate):
@@ -431,10 +407,7 @@ def get_contest_participations_range_fetch(
     offset: int = 0,
     limit: int = 25,
 ) -> Dict[str, Any]:
-    q = db.query(models.ContestParticipation).options(
-        joinedload(models.ContestParticipation.user),
-        joinedload(models.ContestParticipation.contest),
-    )
+    q = db.query(models.ContestParticipation)
 
     if gid:
         q = q.filter(models.ContestParticipation.group_id == gid)
@@ -442,8 +415,6 @@ def get_contest_participations_range_fetch(
         q = q.filter(models.ContestParticipation.user_id == uid)
     if cid:
         q = q.filter(models.ContestParticipation.contest_id == cid)
-
-    total = q.count()
 
     sort_map = {
         schemas.ContestParticipationSortByField.CF_HANDLE: models.ContestParticipation.cf_handle,
@@ -459,7 +430,7 @@ def get_contest_participations_range_fetch(
         q = q.order_by(desc(models.ContestParticipation.rating_after))
 
     items = q.offset(offset).limit(limit).all()
-    return {"items": items, "total": total}
+    return {"items": items}
 
 # ───────────────────────────── CONTEST METADATA & CF SYNC ─────────────────────────────
 def list_contests(db: Session, finished: Optional[bool] = None) -> List[models.Contest]:
@@ -682,11 +653,9 @@ def update_contest_info_from_cf_api(db: Session, cf_contest_id: str, group_id: O
         ContestUpdate(
             contest_id=contest.contest_id,
             finished=True,
-            standings=standings,
             group_views=group_views,
         )
     )
-
 
 def update_finished_contests(db: Session, group_id: Optional[str] = None, cutoff_days: Optional[int] = None) -> None:
     finished = cf_api.fetch_finished_contests(cutoff_days)
@@ -1130,7 +1099,6 @@ def get_group_memberships_paginated(
         query = query.order_by(asc(sort_expression))
     memberships = query.offset(offset).limit(limit).all()
     return memberships
-
 
 def get_ratings_by_cf_handles(db: Session, group_id: str, cf_handles: List[str]) -> List[Optional[int]]:
     """

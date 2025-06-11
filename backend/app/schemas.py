@@ -120,7 +120,6 @@ class GroupOutFull(BaseModel):
     class Config:
         from_attributes = True
 
-
 class GroupOut(BaseModel):
     group_id: str
     group_name: Optional[str] = None
@@ -164,7 +163,6 @@ class ContestUpdate(BaseModel):
     group_views: Optional[Dict[str, "GroupViewDetail"]] = None
     contest_type: Optional[ContestType] = None
 
-
 class TokenOut(BaseModel):
     access_token: str
     token_type: str = "bearer"
@@ -190,7 +188,6 @@ class ContestOut(BaseModel):
     class Config:
         from_attributes = True
 
-
 class ContestParticipationOut(BaseModel):
     user_id: str
     group_id: str
@@ -200,11 +197,9 @@ class ContestParticipationOut(BaseModel):
     rank: Optional[int] = None
     rating_change: Optional[int] = None
     cf_handle: Optional[str] = None
-    contest: Optional[ContestOut] = None
 
     class Config:
         from_attributes = True
-
 
 class GroupViewDetail(BaseModel):
     total_members: int
@@ -221,7 +216,6 @@ class ContestParticipationSortByField(str, Enum):
 
 class ContestParticipationRangeFetchResponse(BaseModel):
     items: List[ContestParticipationOut]
-    total: int
 
     class Config:
         from_attributes = True
@@ -385,7 +379,6 @@ class RequestSortByField(str, Enum):
 class RequestRangeFetchResponse(BaseModel):
     items: List[RequestOut]
     total: int
-
     class Config:
         from_attributes = True
 

@@ -45,8 +45,6 @@ def drop_table(table_name: str) -> None:
 
 
 
-
-
 def get_table_names() -> list:
     """
     Get all table names in the database.
