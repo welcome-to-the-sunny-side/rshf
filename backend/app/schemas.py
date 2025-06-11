@@ -33,7 +33,6 @@ class UserRegister(BaseModel):
     cf_handle: str
     email_id: str
     password: str
-    is_registered: bool
 
 class UserLogin(BaseModel):
     cf_handle: str

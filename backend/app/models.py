@@ -56,7 +56,6 @@ class User(ModelBase):
     def __repr__(self):
         return f"<User(id={self.user_id}, cf_handle='{self.cf_handle}')>"
 
-
 class Group(ModelBase):
     """
         group specific rating formulas to be implemented later

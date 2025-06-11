@@ -47,7 +47,7 @@ def create_user(db: Session, payload: schemas.UserRegister) -> models.User:
         email_id=payload.email_id,
         hashed_password=hash_password(payload.password),
         role=schemas.Role.user,  # Always assign 'user' role
-        is_registered=payload.is_registered,
+        is_registered=True,  # Always set to True for new registrations
     )
     db.add(db_user)
     db.commit()

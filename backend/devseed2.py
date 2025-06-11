@@ -592,9 +592,6 @@ def seed():
         BannedUser(
             cf_handle="misaki",
         ),
-        BannedUser(
-            cf_handle="misaki-nakahara",
-        )
     ]
     db.add_all(banned_users)
     db.commit()

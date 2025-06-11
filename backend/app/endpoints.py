@@ -220,12 +220,12 @@ def register_user(payload: schemas.UserRegister, db: Session = Depends(get_db)):
 
     # check if user is banned
     if crud.check_if_user_is_banned(db, cf_handle):
-        raise HTTPException(400, " is banned.")
+        raise HTTPException(status_code=400, detail=f"User with handle '{cf_handle}' is banned.")
 
     # Check if user with this cf_handle already exists (as user_id or cf_handle)
     existing_user = crud.get_user(db, user_id) or crud.get_user_by_handle(db, cf_handle)
     if existing_user and existing_user.is_registered:
-        raise HTTPException(400, "A user with this Codeforces handle already exists.")
+        raise HTTPException(status_code=400, detail=f"A user with Codeforces handle '{cf_handle}' already exists.")
     # Fetch recent submissions from Codeforces API
     
     try:
@@ -242,13 +242,15 @@ def register_user(payload: schemas.UserRegister, db: Session = Depends(get_db)):
 
     # Only check the latest submission
     if not submissions:
-        raise HTTPException(400, "No submissions found for this user.")
+        raise HTTPException(status_code=400, detail=f"No submissions found for user '{cf_handle}'.")
     latest = submissions[0]
     prob = latest.get('problem', {})
     if str(prob.get('contestId')) != '1188' or prob.get('index') != 'B':
-        raise HTTPException(400, "Your latest submission is not to problem 1188/B.")
+        latest_problem = f"{prob.get('contestId')}/{prob.get('index')}"
+        raise HTTPException(status_code=400, detail=f"Your latest submission is to {latest_problem}, not to problem 1188/B.")
     if latest.get('verdict') != 'COMPILATION_ERROR':
-        raise HTTPException(400, "Your latest submission to 1188/B is not a COMPILATION_ERROR.")
+        verdict = latest.get('verdict', 'UNKNOWN')
+        raise HTTPException(status_code=400, detail=f"Your latest submission to 1188/B has verdict '{verdict}', not 'COMPILATION_ERROR'.")
     # Check time (must be <5 minutes ago)
     
     now = datetime.now(timezone.utc).timestamp()
@@ -256,7 +258,8 @@ def register_user(payload: schemas.UserRegister, db: Session = Depends(get_db)):
     if sub_time is None:
         raise HTTPException(400, "Could not determine submission time.")
     if now - sub_time > 5 * 60:
-        raise HTTPException(400, "Your latest submission to 1188/B is older than 5 minutes.")
+        minutes_ago = round((now - sub_time) / 60, 1)
+        raise HTTPException(status_code=400, detail=f"Your latest submission to 1188/B is from {minutes_ago} minutes ago, which is older than the 5 minute limit.")
 
     # user is already in db but not registered
     if existing_user and not existing_user.is_registered:
