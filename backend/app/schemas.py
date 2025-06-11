@@ -33,13 +33,12 @@ class UserRegister(BaseModel):
     cf_handle: str
     email_id: str
     password: str
+    is_registered: bool
     role: Role = Role.user
-
 
 class UserLogin(BaseModel):
     cf_handle: str
     password: str
-
 
 class UserUpdate(BaseModel):
     email_id: Optional[str] = None
@@ -181,7 +180,6 @@ class ContestOut(BaseModel):
     duration_seconds: Optional[int] = None
     link: str
     internal_contest_identifier: Optional[str] = None
-    standings: Optional[dict] = None
     finished: bool
     group_views: Optional[Dict[str, "GroupViewDetail"]] = None
 
@@ -233,14 +231,12 @@ class ReportCreate(BaseModel):
     respondent_role_after: Optional[Role] = None
     accepted: Optional[bool] = None
 
-
 class ReportResolve(BaseModel):
     report_id: str
     resolver_user_id: str
     resolve_message: str
     respondent_role_after: Role
     accepted: bool
-
 
 class ReportOut(BaseModel):
     report_id: str
@@ -281,7 +277,6 @@ class ReportSortByField(str, Enum):
 
 class ReportRangeFetchResponse(BaseModel):
     items: List[ReportOut]
-    total: int
 
     class Config:
         from_attributes = True
@@ -298,7 +293,6 @@ class AnnouncementUpdate(BaseModel):
     title: Optional[str] = None
     content: Optional[str] = None
 
-
 class AnnouncementOut(BaseModel):
     announcement_id: str
     group_id: str
@@ -306,10 +300,8 @@ class AnnouncementOut(BaseModel):
     content: str
     timestamp: datetime
 
-
 class AnnouncementDelete(BaseModel):
     announcement_id: str
-
     class Config:
         from_attributes = True
 
@@ -320,10 +312,9 @@ class CustomMembershipData(BaseModel):
     user_group_rating: int
     user_group_max_rating: int
     date_joined: datetime
-
+    
     class Config:
         from_attributes = True
-
 
 class ExtensionQuery1Request(BaseModel):
     group_id: str
@@ -378,7 +369,7 @@ class RequestSortByField(str, Enum):
 
 class RequestRangeFetchResponse(BaseModel):
     items: List[RequestOut]
-    total: int
+    
     class Config:
         from_attributes = True
 

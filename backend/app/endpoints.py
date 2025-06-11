@@ -714,7 +714,7 @@ def get_reports_range_fetch_endpoint(
         skip=skip,
         limit=limit,
     )
-    return schemas.ReportRangeFetchResponse(items=result["items"], total=result["total"])
+    return schemas.ReportRangeFetchResponse(items=result["items"])
 
 
 # ========== announcement routes ==========
@@ -1538,7 +1538,7 @@ def get_requests_range_fetch_endpoint(
         skip=skip,
         limit=limit,
     )
-    return schemas.RequestRangeFetchResponse(items=result["items"], total=result["total"])
+    return schemas.RequestRangeFetchResponse(items=result["items"])
 
 
 @router.get("/requests_count", response_model=schemas.CountResponse, dependencies=[Depends(check_logged_in)])

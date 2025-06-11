@@ -57,7 +57,6 @@ def create_user(db: Session, payload: schemas.UserRegister) -> models.User:
 def check_if_user_is_banned(db: Session, cf_handle: str) -> bool:
     return db.query(models.BannedUser).filter(models.BannedUser.cf_handle == cf_handle).first() is not None
 
-
 def get_user(db: Session, user_id: str) -> Optional[models.User]:
     usr = db.query(models.User).filter(models.User.user_id == user_id).first()
     return _enrich_user(db, usr) if usr else None
@@ -371,7 +370,7 @@ def filter_contest_participations(
     uid: Optional[str] = None,
     cid: Optional[str] = None,
 ) -> List[models.ContestParticipation]:
-    q = db.query(models.ContestParticipation).options(joinedload(models.ContestParticipation.contest))
+    q = db.query(models.ContestParticipation)
     if gid:
         q = q.filter(models.ContestParticipation.group_id == gid)
     if uid:
@@ -861,9 +860,6 @@ def get_reports_range_fetch(
     if accepted is not None:
         query = query.filter(models.Report.accepted.is_(accepted))
 
-    # Get total count before pagination for the filtered query
-    total = query.count()
-
     # Apply sorting
     sort_column_map = {
         schemas.ReportSortByField.REPORT_ID: models.Report.report_id,
@@ -886,7 +882,7 @@ def get_reports_range_fetch(
     # Apply pagination
     items = query.offset(skip).limit(limit).all()
 
-    return {"items": items, "total": total}
+    return {"items": items}
 
 
 # ───────────── announcements ─────────────
@@ -1303,7 +1299,7 @@ def get_requests_range_fetch(
         limit: Maximum number of records to return
         
     Returns:
-        Dictionary with 'items' (list of requests) and 'total' (total count)
+        Dictionary with 'items' (list of requests)
     """
     # Base query
     query = db.query(models.Request)
@@ -1324,9 +1320,6 @@ def get_requests_range_fetch(
     if accepted is not None:
         query = query.filter(models.Request.accepted == accepted)
     
-    # Get total count for pagination info
-    total = query.count()
-    
     # Apply sorting
     sort_column = getattr(models.Request, sort_by.value)
     if sort_order == schemas.SortOrder.DESC:
@@ -1338,7 +1331,6 @@ def get_requests_range_fetch(
     requests = query.offset(skip).limit(limit).all()
     
     return {
-        "items": requests,
-        "total": total
+        "items": requests
     }
 
