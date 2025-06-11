@@ -165,7 +165,6 @@ def update_finished_contest_from_cf(db, cf_contest_id: str):
     print("🏁 Ranking done — time to persist!")
 
     contest.finished = True
-    contest.standings = standings
     contest.group_views = group_views
 
     print("💾 Committing contest updates to DB...")

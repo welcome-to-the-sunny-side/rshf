@@ -155,7 +155,6 @@ class ContestUpdate(BaseModel):
     duration_seconds: Optional[int] = None
     link: Optional[str] = None
     internal_contest_identifier: Optional[str] = None
-    standings: Optional[dict] = None
     finished: Optional[bool] = None
     group_views: Optional[Dict[str, "GroupViewDetail"]] = None
     contest_type: Optional[ContestType] = None
