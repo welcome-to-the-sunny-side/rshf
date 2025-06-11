@@ -4,6 +4,7 @@ import sys
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
+from typing import List, Optional
 
 # Add the parent directory to the path so we can import from app
 # This allows us to import modules from the 'app' directory, e.g., app.crud
@@ -13,8 +14,68 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 load_dotenv()
 
 # Imports from our 'app' directory, must be after sys.path modification
-from app.crud import update_upcoming_contests, update_finished_contests, update_contest_ratings_for_group
+from app.cf_contest_utils import map_cf_contest_to_internal, fetch_and_add_contest_to_db_from_cf, update_finished_contest_from_cf, update_contest_ratings_for_group
+from app.codeforces_api import cf_api
 from app import models  # Required for querying app.models.Group
+
+# Custom implementation of functions that are in crud but not in cf_contest_utils
+def update_upcoming_contests(db: Session) -> None:
+    """
+    Fetches upcoming contests from Codeforces API and updates the database.
+    This is implemented in the cron script based on the function in crud.py
+    """
+    upcoming = cf_api.fetch_upcoming_contests()
+    
+    # Process each upcoming contest
+    for cf_contest in upcoming:
+        contest_id = str(cf_contest["id"])
+        
+        # Check if contest exists in DB
+        existing = db.query(models.Contest).filter(
+            models.Contest.internal_contest_identifier == contest_id
+        ).first()
+        
+        if existing is None:
+            # Contest doesn't exist, add it
+            contest = models.Contest(
+                **map_cf_contest_to_internal(cf_contest)
+            )
+            db.add(contest)
+        else:
+            # Contest exists, update its details
+            contest_data = map_cf_contest_to_internal(cf_contest)
+            for key, value in contest_data.items():
+                setattr(existing, key, value)
+    
+    # Commit all changes
+    db.commit()
+    print(f"Updated {len(upcoming)} upcoming contests")
+
+def update_finished_contests(db: Session, group_id: Optional[str] = None, cutoff_days: Optional[int] = None) -> List[str]:
+    """
+    Updates information for finished contests from Codeforces API.
+    This is implemented in the cron script based on the function in crud.py
+    
+    Returns:
+        List of updated contest IDs
+    """
+    finished = cf_api.fetch_finished_contests(cutoff_days)
+    updated_contests = []
+    
+    for cf_contest in finished:
+        contest_id = str(cf_contest["id"])
+        
+        # Check if contest exists in DB
+        existing = db.query(models.Contest).filter(
+            models.Contest.internal_contest_identifier == contest_id
+        ).first()
+        
+        if existing:
+            # Update this contest
+            update_finished_contest_from_cf(db, contest_id)
+            updated_contests.append(f"cf_{contest_id}")
+    
+    return updated_contests
 
 def main():
     """
