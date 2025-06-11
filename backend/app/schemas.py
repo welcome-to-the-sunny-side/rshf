@@ -34,7 +34,6 @@ class UserRegister(BaseModel):
     email_id: str
     password: str
     is_registered: bool
-    role: Role = Role.user
 
 class UserLogin(BaseModel):
     cf_handle: str

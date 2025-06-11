@@ -265,7 +265,7 @@ def register_user(payload: schemas.UserRegister, db: Session = Depends(get_db)):
             email_id=payload.email_id,
             cf_handle=cf_handle,
             password=payload.password,
-            role=payload.role
+            role=schemas.Role.user  # Always assign 'user' role
         ))
 
     # All checks passed, create user
@@ -273,8 +273,7 @@ def register_user(payload: schemas.UserRegister, db: Session = Depends(get_db)):
         user_id=user_id,
         cf_handle=cf_handle,
         email_id=payload.email_id,
-        password=payload.password,
-        role=payload.role
+        password=payload.password
     )
     user = crud.create_user(db, user_payload)
 
