@@ -46,7 +46,7 @@ class User(ModelBase):
     email_id = Column(String, nullable=False, default="not_registered@rshf.net")
 
     # registered flag -> has the user actually registered?
-    is_registered = Column(Boolean, nullable=False, default=True)
+    is_registered = Column(Boolean, nullable=False, default=False)
 
     # hqas to be hashed
     hashed_password = Column(String, nullable=False, default=hash_password("devpass"))
