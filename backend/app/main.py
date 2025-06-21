@@ -33,7 +33,7 @@ logger.info("✅ FastAPI app instance created.")
 async def startup():
     logger.info("🚀 Executing startup event...")
     # Initialize Redis for rate limiting
-    redis_url = os.getenv("REDIS_URL")
+    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
     if not redis_url:
         logger.error("❌ REDIS_URL environment variable not set. Rate limiting will not work.")
     else:

@@ -444,7 +444,8 @@ def seed():
     # 7. Create announcements for main group
     def build_announcements(num=10):
         banner("building announcements")
-        anns = [
+        # Create group-specific announcements
+        group_anns = [
             Announcement
             (
                 announcement_id=f"anmt{i}", 
@@ -453,9 +454,24 @@ def seed():
                 title=faker.sentence(nb_words=6), 
                 content='https://codeforces.com/blog/entry/143422'
             )
-            for i in range(num)
+            for i in range(num//2)
         ]
-        print(f"   total announcements: {len(anns)}")
+        
+        # Create global announcements (NULL group_id)
+        global_anns = [
+            Announcement
+            (
+                announcement_id=f"anmt{num//2+i}", 
+                group_id=None,  # NULL group_id for global announcements
+                user_id=random.choice(SPECIAL_USERS), 
+                title=f"Global Announcement: {faker.sentence(nb_words=5)}", 
+                content='https://codeforces.com/blog/entry/143422'
+            )
+            for i in range(num//2)
+        ]
+        
+        anns = group_anns + global_anns
+        print(f"   total announcements: {len(anns)} ({len(global_anns)} global)")
         return anns
     announcements = build_announcements(num=10)
     db.add_all(announcements)

@@ -247,6 +247,24 @@ def devseed():
     if announcement_batch:
         write_session.bulk_save_objects(announcement_batch)
         write_session.commit()
+        
+    # Add global announcements (NULL group_id)
+    global_announcement_batch = []
+    for i in range(5):  # Add 5 global announcements
+        announcement_counter += 1
+        global_announcement_batch.append(
+            Announcement(
+                announcement_id=f'an_global_{announcement_counter}',
+                user_id=random.choice(list(uw)),
+                group_id=None,  # NULL group_id for global announcements
+                title=f"Global Announcement: {faker.sentence(nb_words=5)}",
+                content=faker.url()
+            )
+        )
+    
+    # Save global announcements
+    write_session.bulk_save_objects(global_announcement_batch)
+    write_session.commit()
     
     write_session.close()
     

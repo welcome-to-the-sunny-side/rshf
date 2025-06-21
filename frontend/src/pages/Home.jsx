@@ -162,8 +162,11 @@ export default function Home() {
         
         const data = JSON.parse(text);
         
+        // Filter announcements to only include those with NULL group_id
+        const filteredAnnouncements = data.filter(announcement => announcement.group_id === null);
+        
         // Transform announcements data to match our UI format
-        const transformedAnnouncements = data.map(announcement => ({
+        const transformedAnnouncements = filteredAnnouncements.map(announcement => ({
           date: new Date(announcement.timestamp).toISOString().split('T')[0],
           link: announcement.content.startsWith('http') ? announcement.content : `https://${announcement.content}`,
           title: announcement.title

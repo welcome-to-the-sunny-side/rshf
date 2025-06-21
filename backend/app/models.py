@@ -170,7 +170,7 @@ class Announcement(ModelBase):
 
     announcement_id = Column(String, primary_key=True, index=True)
     user_id = Column(String, ForeignKey("users.user_id"), nullable=False)
-    group_id = Column(String, ForeignKey("groups.group_id"), nullable=False)
+    group_id = Column(String, ForeignKey("groups.group_id"), nullable=True)
     title = Column(String, nullable=False)
     content = Column(String, nullable=False)
 
