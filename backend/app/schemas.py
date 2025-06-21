@@ -14,7 +14,6 @@ class Role(str, Enum):
     user      = "user"
     kicked    = "kicked"
 
-
 class GroupMemberSortByField(str, Enum):
     CF_HANDLE            = "cf_handle"
     ROLE                 = "role"
