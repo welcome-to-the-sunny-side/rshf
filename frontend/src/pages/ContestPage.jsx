@@ -188,35 +188,41 @@ const ContestPage = () => {
         ];
       });
     } else {
-      // Completed contests: Iterate through current user's participations
-      if (loading.currentUserParticipations) return [];
-      if (!currentUserParticipations || currentUserParticipations.length === 0) return [];
+      // Completed contests: Iterate through all user's groups
+      if (loading.userGroupMemberships || loading.currentUserParticipations) return [];
+      if (!userGroupMemberships || userGroupMemberships.length === 0) return [];
 
-      return currentUserParticipations.map(participation => {
-        const ratingChange = (participation.rating_after != null && participation.rating_before != null) 
-          ? participation.rating_after - participation.rating_before 
+      return userGroupMemberships.map(membership => {
+        const groupId = membership.group_id;
+        const participation = currentUserParticipations.find(p => p.group_id === groupId);
+
+        const rank = participation ? participation.rank : null;
+        const ratingBefore = participation ? participation.rating_before : null;
+        const ratingAfter = participation ? participation.rating_after : null;
+
+        const ratingChange = (ratingAfter != null && ratingBefore != null)
+          ? ratingAfter - ratingBefore
           : null;
         const ratingChangeText = ratingChange === null ? 'N/A' : (ratingChange > 0 ? `+${ratingChange}` : ratingChange.toString());
         const ratingChangeColor = ratingChange === null ? 'gray' : (ratingChange > 0 ? 'green' : 'red');
-        
-        const groupViewData = contestData.group_views && contestData.group_views[participation.group_id];
-        // Ensure using total_participants as per GroupViewDetail schema
-        const participantCount = groupViewData ? groupViewData.total_participants : 0; 
+
+        const groupViewData = contestData.group_views && contestData.group_views[groupId];
+        const participantCount = groupViewData ? groupViewData.total_participants : 0;
         const totalMembers = groupViewData ? groupViewData.total_members : 0;
 
         return [
-          <Link key={`${participation.group_id}-link`} to={`/group/${participation.group_id}/contest/${contest_id}`} className="tableCellLink">
-            {participation.group_id} {/* Ideally, group_name */}
+          <Link key={`${groupId}-link`} to={`/group/${groupId}/contest/${contest_id}`} className="tableCellLink">
+            {groupId}
           </Link>,
           <>
-            <span style={{ fontWeight: 'bold' }}>{participation.rank || 'N/A'}</span>
+            <span style={{ fontWeight: 'bold' }}>{rank || 'N/A'}</span>
             <span style={{ fontSize: '0.7rem' }}>
               /{participantCount || 0}/{totalMembers || 0}
             </span>
           </>,
           <span style={{ color: ratingChangeColor, fontWeight: 'bold' }}>{ratingChangeText}</span>,
-          <span style={{ color: getRatingColor(participation.rating_after), fontWeight: 'bold' }}>
-            {participation.rating_after != null ? participation.rating_after : 'N/A'}
+          <span style={{ color: ratingAfter != null ? getRatingColor(ratingAfter) : 'gray', fontWeight: 'bold' }}>
+            {ratingAfter != null ? ratingAfter : 'N/A'}
           </span>
         ];
       });
@@ -224,8 +230,8 @@ const ContestPage = () => {
   };
   
   // Determine overall loading state for the main content sections
-  const isPageLoading = loading.contest || (contestData && !contestData.finished && (loading.userGroupMemberships || loading.currentUserParticipations));
-  const pageError = error.contest || (contestData && !contestData.finished && (error.userGroupMemberships || error.currentUserParticipations));
+  const isPageLoading = loading.contest || loading.userGroupMemberships || (contestData && !contestData.finished && loading.currentUserParticipations);
+  const pageError = error.contest || error.userGroupMemberships || (contestData && !contestData.finished && error.currentUserParticipations);
 
   return (
     <div className="page-container">
