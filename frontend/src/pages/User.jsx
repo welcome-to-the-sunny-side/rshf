@@ -215,10 +215,9 @@ export default function User() {
             'Authorization': `Bearer ${token}`
           }
         });
-        
         const formattedRatingData = response.data.map(participation => {
           // Check if contest exists and has start_time_posix
-          if (!participation.contest || typeof participation.contest.start_time_posix === 'undefined') {
+          if (!participation.contest || !participation.contest.start_time_posix) {
             return null; // We'll filter these out below
           }
           
@@ -226,7 +225,7 @@ export default function User() {
           const timestamp = participation.contest.start_time_posix * 1000;
           // Format as ISO string date (YYYY-MM-DD)
           const isoDate = new Date(timestamp).toISOString().split('T')[0];
-          
+
           const rating_before = participation.rating_before;
           const rating_after = participation.rating_after;
           const rank = participation.rank;
