@@ -258,7 +258,7 @@ export default function Report() {
           backgroundColor={isAccepted === true ? "rgb(230, 255, 240)" : (isAccepted === false ? "rgb(255, 230, 230)" : "rgb(240, 240, 240)")}
           contentPadding="0.5rem 1rem 0rem 1rem"
         >
-          <div className="c standardTextFont" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto', padding: '5px' }}>
+          <div className="contentBox standardTextFont" style={{ border: 'none', boxShadow: 'none', minHeight: 'auto', padding: '5px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {reportData.resolver_cf_handle && (
                 <div>
