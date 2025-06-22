@@ -86,7 +86,7 @@ export default function Groups() {
       </div>,
       <span style={{ fontWeight: 500 }}>{mainGroup.is_private ? 'private' : 'public'}</span>,
       <span style={{ fontWeight: 500 }}>{mainGroup.member_count.toLocaleString()}</span>,
-      <span style={{ fontWeight: 500 }}>{formatDate(mainGroup.create_date)}</span>
+      <span style={{ fontWeight: 500 }}>{formatDate(mainGroup.timestamp)}</span>
     ];
   }, [mainGroup]);
   
