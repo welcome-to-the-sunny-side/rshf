@@ -317,6 +317,7 @@ export default function RatingGraph({ ratingHistory }) {
             name=""
             dot={ClickableDot}
             activeDot={ClickableDot}
+            isAnimationActive={false}
             filter="url(#yellowLineShadow)"
           />
           {/* Show a subtle message if no data points */}
