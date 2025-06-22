@@ -331,7 +331,7 @@ export default function ParticipationGraph({ participationData, groupName }) {
 
           <defs>
             <filter id="lineShadow" x="-10" y="-10" width="200" height="200">
-              <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#000" floodOpacity="0.3" />
+              <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#000" floodOpacity="0.15" />
             </filter>
           </defs>
           
@@ -346,7 +346,7 @@ export default function ParticipationGraph({ participationData, groupName }) {
             activeDot={ClickableDot}
             isAnimationActive={false}
             connectNulls={true}
-            style={{ filter: 'drop-shadow(0px 1px 2px rgba(0,0,0,0.5))' }}
+            style={{ filter: 'drop-shadow(0px 1px 2px rgba(0,0,0,0.25))' }}
           />
 
           {/* Strength line (clickable) */}
@@ -360,7 +360,7 @@ export default function ParticipationGraph({ participationData, groupName }) {
             activeDot={StrengthDot}
             isAnimationActive={false}
             connectNulls={true}
-            style={{ filter: 'drop-shadow(0px 1px 2px rgba(0,0,0,0.5))' }}
+            style={{ filter: 'drop-shadow(0px 1px 2px rgba(0,0,0,0.25))' }}
           />
 
           {/* Show a subtle message if no data points */}

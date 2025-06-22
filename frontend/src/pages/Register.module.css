@@ -42,15 +42,16 @@
   
   .loginPage {
     display: flex;
-    min-height: 100vh; /* Full viewport height */
+    align-items: flex-end; /* CHANGE: Align items to the bottom */
+    min-height: 100vh;
     padding: 0;
     margin: 0;
     width: 100%;
-    max-width: 1200px; /* Match page-container width */
+    max-width: 1200px;
     margin: 0 auto;
-    /* Remove any margin-bottom on the login page */
     margin-bottom: 0 !important;
-  }
+    }
+    
   
   .waifuContainer {
     flex: 1;
@@ -78,12 +79,14 @@
   .formSide {
     flex: 1;
     display: flex;
-    align-items: flex-start; /* Align to top instead of center */
+    align-items: flex-start;
     justify-content: center;
-    padding-left: 0.1rem; /* Space between waifu and form */
+    padding-left: 0.1rem;
     padding-right: 100px;
-    padding-top: 1px; /* Position form higher up to align with pointing */
-  }
+    padding-top: 0; /* CHANGE: Remove this */
+    margin-bottom: 11rem; /* ADD: Push the form up. Adjust this value for perfect alignment. */
+    }
+
   
   .loginFormContainer {
     max-width: 400px;

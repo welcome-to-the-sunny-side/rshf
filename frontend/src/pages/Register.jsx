@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ContentBoxWithTitle from '../components/ContentBoxWithTitle';
-import styles from './Login.module.css';
+import styles from './Register.module.css';
 import waifuImage from '../assets/rshf_waifu_register_pose.webp';
 import formInputStyles from '../components/FormInput.module.css';
 import useIsMobile from '../utils/useIsMobile'; // Import the mobile detection hook

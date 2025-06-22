@@ -186,6 +186,7 @@ class ContestParticipationOut(BaseModel):
     user_id: str
     group_id: str
     contest_id: str
+    contest: ContestOut
     rating_before: Optional[int] = None
     rating_after: Optional[int] = None
     rank: Optional[int] = None
