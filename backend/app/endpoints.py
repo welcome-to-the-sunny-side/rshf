@@ -1170,7 +1170,7 @@ def register_contest_participation_endpoint(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only register yourself for contests"
         )
-    
+
     # Check if user exists
     user = crud.get_user(db, payload.user_id)
     if not user:
@@ -1194,6 +1194,14 @@ def register_contest_participation_endpoint(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Contest not found"
         )
+
+    # check if current time <= start_time_posix
+    if contest.start_time_posix < time.time():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Contest has already started"
+        )
+    
 
     if contest.finished:
         raise HTTPException(
@@ -1250,6 +1258,19 @@ def deregister_contest_participation_endpoint(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only deregister yourself from contests"
+        )
+
+    contest = crud.get_contest(db, payload.contest_id)
+    if not contest:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Contest not found"
+        )
+    
+    if contest.start_time_posix < time.time():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Contest has already started"
         )
     
     # Attempt to delete the contest participation
