@@ -23,7 +23,7 @@ def main() -> None:
 
         print(f"Found {len(registered_users)} registered users:\n")
         for usr in registered_users:
-            print(f"user_id: {usr.user_id}\tcf_handle: {usr.cf_handle}")
+            print(f"user: {usr.user_id}")
     finally:
         db.close()
 
